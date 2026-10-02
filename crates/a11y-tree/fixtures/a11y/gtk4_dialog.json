@@ -1,0 +1,303 @@
+{
+  "source": "atspi",
+  "taken": 1000,
+  "nodes": [
+    {
+      "id": 0,
+      "parent": {
+        "kind": "root"
+      },
+      "role": {
+        "kind": "dialog"
+      },
+      "name": {
+        "value": "Save changes?",
+        "label": {
+          "integrity": "untrusted",
+          "confidentiality": {
+            "kind": "private",
+            "v": [
+              "desktop"
+            ]
+          },
+          "classes": [
+            "screen"
+          ],
+          "sources": [
+            {
+              "kind": "screen",
+              "v": {
+                "app": "org.gnome.TextEditor"
+              }
+            }
+          ]
+        }
+      },
+      "value": {
+        "kind": "none"
+      },
+      "states": [
+        "enabled",
+        "visible",
+        "showing"
+      ],
+      "bounds": {
+        "origin": {
+          "x": 0,
+          "y": 0
+        },
+        "size": {
+          "w": 420,
+          "h": 180
+        }
+      },
+      "actions": [],
+      "typed": {
+        "kind": "none"
+      },
+      "sensitivity": "normal"
+    },
+    {
+      "id": 1,
+      "parent": {
+        "kind": "node",
+        "v": 0
+      },
+      "role": {
+        "kind": "label"
+      },
+      "name": {
+        "value": "Your changes will be lost if you do not save.",
+        "label": {
+          "integrity": "untrusted",
+          "confidentiality": {
+            "kind": "private",
+            "v": [
+              "desktop"
+            ]
+          },
+          "classes": [
+            "screen"
+          ],
+          "sources": [
+            {
+              "kind": "screen",
+              "v": {
+                "app": "org.gnome.TextEditor"
+              }
+            }
+          ]
+        }
+      },
+      "value": {
+        "kind": "none"
+      },
+      "states": [
+        "enabled",
+        "visible",
+        "showing"
+      ],
+      "bounds": {
+        "origin": {
+          "x": 20,
+          "y": 40
+        },
+        "size": {
+          "w": 380,
+          "h": 40
+        }
+      },
+      "actions": [],
+      "typed": {
+        "kind": "none"
+      },
+      "sensitivity": "normal"
+    },
+    {
+      "id": 2,
+      "parent": {
+        "kind": "node",
+        "v": 0
+      },
+      "role": {
+        "kind": "button"
+      },
+      "name": {
+        "value": "Cancel",
+        "label": {
+          "integrity": "untrusted",
+          "confidentiality": {
+            "kind": "private",
+            "v": [
+              "desktop"
+            ]
+          },
+          "classes": [
+            "screen"
+          ],
+          "sources": [
+            {
+              "kind": "screen",
+              "v": {
+                "app": "org.gnome.TextEditor"
+              }
+            }
+          ]
+        }
+      },
+      "value": {
+        "kind": "none"
+      },
+      "states": [
+        "enabled",
+        "focusable",
+        "visible",
+        "showing"
+      ],
+      "bounds": {
+        "origin": {
+          "x": 140,
+          "y": 120
+        },
+        "size": {
+          "w": 80,
+          "h": 32
+        }
+      },
+      "actions": [
+        {
+          "kind": "click"
+        }
+      ],
+      "typed": {
+        "kind": "none"
+      },
+      "sensitivity": "normal"
+    },
+    {
+      "id": 3,
+      "parent": {
+        "kind": "node",
+        "v": 0
+      },
+      "role": {
+        "kind": "button"
+      },
+      "name": {
+        "value": "Discard",
+        "label": {
+          "integrity": "untrusted",
+          "confidentiality": {
+            "kind": "private",
+            "v": [
+              "desktop"
+            ]
+          },
+          "classes": [
+            "screen"
+          ],
+          "sources": [
+            {
+              "kind": "screen",
+              "v": {
+                "app": "org.gnome.TextEditor"
+              }
+            }
+          ]
+        }
+      },
+      "value": {
+        "kind": "none"
+      },
+      "states": [
+        "enabled",
+        "focusable",
+        "visible",
+        "showing"
+      ],
+      "bounds": {
+        "origin": {
+          "x": 230,
+          "y": 120
+        },
+        "size": {
+          "w": 80,
+          "h": 32
+        }
+      },
+      "actions": [
+        {
+          "kind": "click"
+        }
+      ],
+      "typed": {
+        "kind": "none"
+      },
+      "sensitivity": "normal"
+    },
+    {
+      "id": 4,
+      "parent": {
+        "kind": "node",
+        "v": 0
+      },
+      "role": {
+        "kind": "button"
+      },
+      "name": {
+        "value": "Save",
+        "label": {
+          "integrity": "untrusted",
+          "confidentiality": {
+            "kind": "private",
+            "v": [
+              "desktop"
+            ]
+          },
+          "classes": [
+            "screen"
+          ],
+          "sources": [
+            {
+              "kind": "screen",
+              "v": {
+                "app": "org.gnome.TextEditor"
+              }
+            }
+          ]
+        }
+      },
+      "value": {
+        "kind": "none"
+      },
+      "states": [
+        "enabled",
+        "focusable",
+        "visible",
+        "showing"
+      ],
+      "bounds": {
+        "origin": {
+          "x": 320,
+          "y": 120
+        },
+        "size": {
+          "w": 80,
+          "h": 32
+        }
+      },
+      "actions": [
+        {
+          "kind": "click"
+        }
+      ],
+      "typed": {
+        "kind": "none"
+      },
+      "sensitivity": "normal"
+    }
+  ],
+  "truncated": {
+    "kind": "complete"
+  }
+}

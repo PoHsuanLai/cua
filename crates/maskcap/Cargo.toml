@@ -1,0 +1,35 @@
+[package]
+name = "maskcap"
+description = "Masked per-window capture: frames, masks, digests, settling and the capture seams. The `wayland` feature is the ext-image-copy-capture backend (stock and the quire masked source)."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+cua-action = { workspace = true }
+cua-desktop = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+base64 = { workspace = true }
+wayland-client = { workspace = true, optional = true }
+wayland-protocols = { workspace = true, optional = true }
+quire-agent-protocol = { workspace = true, optional = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+
+[features]
+# ext-image-copy-capture over a wayland connection; the masked source of `quire-agent-v1`.
+wayland = [
+  "dep:wayland-client",
+  "dep:wayland-protocols",
+  "dep:quire-agent-protocol",
+  "quire-agent-protocol/client",
+  "cua-desktop/cosmic",
+]
+
+[lints]
+workspace = true

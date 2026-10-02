@@ -1,0 +1,30 @@
+[package]
+name = "cua-desktop"
+description = "The desktop vocabulary every cua crate shares: windows, leases, backend capabilities, glow, units and the Desktop and LeaseControl seams. The `cosmic` feature is the COSMIC backend."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+cua-action = { workspace = true }
+docket-core = { workspace = true }
+prov = { workspace = true }
+porter-core = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+wayland-client = { workspace = true, optional = true }
+quire-agent-protocol = { workspace = true, optional = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+
+[features]
+# The COSMIC backend (stock cosmic-comp and the quire fork): toplevel info, workspaces and the
+# lease protocol. Linux only; reaches wayland-client.
+cosmic = ["dep:wayland-client", "dep:quire-agent-protocol", "quire-agent-protocol/client"]
+
+[lints]
+workspace = true

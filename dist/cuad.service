@@ -1,0 +1,62 @@
+# Skeleton of cuad's systemd user unit: the computer-use daemon. It holds a Wayland connection
+# (capture of one leased window, the lease protocol), an EIS socket (the agent's input), the
+# accessibility bus, and talks D-Bus to the router, inferd and memoryd. It holds no files and
+# no network. Each sandbox line says what it protects. Computer use is off by default
+# (`cua.enabled`): the unit may be installed and idle.
+[Unit]
+Description=Quire computer-use daemon (org.quire.Cua1)
+
+[Service]
+Type=dbus
+BusName=org.quire.Cua1
+ExecStart=/usr/libexec/quire/cuad --config /etc/quire/cuad.toml
+# The compositor to connect to. The fork offers `quire_agent_manager_v1` (protocols/quire-agent-v1.xml)
+# only to the client its security context names as this unit; stock cosmic-comp offers
+# ext-image-copy-capture and the Ei D-Bus method to any client on the session bus.
+PassEnvironment=WAYLAND_DISPLAY
+
+# --- Sandbox ---
+# Only Unix sockets: the session bus, the accessibility bus, the Wayland socket, inferd's and
+# memoryd's sockets, and the EIS socket the compositor hands over. Nothing can reach the network,
+# so a compromised cuad cannot send what it sees anywhere. (All of these are filesystem Unix
+# sockets, so PrivateNetwork=yes below does not cut them off.)
+RestrictAddressFamilies=AF_UNIX
+PrivateNetwork=yes
+# The person's files are out of reach: cuad never reads or writes them. A step's thumbnail is
+# stored by memoryd in the Space's encrypted store, and only when `cua.screens.keep` is on.
+ProtectHome=yes
+# The whole file system is read-only; nothing is writable. Frames live in memory (memfds) and
+# are never written to disk.
+ProtectSystem=strict
+ReadWritePaths=
+PrivateTmp=yes
+# No setuid gain, no writable-and-executable memory (no JIT, no injected code).
+NoNewPrivileges=yes
+MemoryDenyWriteExecute=yes
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictNamespaces=yes
+RestrictSUIDSGID=yes
+# No devices at all: capture is shared memory, never a GPU or an input node. (uinput, in any
+# form, is never used: input goes through the compositor's EIS server.)
+PrivateDevices=yes
+# No kernel, module or debug surfaces.
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+# A narrow syscall set: the system-service baseline, minus privileged and obsolete calls. Frames
+# travel in memfds, so memfd_create is named rather than assumed.
+SystemCallFilter=@system-service memfd_create
+SystemCallFilter=~@privileged @resources @mount @debug @obsolete
+SystemCallArchitectures=native
+# No capabilities at all.
+CapabilityBoundingSet=
+AmbientCapabilities=
+# Files cuad creates are private to it.
+UMask=0077
+
+[Install]
+WantedBy=default.target

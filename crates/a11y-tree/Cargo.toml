@@ -1,0 +1,28 @@
+[package]
+name = "a11y-tree"
+description = "The accessibility tree of a leased window: snapshot model, prune, render to model text, diff, secret rectangles, selectors and the A11ySource seam. The `atspi` feature is the AT-SPI backend."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+cua-action = { workspace = true }
+cua-desktop = { workspace = true }
+prov = { workspace = true }
+porter-core = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+atspi = { workspace = true, optional = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+
+[features]
+# The AT-SPI backend over atspi (zbus): the accessibility bus of the session.
+atspi = ["dep:atspi"]
+
+[lints]
+workspace = true

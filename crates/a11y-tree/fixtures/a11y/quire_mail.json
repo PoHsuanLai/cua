@@ -1,0 +1,422 @@
+{
+  "source": "quire_app",
+  "taken": 1000,
+  "nodes": [
+    {
+      "id": 0,
+      "parent": {
+        "kind": "root"
+      },
+      "role": {
+        "kind": "window"
+      },
+      "name": {
+        "value": "Inbox",
+        "label": {
+          "integrity": "untrusted",
+          "confidentiality": {
+            "kind": "private",
+            "v": [
+              "desktop"
+            ]
+          },
+          "classes": [
+            "screen"
+          ],
+          "sources": [
+            {
+              "kind": "screen",
+              "v": {
+                "app": "org.quire.Mail"
+              }
+            }
+          ]
+        }
+      },
+      "value": {
+        "kind": "none"
+      },
+      "states": [
+        "enabled",
+        "visible",
+        "showing"
+      ],
+      "bounds": {
+        "origin": {
+          "x": 0,
+          "y": 0
+        },
+        "size": {
+          "w": 900,
+          "h": 600
+        }
+      },
+      "actions": [],
+      "typed": {
+        "kind": "none"
+      },
+      "sensitivity": "normal"
+    },
+    {
+      "id": 1,
+      "parent": {
+        "kind": "node",
+        "v": 0
+      },
+      "role": {
+        "kind": "tool_bar"
+      },
+      "name": {
+        "value": "Toolbar",
+        "label": {
+          "integrity": "untrusted",
+          "confidentiality": {
+            "kind": "private",
+            "v": [
+              "desktop"
+            ]
+          },
+          "classes": [
+            "screen"
+          ],
+          "sources": [
+            {
+              "kind": "screen",
+              "v": {
+                "app": "org.quire.Mail"
+              }
+            }
+          ]
+        }
+      },
+      "value": {
+        "kind": "none"
+      },
+      "states": [
+        "enabled",
+        "visible",
+        "showing"
+      ],
+      "bounds": {
+        "origin": {
+          "x": 0,
+          "y": 0
+        },
+        "size": {
+          "w": 900,
+          "h": 48
+        }
+      },
+      "actions": [],
+      "typed": {
+        "kind": "none"
+      },
+      "sensitivity": "normal"
+    },
+    {
+      "id": 2,
+      "parent": {
+        "kind": "node",
+        "v": 1
+      },
+      "role": {
+        "kind": "button"
+      },
+      "name": {
+        "value": "Archive",
+        "label": {
+          "integrity": "untrusted",
+          "confidentiality": {
+            "kind": "private",
+            "v": [
+              "desktop"
+            ]
+          },
+          "classes": [
+            "screen"
+          ],
+          "sources": [
+            {
+              "kind": "screen",
+              "v": {
+                "app": "org.quire.Mail"
+              }
+            }
+          ]
+        }
+      },
+      "value": {
+        "kind": "none"
+      },
+      "states": [
+        "enabled",
+        "focusable",
+        "visible",
+        "showing"
+      ],
+      "bounds": {
+        "origin": {
+          "x": 12,
+          "y": 8
+        },
+        "size": {
+          "w": 80,
+          "h": 32
+        }
+      },
+      "actions": [
+        {
+          "kind": "press"
+        }
+      ],
+      "typed": {
+        "kind": "action",
+        "v": "mail.thread.archive"
+      },
+      "sensitivity": "normal"
+    },
+    {
+      "id": 3,
+      "parent": {
+        "kind": "node",
+        "v": 0
+      },
+      "role": {
+        "kind": "list"
+      },
+      "name": {
+        "value": "Threads",
+        "label": {
+          "integrity": "untrusted",
+          "confidentiality": {
+            "kind": "private",
+            "v": [
+              "desktop"
+            ]
+          },
+          "classes": [
+            "screen"
+          ],
+          "sources": [
+            {
+              "kind": "screen",
+              "v": {
+                "app": "org.quire.Mail"
+              }
+            }
+          ]
+        }
+      },
+      "value": {
+        "kind": "none"
+      },
+      "states": [
+        "enabled",
+        "visible",
+        "showing"
+      ],
+      "bounds": {
+        "origin": {
+          "x": 0,
+          "y": 48
+        },
+        "size": {
+          "w": 400,
+          "h": 552
+        }
+      },
+      "actions": [],
+      "typed": {
+        "kind": "none"
+      },
+      "sensitivity": "normal"
+    },
+    {
+      "id": 4,
+      "parent": {
+        "kind": "node",
+        "v": 3
+      },
+      "role": {
+        "kind": "list_item"
+      },
+      "name": {
+        "value": "Lisbon receipts, March",
+        "label": {
+          "integrity": "untrusted",
+          "confidentiality": {
+            "kind": "private",
+            "v": [
+              "desktop"
+            ]
+          },
+          "classes": [
+            "screen"
+          ],
+          "sources": [
+            {
+              "kind": "screen",
+              "v": {
+                "app": "org.quire.Mail"
+              }
+            }
+          ]
+        }
+      },
+      "value": {
+        "kind": "none"
+      },
+      "states": [
+        "enabled",
+        "focusable",
+        "visible",
+        "showing"
+      ],
+      "bounds": {
+        "origin": {
+          "x": 0,
+          "y": 0
+        },
+        "size": {
+          "w": 400,
+          "h": 56
+        }
+      },
+      "actions": [
+        {
+          "kind": "activate"
+        }
+      ],
+      "typed": {
+        "kind": "none"
+      },
+      "sensitivity": "normal"
+    },
+    {
+      "id": 5,
+      "parent": {
+        "kind": "node",
+        "v": 3
+      },
+      "role": {
+        "kind": "list_item"
+      },
+      "name": {
+        "value": "Re: invoice 2291",
+        "label": {
+          "integrity": "untrusted",
+          "confidentiality": {
+            "kind": "private",
+            "v": [
+              "desktop"
+            ]
+          },
+          "classes": [
+            "screen"
+          ],
+          "sources": [
+            {
+              "kind": "screen",
+              "v": {
+                "app": "org.quire.Mail"
+              }
+            }
+          ]
+        }
+      },
+      "value": {
+        "kind": "none"
+      },
+      "states": [
+        "enabled",
+        "focusable",
+        "visible",
+        "showing"
+      ],
+      "bounds": {
+        "origin": {
+          "x": 0,
+          "y": 56
+        },
+        "size": {
+          "w": 400,
+          "h": 56
+        }
+      },
+      "actions": [
+        {
+          "kind": "activate"
+        }
+      ],
+      "typed": {
+        "kind": "none"
+      },
+      "sensitivity": "normal"
+    },
+    {
+      "id": 6,
+      "parent": {
+        "kind": "node",
+        "v": 3
+      },
+      "role": {
+        "kind": "list_item"
+      },
+      "name": {
+        "value": "Lunch on Friday?",
+        "label": {
+          "integrity": "untrusted",
+          "confidentiality": {
+            "kind": "private",
+            "v": [
+              "desktop"
+            ]
+          },
+          "classes": [
+            "screen"
+          ],
+          "sources": [
+            {
+              "kind": "screen",
+              "v": {
+                "app": "org.quire.Mail"
+              }
+            }
+          ]
+        }
+      },
+      "value": {
+        "kind": "none"
+      },
+      "states": [
+        "enabled",
+        "focusable",
+        "selected",
+        "visible",
+        "showing"
+      ],
+      "bounds": {
+        "origin": {
+          "x": 0,
+          "y": 112
+        },
+        "size": {
+          "w": 400,
+          "h": 56
+        }
+      },
+      "actions": [
+        {
+          "kind": "activate"
+        }
+      ],
+      "typed": {
+        "kind": "none"
+      },
+      "sensitivity": "normal"
+    }
+  ],
+  "truncated": {
+    "kind": "complete"
+  }
+}

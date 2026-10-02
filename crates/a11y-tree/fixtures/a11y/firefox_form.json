@@ -1,0 +1,523 @@
+{
+  "source": "atspi",
+  "taken": 1000,
+  "nodes": [
+    {
+      "id": 0,
+      "parent": {
+        "kind": "root"
+      },
+      "role": {
+        "kind": "document"
+      },
+      "name": {
+        "value": "Sign in to Example",
+        "label": {
+          "integrity": "untrusted",
+          "confidentiality": {
+            "kind": "private",
+            "v": [
+              "desktop"
+            ]
+          },
+          "classes": [
+            "screen"
+          ],
+          "sources": [
+            {
+              "kind": "screen",
+              "v": {
+                "app": "org.mozilla.firefox"
+              }
+            }
+          ]
+        }
+      },
+      "value": {
+        "kind": "none"
+      },
+      "states": [
+        "enabled",
+        "visible",
+        "showing"
+      ],
+      "bounds": {
+        "origin": {
+          "x": 0,
+          "y": 0
+        },
+        "size": {
+          "w": 1000,
+          "h": 700
+        }
+      },
+      "actions": [],
+      "typed": {
+        "kind": "none"
+      },
+      "sensitivity": "normal"
+    },
+    {
+      "id": 1,
+      "parent": {
+        "kind": "node",
+        "v": 0
+      },
+      "role": {
+        "kind": "heading"
+      },
+      "name": {
+        "value": "Sign in",
+        "label": {
+          "integrity": "untrusted",
+          "confidentiality": {
+            "kind": "private",
+            "v": [
+              "desktop"
+            ]
+          },
+          "classes": [
+            "screen"
+          ],
+          "sources": [
+            {
+              "kind": "screen",
+              "v": {
+                "app": "org.mozilla.firefox"
+              }
+            }
+          ]
+        }
+      },
+      "value": {
+        "kind": "none"
+      },
+      "states": [
+        "enabled",
+        "visible",
+        "showing"
+      ],
+      "bounds": {
+        "origin": {
+          "x": 40,
+          "y": 40
+        },
+        "size": {
+          "w": 200,
+          "h": 40
+        }
+      },
+      "actions": [],
+      "typed": {
+        "kind": "none"
+      },
+      "sensitivity": "normal"
+    },
+    {
+      "id": 2,
+      "parent": {
+        "kind": "node",
+        "v": 0
+      },
+      "role": {
+        "kind": "other",
+        "v": 116
+      },
+      "name": {
+        "value": "Account form",
+        "label": {
+          "integrity": "untrusted",
+          "confidentiality": {
+            "kind": "private",
+            "v": [
+              "desktop"
+            ]
+          },
+          "classes": [
+            "screen"
+          ],
+          "sources": [
+            {
+              "kind": "screen",
+              "v": {
+                "app": "org.mozilla.firefox"
+              }
+            }
+          ]
+        }
+      },
+      "value": {
+        "kind": "none"
+      },
+      "states": [
+        "enabled",
+        "visible",
+        "showing"
+      ],
+      "bounds": {
+        "origin": {
+          "x": 30,
+          "y": 100
+        },
+        "size": {
+          "w": 340,
+          "h": 220
+        }
+      },
+      "actions": [],
+      "typed": {
+        "kind": "none"
+      },
+      "sensitivity": "normal"
+    },
+    {
+      "id": 3,
+      "parent": {
+        "kind": "node",
+        "v": 0
+      },
+      "role": {
+        "kind": "entry"
+      },
+      "name": {
+        "value": "Email",
+        "label": {
+          "integrity": "untrusted",
+          "confidentiality": {
+            "kind": "private",
+            "v": [
+              "desktop"
+            ]
+          },
+          "classes": [
+            "screen"
+          ],
+          "sources": [
+            {
+              "kind": "screen",
+              "v": {
+                "app": "org.mozilla.firefox"
+              }
+            }
+          ]
+        }
+      },
+      "value": {
+        "kind": "text",
+        "v": {
+          "value": "ada@example.org",
+          "label": {
+            "integrity": "untrusted",
+            "confidentiality": {
+              "kind": "private",
+              "v": [
+                "desktop"
+              ]
+            },
+            "classes": [
+              "screen"
+            ],
+            "sources": [
+              {
+                "kind": "screen",
+                "v": {
+                  "app": "org.mozilla.firefox"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "states": [
+        "enabled",
+        "focusable",
+        "editable",
+        "visible",
+        "showing"
+      ],
+      "bounds": {
+        "origin": {
+          "x": 40,
+          "y": 120
+        },
+        "size": {
+          "w": 320,
+          "h": 32
+        }
+      },
+      "actions": [],
+      "typed": {
+        "kind": "none"
+      },
+      "sensitivity": "normal"
+    },
+    {
+      "id": 4,
+      "parent": {
+        "kind": "node",
+        "v": 0
+      },
+      "role": {
+        "kind": "password_text"
+      },
+      "name": {
+        "value": "Password",
+        "label": {
+          "integrity": "untrusted",
+          "confidentiality": {
+            "kind": "private",
+            "v": [
+              "desktop"
+            ]
+          },
+          "classes": [
+            "screen"
+          ],
+          "sources": [
+            {
+              "kind": "screen",
+              "v": {
+                "app": "org.mozilla.firefox"
+              }
+            }
+          ]
+        }
+      },
+      "value": {
+        "kind": "text",
+        "v": {
+          "value": "correct horse battery staple",
+          "label": {
+            "integrity": "untrusted",
+            "confidentiality": {
+              "kind": "private",
+              "v": [
+                "desktop"
+              ]
+            },
+            "classes": [
+              "screen"
+            ],
+            "sources": [
+              {
+                "kind": "screen",
+                "v": {
+                  "app": "org.mozilla.firefox"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "states": [
+        "enabled",
+        "focusable",
+        "editable",
+        "visible",
+        "showing"
+      ],
+      "bounds": {
+        "origin": {
+          "x": 40,
+          "y": 170
+        },
+        "size": {
+          "w": 320,
+          "h": 32
+        }
+      },
+      "actions": [],
+      "typed": {
+        "kind": "none"
+      },
+      "sensitivity": "secret"
+    },
+    {
+      "id": 5,
+      "parent": {
+        "kind": "node",
+        "v": 0
+      },
+      "role": {
+        "kind": "check_box"
+      },
+      "name": {
+        "value": "Remember me",
+        "label": {
+          "integrity": "untrusted",
+          "confidentiality": {
+            "kind": "private",
+            "v": [
+              "desktop"
+            ]
+          },
+          "classes": [
+            "screen"
+          ],
+          "sources": [
+            {
+              "kind": "screen",
+              "v": {
+                "app": "org.mozilla.firefox"
+              }
+            }
+          ]
+        }
+      },
+      "value": {
+        "kind": "none"
+      },
+      "states": [
+        "enabled",
+        "focusable",
+        "checked",
+        "visible",
+        "showing"
+      ],
+      "bounds": {
+        "origin": {
+          "x": 40,
+          "y": 220
+        },
+        "size": {
+          "w": 140,
+          "h": 24
+        }
+      },
+      "actions": [
+        {
+          "kind": "toggle"
+        }
+      ],
+      "typed": {
+        "kind": "none"
+      },
+      "sensitivity": "normal"
+    },
+    {
+      "id": 6,
+      "parent": {
+        "kind": "node",
+        "v": 0
+      },
+      "role": {
+        "kind": "button"
+      },
+      "name": {
+        "value": "Sign in",
+        "label": {
+          "integrity": "untrusted",
+          "confidentiality": {
+            "kind": "private",
+            "v": [
+              "desktop"
+            ]
+          },
+          "classes": [
+            "screen"
+          ],
+          "sources": [
+            {
+              "kind": "screen",
+              "v": {
+                "app": "org.mozilla.firefox"
+              }
+            }
+          ]
+        }
+      },
+      "value": {
+        "kind": "none"
+      },
+      "states": [
+        "enabled",
+        "focusable",
+        "visible",
+        "showing"
+      ],
+      "bounds": {
+        "origin": {
+          "x": 40,
+          "y": 260
+        },
+        "size": {
+          "w": 120,
+          "h": 36
+        }
+      },
+      "actions": [
+        {
+          "kind": "press"
+        }
+      ],
+      "typed": {
+        "kind": "none"
+      },
+      "sensitivity": "normal"
+    },
+    {
+      "id": 7,
+      "parent": {
+        "kind": "node",
+        "v": 0
+      },
+      "role": {
+        "kind": "link"
+      },
+      "name": {
+        "value": "Forgot password?",
+        "label": {
+          "integrity": "untrusted",
+          "confidentiality": {
+            "kind": "private",
+            "v": [
+              "desktop"
+            ]
+          },
+          "classes": [
+            "screen"
+          ],
+          "sources": [
+            {
+              "kind": "screen",
+              "v": {
+                "app": "org.mozilla.firefox"
+              }
+            }
+          ]
+        }
+      },
+      "value": {
+        "kind": "none"
+      },
+      "states": [
+        "enabled",
+        "focusable",
+        "visible",
+        "showing"
+      ],
+      "bounds": {
+        "origin": {
+          "x": 180,
+          "y": 268
+        },
+        "size": {
+          "w": 160,
+          "h": 20
+        }
+      },
+      "actions": [
+        {
+          "kind": "click"
+        }
+      ],
+      "typed": {
+        "kind": "none"
+      },
+      "sensitivity": "normal"
+    }
+  ],
+  "truncated": {
+    "kind": "complete"
+  }
+}

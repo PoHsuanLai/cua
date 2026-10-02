@@ -1,0 +1,379 @@
+//! What the frozen pure functions of cua-run must do. Each is a `todo!()` today, so each test is
+//! ignored with the work that closes it and carries the real assertions.
+
+use a11y_tree::{
+    A11yNode, A11ySnapshot, NodeState, NodeValue, Parent, Role, Sensitivity, TreeSource,
+    Truncation, TypedHint,
+};
+use cua_action::{
+    Button, Chord, ClickCount, Coord, CuaAction, DeviceSize, FinishOutcome, PixelFormat, Point,
+    Rect, Repeat, Scale120, Size, Summary, Target, TypedText, WaitMs, WindowSpace,
+};
+use cua_bus::WindowRef;
+use cua_desktop::{Digest32, Stamp, ToplevelIdent};
+use cua_run::{
+    ContextObs, CursorObs, Focus, LeaseBook, Observation, Stall, TreeObs, Visibility, WindowInfo,
+    classify_effect, stalled, turn,
+};
+use docket_core::{EffectBasis, WindowClass, WindowTrust};
+use maskcap::{Frame, FrameDigest, FrameSeq, MaskReport, PixelBuf, WholeMask};
+use porter_core::{AppName, Count, DataClass};
+use porter_infer::{MaskedRegions, StepIndex, TreeText};
+use prov::{
+    ActionName, Confidentiality, Effect, Integrity, Label, Labelled, RunId, Source, SpaceId,
+};
+use std::collections::BTreeSet;
+use std::sync::Arc;
+
+fn point() -> Target<WindowSpace> {
+    Target::Point(Point::new(Coord(10), Coord(10)))
+}
+
+fn click() -> CuaAction<WindowSpace> {
+    CuaAction::Click {
+        at: point(),
+        button: Button::Left,
+        count: ClickCount::One,
+        mods: BTreeSet::new(),
+    }
+}
+
+fn typing() -> CuaAction<WindowSpace> {
+    CuaAction::Type {
+        text: TypedText::new("hello").unwrap(),
+    }
+}
+
+fn enter() -> CuaAction<WindowSpace> {
+    CuaAction::Key {
+        chord: Chord::new(BTreeSet::new(), keyboard_types::Key::Enter).unwrap(),
+        repeat: Repeat::ONCE,
+    }
+}
+
+fn screen_label() -> Label {
+    let space = SpaceId::parse("desktop").unwrap();
+    Label {
+        integrity: Integrity::Untrusted,
+        confidentiality: Confidentiality::Private(BTreeSet::from([space])),
+        classes: BTreeSet::from([DataClass::Screen]),
+        sources: BTreeSet::from([Source::Screen {
+            app: AppName::parse("org.mozilla.firefox").unwrap(),
+        }]),
+    }
+}
+
+fn node_with_typed_action() -> A11yNode {
+    let mut node = secret_node(1, Role::Button, "Archive", Sensitivity::Normal, "");
+    node.typed = TypedHint::Action(ActionName::parse("mail.thread.archive").unwrap());
+    node
+}
+
+fn secret_node(id: u32, role: Role, name: &str, sensitivity: Sensitivity, value: &str) -> A11yNode {
+    A11yNode {
+        id: cua_action::NodeId(id),
+        parent: if id == 0 {
+            Parent::Root
+        } else {
+            Parent::Node(cua_action::NodeId(0))
+        },
+        role,
+        name: Labelled::new(name.to_owned(), screen_label()),
+        value: if value.is_empty() {
+            NodeValue::None
+        } else {
+            NodeValue::Text(Labelled::new(value.to_owned(), screen_label()))
+        },
+        states: BTreeSet::from([NodeState::Enabled, NodeState::Visible]),
+        bounds: Rect {
+            origin: Point::new(Coord(0), Coord(0)),
+            size: Size::new(Coord(50), Coord(20)),
+        },
+        actions: vec![],
+        typed: TypedHint::None,
+        sensitivity,
+    }
+}
+
+#[test]
+#[ignore = "closes with the cua-run fill (classify_effect)"]
+fn classify_effect_table() {
+    use WindowClass::{MailCompose, Ordinary, Payments, Terminal};
+    struct Row {
+        name: &'static str,
+        action: CuaAction<WindowSpace>,
+        class: WindowClass,
+        want: (Effect, EffectBasis),
+    }
+    let observe = CuaAction::<WindowSpace>::Observe;
+    let wait = CuaAction::<WindowSpace>::Wait {
+        for_ms: WaitMs::new(500).unwrap(),
+    };
+    let finish = CuaAction::<WindowSpace>::Finish {
+        outcome: FinishOutcome::Done,
+        summary: Summary::new("done").unwrap(),
+        extracted: vec![],
+    };
+    let rows = [
+        Row {
+            name: "observe",
+            action: observe,
+            class: Ordinary,
+            want: (Effect::Read, EffectBasis::DefaultTable),
+        },
+        Row {
+            name: "wait",
+            action: wait,
+            class: Ordinary,
+            want: (Effect::Read, EffectBasis::DefaultTable),
+        },
+        Row {
+            name: "finish",
+            action: finish,
+            class: Ordinary,
+            want: (Effect::Read, EffectBasis::DefaultTable),
+        },
+        Row {
+            name: "click",
+            action: click(),
+            class: Ordinary,
+            want: (Effect::UndoableWrite, EffectBasis::DefaultTable),
+        },
+        Row {
+            name: "type",
+            action: typing(),
+            class: Ordinary,
+            want: (Effect::UndoableWrite, EffectBasis::DefaultTable),
+        },
+        Row {
+            name: "type in compose",
+            action: typing(),
+            class: MailCompose,
+            want: (Effect::Outbound, EffectBasis::WindowClass(MailCompose)),
+        },
+        Row {
+            name: "enter in compose",
+            action: enter(),
+            class: MailCompose,
+            want: (Effect::Outbound, EffectBasis::WindowClass(MailCompose)),
+        },
+        Row {
+            name: "type in a terminal",
+            action: typing(),
+            class: Terminal,
+            want: (Effect::Outbound, EffectBasis::WindowClass(Terminal)),
+        },
+        Row {
+            name: "enter in payments",
+            action: enter(),
+            class: Payments,
+            want: (Effect::Outbound, EffectBasis::WindowClass(Payments)),
+        },
+        Row {
+            name: "click in a terminal is not typing",
+            action: click(),
+            class: Terminal,
+            want: (Effect::UndoableWrite, EffectBasis::DefaultTable),
+        },
+    ];
+    for row in rows {
+        assert_eq!(
+            classify_effect(&row.action, None, row.class),
+            row.want,
+            "{}",
+            row.name
+        );
+    }
+    let node = node_with_typed_action();
+    let (_, basis) = classify_effect(&click(), Some(&node), MailCompose);
+    assert_eq!(
+        basis,
+        EffectBasis::NodeTypedAction(ActionName::parse("mail.thread.archive").unwrap()),
+        "a typed node wins over the window class"
+    );
+}
+
+fn digest(byte: u8) -> FrameDigest {
+    FrameDigest(Digest32([byte; 32]))
+}
+
+#[test]
+#[ignore = "closes with the cua-run fill (stalled)"]
+fn stall_after_n_equal_digests() {
+    struct Row {
+        name: &'static str,
+        history: Vec<FrameDigest>,
+        limit: u32,
+        want: Stall,
+    }
+    let (a, b) = (digest(1), digest(2));
+    let rows = [
+        Row {
+            name: "no frames",
+            history: vec![],
+            limit: 3,
+            want: Stall::Moving,
+        },
+        Row {
+            name: "fewer than the limit",
+            history: vec![a, a],
+            limit: 3,
+            want: Stall::Moving,
+        },
+        Row {
+            name: "the newest three equal",
+            history: vec![a, a, a],
+            limit: 3,
+            want: Stall::Stalled,
+        },
+        Row {
+            name: "older ones do not matter",
+            history: vec![a, b, b, b],
+            limit: 3,
+            want: Stall::Stalled,
+        },
+        Row {
+            name: "the last one moved",
+            history: vec![a, a, b],
+            limit: 3,
+            want: Stall::Moving,
+        },
+        Row {
+            name: "a limit of zero never stalls",
+            history: vec![a, a, a],
+            limit: 0,
+            want: Stall::Moving,
+        },
+    ];
+    for row in rows {
+        assert_eq!(
+            stalled(&row.history, Count(row.limit)),
+            row.want,
+            "{}",
+            row.name
+        );
+    }
+}
+
+#[test]
+#[ignore = "closes with the cua-run fill (LeaseBook)"]
+fn lease_book_one_run_per_window() {
+    let (w1, w2) = (
+        ToplevelIdent::parse("w1").unwrap(),
+        ToplevelIdent::parse("w2").unwrap(),
+    );
+    let (r1, r2) = (RunId::parse("r-1").unwrap(), RunId::parse("r-2").unwrap());
+    let book = LeaseBook::default().claim(&w1, &r1).expect("free window");
+    assert_eq!(book.holder(&w1), Some(&r1));
+    assert_eq!(
+        book.claim(&w1, &r2).unwrap_err().by,
+        r1,
+        "a held window is refused"
+    );
+    assert_eq!(
+        book.claim(&w2, &r1).unwrap_err().by,
+        r1,
+        "one window per run"
+    );
+    let book = book.set_state(&r1, cua_run::SlotState::Suspended);
+    assert_eq!(book.holder(&w1), Some(&r1), "suspended is still held");
+    assert_eq!(book.claim(&w1, &r2).unwrap_err().by, r1);
+    let book = book.release(&r1);
+    assert_eq!(book.holder(&w1), None);
+    assert!(book.claim(&w1, &r2).is_ok());
+}
+
+fn observation(tree: A11ySnapshot, masked: usize) -> Observation {
+    let regions = (0..masked)
+        .map(|i| maskcap::MaskRegion {
+            rect: Rect {
+                origin: Point::new(Coord(i as u32), Coord(0)),
+                size: Size::new(Coord(5), Coord(5)),
+            },
+            why: maskcap::MaskReason::PasswordField,
+        })
+        .collect();
+    Observation {
+        step: StepIndex(1),
+        window: WindowInfo {
+            window: WindowRef(1),
+            app: AppName::parse("org.mozilla.firefox").unwrap(),
+            title: Labelled::new("Sign in".to_owned(), screen_label()),
+            size: Size::new(Coord(100), Coord(80)),
+            scale: Scale120(120),
+            focus: Focus::Focused,
+            visibility: Visibility::Shown,
+            trust: WindowTrust::Native,
+        },
+        frame: Frame {
+            seq: FrameSeq(1),
+            at: Stamp(1000),
+            pixels: PixelBuf {
+                format: PixelFormat::Xbgr8888,
+                size: DeviceSize { w: 100, h: 80 },
+                stride: 400,
+                data: Arc::from(vec![0u8; 400 * 80]),
+            },
+            logical: Size::new(Coord(100), Coord(80)),
+            scale: Scale120(120),
+            damage: vec![],
+            masks: MaskReport {
+                applied_by: cua_desktop::MaskWhere::Cuad,
+                whole: WholeMask::None,
+                regions,
+            },
+        },
+        tree: TreeObs::Present(tree),
+        context: ContextObs::Absent,
+        cursor: CursorObs::Unknown,
+        prev: vec![],
+    }
+}
+
+fn form_tree() -> A11ySnapshot {
+    A11ySnapshot {
+        source: TreeSource::Atspi,
+        taken: Stamp(900),
+        nodes: vec![
+            secret_node(0, Role::Document, "Sign in", Sensitivity::Normal, ""),
+            secret_node(
+                1,
+                Role::Entry,
+                "Email",
+                Sensitivity::Normal,
+                "ada@example.org",
+            ),
+            secret_node(
+                2,
+                Role::PasswordText,
+                "Password",
+                Sensitivity::Secret,
+                "hunter2-hunter2",
+            ),
+        ],
+        truncated: Truncation::Complete,
+    }
+}
+
+#[test]
+#[ignore = "closes with the cua-run fill (turn)"]
+fn turn_renders_tree_without_secret_values_and_notes_masked_regions() {
+    let (request, attachment) = turn(&observation(form_tree(), 2));
+    let TreeText::Present(text) = &request.tree else {
+        panic!("a tree was observed")
+    };
+    assert!(text.contains("ada@example.org"), "{text}");
+    assert!(
+        !text.contains("hunter2"),
+        "a secret value never reaches the model: {text}"
+    );
+    assert_eq!(request.masked, MaskedRegions(2));
+    assert_eq!(request.step, StepIndex(1));
+    assert_eq!(attachment.0.size, DeviceSize { w: 100, h: 80 });
+    let none = observation(form_tree(), 0);
+    let none = Observation {
+        tree: TreeObs::Absent(cua_run::TreeAbsence::NotExposed),
+        ..none
+    };
+    assert_eq!(turn(&none).0.tree, TreeText::Absent);
+}

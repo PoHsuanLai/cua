@@ -1,0 +1,117 @@
+//! What the tree functions must do, over the fixtures. They are frozen with `todo!()` bodies,
+//! so each test is ignored with the work that closes it and carries the real assertions.
+
+mod support;
+
+use a11y_tree::{
+    NameMatch, NodeBudget, NodeSelector, Resolution, Role, SelectorStep, Truncation, diff, prune,
+    render, resolve, secret_rects,
+};
+use cua_action::NodeId;
+
+#[test]
+#[ignore = "closes with the a11y-tree fill (prune, render, diff, secret_rects)"]
+fn prune_keeps_actionable_visible_first_within_budget() {
+    let form = support::firefox_form();
+    let total = form.nodes.len();
+    let pruned = prune(&form, NodeBudget(5));
+    assert_eq!(pruned.nodes.len(), 5);
+    assert_eq!(pruned.nodes[0].role, Role::Document, "the root stays first");
+    let dropped = u32::try_from(total - 5).unwrap();
+    assert_eq!(
+        pruned.truncated,
+        Truncation::Pruned {
+            dropped: porter_core::Count(dropped)
+        }
+    );
+    assert!(
+        pruned.nodes.iter().any(|n| n.role == Role::Button),
+        "the sign-in button is actionable and visible, so it survives"
+    );
+    let all = prune(&form, NodeBudget(400));
+    assert_eq!(all, form, "a budget that fits changes nothing");
+}
+
+#[test]
+#[ignore = "closes with the a11y-tree fill (prune, render, diff, secret_rects)"]
+fn render_is_stable_golden_and_never_prints_a_secret_value() {
+    let form = support::firefox_form();
+    let text = render(&form);
+    assert_eq!(text, render(&form), "stable");
+    assert!(text.contains("button \"Sign in\""), "{text}");
+    assert!(text.contains("@40,260 120x36"), "{text}");
+    assert!(
+        !text.contains("correct horse"),
+        "a secret value is never rendered: {text}"
+    );
+    assert!(text.contains("ada@example.org"), "an ordinary value is");
+    let mail = render(&support::quire_mail());
+    assert!(
+        mail.contains("mail.thread.archive"),
+        "typed hints reach the model: {mail}"
+    );
+}
+
+#[test]
+#[ignore = "closes with the a11y-tree fill (prune, render, diff, secret_rects)"]
+fn secret_rects_cover_password_text() {
+    let form = support::firefox_form();
+    let password = form
+        .nodes
+        .iter()
+        .find(|n| n.role == Role::PasswordText)
+        .expect("password");
+    assert_eq!(secret_rects(&form), vec![password.bounds]);
+    assert!(secret_rects(&support::gtk4_dialog()).is_empty());
+}
+
+#[test]
+#[ignore = "closes with the a11y-tree fill (prune, render, diff, secret_rects)"]
+fn diff_reports_added_removed_changed() {
+    let before = support::gtk4_dialog();
+    let mut after = before.clone();
+    let removed = after.nodes.pop().expect("a node");
+    after.nodes[2].states.insert(a11y_tree::NodeState::Focused);
+    let d = diff(&before, &after);
+    assert_eq!(d.removed, vec![removed.id]);
+    assert_eq!(d.changed, vec![NodeId(2)]);
+    assert!(d.added.is_empty());
+    assert_eq!(diff(&before, &before), a11y_tree::TreeDiff::default());
+}
+
+#[test]
+#[ignore = "closes with the procedures wave (selector resolution)"]
+fn selector_resolution_table() {
+    let dialog = support::gtk4_dialog();
+    let step = |role, name: &str| SelectorStep {
+        role,
+        name: NameMatch::Exact(name.into()),
+    };
+    let one = NodeSelector {
+        path: vec![
+            step(Role::Dialog, "Save changes?"),
+            step(Role::Button, "Save"),
+        ],
+    };
+    assert_eq!(resolve(&dialog, &one), Resolution::One(NodeId(4)));
+    let any = NodeSelector {
+        path: vec![
+            SelectorStep {
+                role: Role::Dialog,
+                name: NameMatch::Any,
+            },
+            SelectorStep {
+                role: Role::Button,
+                name: NameMatch::Any,
+            },
+        ],
+    };
+    assert_eq!(
+        resolve(&dialog, &any),
+        Resolution::Many(vec![NodeId(2), NodeId(3), NodeId(4)])
+    );
+    let none = NodeSelector {
+        path: vec![step(Role::Dialog, "Other")],
+    };
+    assert_eq!(resolve(&dialog, &none), Resolution::None);
+}

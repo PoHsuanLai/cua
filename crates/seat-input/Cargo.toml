@@ -1,0 +1,28 @@
+[package]
+name = "seat-input"
+description = "The agent's input: InputOp, the pure plan from a CuaAction to input operations, the keymap and region maps, and the AgentSeat seam. The `ei` feature is the reis client."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+cua-action = { workspace = true }
+cua-desktop = { workspace = true }
+porter-core = { workspace = true }
+keyboard-types = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+reis = { workspace = true, optional = true, features = ["tokio"] }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+
+[features]
+# The EI client over reis: stock `GetSenderSocket` or the fork's lease socket.
+ei = ["dep:reis"]
+
+[lints]
+workspace = true

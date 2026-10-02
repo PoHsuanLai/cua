@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<protocol name="quire_agent_v1">
+  <copyright>
+    Copyright 2026 Po Hsuan Lai
+
+    Licensed under the MIT license or the Apache License, Version 2.0, at your option.
+  </copyright>
+
+  <description summary="agent leases: one window, an agent seat, masked capture, glow">
+    The private protocol between cuad (the computer-use daemon) and the quire fork of cosmic-comp.
+    cuad leases one toplevel at a time. A lease binds four things to that window and to nothing
+    else: an input seat of its own (the person's cursor and focus are untouched), a capture source
+    whose buffers arrive masked, the glow and the agent's cursor, and the hardware kill chord's
+    power to end it.
+
+    Stock cosmic-comp does not advertise these globals. cuad then reaches the compositor through
+    ext-image-copy-capture (masking in cuad), the `com.system76.CosmicComp.Ei` D-Bus method for
+    input, and the shell's own glow; see cua.md, "Fork changes against stock".
+
+    All coordinates are window-local logical pixels (the origin is the top-left of the window
+    geometry, the same frame as the captured buffer after division by the output scale), except
+    where a request says otherwise.
+
+    The manager is offered only to a client the compositor can name as cuad: through
+    wp_security_context_v1 and an app-id allow-list in the fork. A client that binds it without
+    being allow-listed is disconnected with `not_permitted`.
+
+    Warning: this protocol is a draft and may change. The server side lives in the fork
+    (~/cosmic-comp, branch quire, src/quire/**); the client side is cuad's `cua-desktop` `cosmic`
+    feature.
+  </description>
+
+  <interface name="quire_agent_manager_v1" version="1">
+    <description summary="creates leases">
+      The global cuad binds. One manager per client; a second bind from another client while a
+      lease exists is refused.
+    </description>
+
+    <enum name="error">
+      <description summary="protocol errors">
+        Raised on the manager object.
+      </description>
+      <entry name="not_permitted" value="0" summary="the client is not the allow-listed cuad"/>
+      <entry name="bad_mode" value="1" summary="a mode value this version does not define"/>
+      <entry name="lease_held" value="2" summary="the toplevel already has a live lease"/>
+    </enum>
+
+    <enum name="lease_mode">
+      <description summary="where a run happens">
+        The same three values as docket-core's RunMode, in the same order.
+      </description>
+      <entry name="in_place" value="0" summary="the window stays where the person has it"/>
+      <entry name="agent_workspace" value="1"
+             summary="the window moves to a hidden workspace that keeps rendering"/>
+      <entry name="nested_session" value="2" summary="the window runs in a nested compositor"/>
+    </enum>
+
+    <request name="create_lease">
+      <description summary="lease a toplevel">
+        Creates a lease on a toplevel. The compositor answers with `granted` (then `ei_socket` and
+        `geometry`), or with `revoked` straight away if it will not grant it (a shell window, a
+        window of another Space, a window that is gone). A lease never outlives the toplevel.
+      </description>
+      <arg name="id" type="new_id" interface="quire_agent_lease_v1"/>
+      <arg name="toplevel" type="object" interface="ext_foreign_toplevel_handle_v1"
+           summary="the window to lease"/>
+      <arg name="mode" type="uint" enum="lease_mode"/>
+    </request>
+
+    <request name="destroy" type="destructor">
+      <description summary="destroy the manager">
+        Existing leases stay valid until they are destroyed.
+      </description>
+    </request>
+  </interface>
+
+  <interface name="quire_agent_lease_v1" version="1">
+    <description summary="one leased window">
+      The lease is the unit of everything the agent may do. Destroying it, or the toplevel
+      closing, or the kill chord, ends the agent seat, the capture source and the glow together.
+    </description>
+
+    <enum name="revoke_reason">
+      <description summary="why a lease ended without cuad asking">
+        The values are cua-desktop's `RevokeReason::code`.
+      </description>
+      <entry name="kill_chord" value="0" summary="the hardware kill chord"/>
+      <entry name="window_closed" value="1" summary="the toplevel was destroyed"/>
+      <entry name="space_changed" value="2" summary="the window left the run's Space"/>
+      <entry name="compositor" value="3" summary="the compositor withdrew or refused the lease"/>
+    </enum>
+
+    <enum name="suspend_reason">
+      <description summary="why input stops without ending the lease">
+        The values are cua-desktop's `Suspend::code`.
+      </description>
+      <entry name="take_over" value="0" summary="the person took over"/>
+      <entry name="consent" value="1" summary="a confirmation is showing"/>
+      <entry name="paused" value="2" summary="the run is paused"/>
+    </enum>
+
+    <enum name="glow_state">
+      <description summary="what the run looks like from outside">
+        The values are cua-desktop's `GlowState::code`. Only `acting` reads the rectangle of
+        `set_glow`.
+      </description>
+      <entry name="off" value="0" summary="nothing"/>
+      <entry name="working" value="1" summary="looking or thinking"/>
+      <entry name="acting" value="2" summary="acting at the given rectangle"/>
+      <entry name="waiting_for_you" value="3" summary="needs the person"/>
+    </enum>
+
+    <enum name="mask_reason">
+      <description summary="why a region is masked">
+        The same set as maskcap's `MaskReason`.
+      </description>
+      <entry name="password_field" value="0" summary="a password field"/>
+      <entry name="surface_declared" value="1" summary="the app declared the region sensitive"/>
+      <entry name="a11y_secret" value="2" summary="an accessibility node marked secret"/>
+      <entry name="sensitive_window" value="3" summary="a sensitive window class"/>
+      <entry name="other_space" value="4" summary="content from another Space"/>
+      <entry name="overlay_outside_lease" value="5"
+             summary="an overlay that is not part of the leased window"/>
+    </enum>
+
+    <event name="granted">
+      <description summary="the lease is live">
+        Sent once, before `ei_socket` and `geometry`.
+      </description>
+    </event>
+
+    <event name="revoked">
+      <description summary="the lease ended">
+        The last event; the client destroys the object. Sent also in answer to a refused
+        `create_lease`.
+      </description>
+      <arg name="reason" type="uint" enum="revoke_reason"/>
+    </event>
+
+    <event name="ei_socket">
+      <description summary="the EIS socket of this lease's agent seat">
+        An EIS sender context bound to this lease's agent seat. Its absolute region is the window
+        geometry, in window-local coordinates, so a click at (x, y) lands at (x, y) in the window.
+        Focus is limited to the leased toplevel's surface tree (popups and subsurfaces included).
+        Input never reaches layer-shell, session-lock or consent surfaces.
+      </description>
+      <arg name="fd" type="fd"/>
+    </event>
+
+    <event name="physical_input">
+      <description summary="the person used the keyboard or pointer">
+        Sent when physical input arrives while the lease is active, so cuad can pause the run.
+        Coalesced: at most one per 100 ms.
+      </description>
+    </event>
+
+    <event name="geometry">
+      <description summary="the window's size changed">
+        The window's logical size and the output's scale in 120ths (wp_fractional_scale units).
+        Sent after `granted` and on every change.
+      </description>
+      <arg name="width" type="uint" summary="logical pixels"/>
+      <arg name="height" type="uint" summary="logical pixels"/>
+      <arg name="scale120" type="uint" summary="scale times 120"/>
+    </event>
+
+    <request name="get_capture_source">
+      <description summary="the window's content, masked">
+        Creates an ext_image_capture_source_v1 for this window. Buffers captured from it through
+        the standard ext_image_copy_capture_manager_v1 arrive with the compositor's masks applied
+        (text-input password purpose, quire_sensitive_v1 regions, `set_mask_hints`, and the
+        sensitive-window rules) before the buffer leaves the compositor. The frame is cropped to
+        the window geometry.
+      </description>
+      <arg name="source" type="new_id" interface="ext_image_capture_source_v1"/>
+    </request>
+
+    <request name="set_mask_hints">
+      <description summary="regions cuad wants masked">
+        Replaces the hints. `hints` is an array of records, each five little-endian 32-bit
+        unsigned integers: x, y, width, height (window-local logical pixels) and a mask_reason
+        value. A length that is not a multiple of 20 bytes is a protocol error on the lease
+        object.
+      </description>
+      <arg name="hints" type="array"/>
+    </request>
+
+    <request name="set_glow">
+      <description summary="draw the glow and the agent cursor">
+        `x`, `y`, `width` and `height` are window-local logical pixels and are read only for
+        `acting`; other states ignore them.
+      </description>
+      <arg name="state" type="uint" enum="glow_state"/>
+      <arg name="x" type="int"/>
+      <arg name="y" type="int"/>
+      <arg name="width" type="uint"/>
+      <arg name="height" type="uint"/>
+    </request>
+
+    <request name="suspend">
+      <description summary="stop the agent seat's input">
+        Input stops, the capture source and the glow stay. A repeated `suspend` replaces the
+        reason.
+      </description>
+      <arg name="why" type="uint" enum="suspend_reason"/>
+    </request>
+
+    <request name="resume">
+      <description summary="let the agent seat's input flow again"/>
+    </request>
+
+    <request name="destroy" type="destructor">
+      <description summary="end the lease">
+        Ends the agent seat (held keys and buttons are released), the capture source and the
+        glow.
+      </description>
+    </request>
+  </interface>
+</protocol>

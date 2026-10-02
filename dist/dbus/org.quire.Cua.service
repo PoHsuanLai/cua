@@ -1,0 +1,4 @@
+[D-BUS Service]
+Name=org.quire.Cua
+Exec=/usr/libexec/quire/cuad
+SystemdService=cuad.service

@@ -1,0 +1,18 @@
+[package]
+name = "cua-dbus"
+description = "org.quire.Cua1 (Manager and Run) as zbus proxies and skeletons, its introspection, bus names, object paths and the error mapping."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+cua-bus = { workspace = true }
+prov = { workspace = true }
+zbus = { workspace = true }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

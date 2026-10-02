@@ -1,0 +1,25 @@
+[package]
+name = "cua-bus"
+description = "What crosses cuad's bus and its event log: the Cua1 bodies, the Start task, run states and outcomes, CuaRecord, the control refusals and who may call which member. Serde only; results are prov Report messages."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+cua-action = { workspace = true }
+cua-desktop = { workspace = true }
+a11y-tree = { workspace = true }
+seat-input = { workspace = true }
+maskcap = { workspace = true }
+docket-core = { workspace = true }
+prov = { workspace = true }
+porter-core = { workspace = true }
+porter-infer = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[lints]
+workspace = true

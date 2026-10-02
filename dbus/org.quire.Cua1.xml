@@ -1,0 +1,70 @@
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
+ "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<node>
+ <interface name="org.quire.Cua1.Manager">
+   <method name="Start">
+     <arg name="task" type="s" direction="in"/>
+     <arg name="run" type="o" direction="out"/>
+   </method>
+   <method name="Runs">
+     <arg type="ao" direction="out"/>
+   </method>
+   <method name="StopAll">
+   </method>
+   <signal name="RunAdded">
+     <arg name="run" type="o"/>
+   </signal>
+   <signal name="RunRemoved">
+     <arg name="run" type="o"/>
+   </signal>
+   <property name="Backend" type="s" access="read"/>
+   <property name="Modes" type="a{ss}" access="read"/>
+ </interface>
+ <interface name="org.quire.Cua1.Run">
+   <method name="Cancel">
+   </method>
+   <method name="Pause">
+   </method>
+   <method name="Resume">
+   </method>
+   <method name="Answer">
+     <arg name="question" type="t" direction="in"/>
+     <arg name="answer" type="s" direction="in"/>
+   </method>
+   <method name="TakeOver">
+   </method>
+   <method name="HandBack">
+   </method>
+   <signal name="StateChanged">
+     <arg name="state" type="s"/>
+   </signal>
+   <signal name="StepStarted">
+     <arg name="step" type="u"/>
+   </signal>
+   <signal name="ThoughtDelta">
+     <arg name="step" type="u"/>
+     <arg name="text" type="s"/>
+   </signal>
+   <signal name="ActionProposed">
+     <arg name="step" type="u"/>
+     <arg name="action" type="s"/>
+   </signal>
+   <signal name="ActionDone">
+     <arg name="step" type="u"/>
+     <arg name="outcome" type="s"/>
+   </signal>
+   <signal name="AskUser">
+     <arg name="question" type="t"/>
+     <arg name="ask" type="s"/>
+   </signal>
+   <signal name="Finished">
+     <arg name="end" type="s"/>
+   </signal>
+   <property name="Budget" type="s" access="read"/>
+   <property name="Goal" type="s" access="read"/>
+   <property name="Mode" type="s" access="read"/>
+   <property name="State" type="s" access="read"/>
+   <property name="Step" type="u" access="read"/>
+   <property name="Window" type="s" access="read"/>
+ </interface>
+</node>

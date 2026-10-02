@@ -1,0 +1,30 @@
+[package]
+name = "cua-run"
+description = "The pure run machine of a computer-use run: observations, the phase table, inputs and effects, effect classification, mode support, the lease book, stall detection, config and the seams cuad plugs in."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+cua-action = { workspace = true }
+cua-desktop = { workspace = true }
+maskcap = { workspace = true }
+seat-input = { workspace = true }
+a11y-tree = { workspace = true }
+cua-bus = { workspace = true }
+docket-core = { workspace = true }
+prov = { workspace = true }
+porter-core = { workspace = true }
+porter-infer = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+keyboard-types = { workspace = true }
+
+[lints]
+workspace = true
