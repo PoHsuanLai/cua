@@ -1,5 +1,4 @@
-//! What the masking and settling functions must do. They are frozen with `todo!()` bodies, so
-//! each test is ignored with the work that closes it and carries the real assertions.
+//! What the masking, digest and settling functions must do.
 
 use cua_action::{Coord, DeviceSize, PixelFormat, Point, Rect, Scale120, Size, WindowSpace};
 use cua_desktop::{Ms, Stamp};
@@ -51,7 +50,6 @@ fn damage_at(ms: u64) -> DamageAt {
 }
 
 #[test]
-#[ignore = "closes with the maskcap fill (apply_masks)"]
 fn apply_masks_blacks_exact_device_pixels_at_scale_150() {
     // At 1.5 (180 in 120ths) a 2-lpx region at logical (2,2) covers device pixels 3..6.
     let (masked, applied) = apply_masks(white(30, 30), Scale120(180), &[region(2, 2, 2, 2)]);
@@ -70,7 +68,6 @@ fn apply_masks_blacks_exact_device_pixels_at_scale_150() {
 }
 
 #[test]
-#[ignore = "closes with the maskcap fill (apply_masks)"]
 fn a_region_past_the_edge_is_clamped_and_reported_as_applied() {
     let (masked, applied) = apply_masks(white(10, 10), Scale120(120), &[region(8, 8, 10, 10)]);
     assert_eq!(pixel(&masked, 9, 9), [0, 0, 0, 255]);
@@ -79,7 +76,6 @@ fn a_region_past_the_edge_is_clamped_and_reported_as_applied() {
 }
 
 #[test]
-#[ignore = "closes with the maskcap fill (digest)"]
 fn digest_differs_on_one_pixel_and_ignores_stride_padding() {
     let a = white(8, 8);
     let mut bytes = a.data.to_vec();
@@ -104,7 +100,6 @@ fn digest_differs_on_one_pixel_and_ignores_stride_padding() {
 }
 
 #[test]
-#[ignore = "closes with the maskcap fill (settle)"]
 fn settle_quiet_waiting_timeout_table() {
     struct Row {
         name: &'static str,
@@ -145,7 +140,6 @@ fn settle_quiet_waiting_timeout_table() {
 }
 
 #[test]
-#[ignore = "closes with the maskcap fill (pixel_diff)"]
 fn pixel_diff_bounds_the_changed_pixels() {
     let a = white(10, 10);
     assert_eq!(pixel_diff(&a, &a), None);

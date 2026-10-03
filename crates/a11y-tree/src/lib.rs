@@ -13,6 +13,7 @@
 mod atspi;
 mod model;
 mod ops;
+mod render;
 mod selector;
 mod source;
 

@@ -1,5 +1,4 @@
-//! What the frozen pure functions of cua-run must do. Each is a `todo!()` today, so each test is
-//! ignored with the work that closes it and carries the real assertions.
+//! What the pure functions of cua-run must do.
 
 use a11y_tree::{
     A11yNode, A11ySnapshot, NodeState, NodeValue, Parent, Role, Sensitivity, TreeSource,
@@ -96,7 +95,6 @@ fn secret_node(id: u32, role: Role, name: &str, sensitivity: Sensitivity, value:
 }
 
 #[test]
-#[ignore = "closes with the cua-run fill (classify_effect)"]
 fn classify_effect_table() {
     use WindowClass::{MailCompose, Ordinary, Payments, Terminal};
     struct Row {
@@ -198,7 +196,6 @@ fn digest(byte: u8) -> FrameDigest {
 }
 
 #[test]
-#[ignore = "closes with the cua-run fill (stalled)"]
 fn stall_after_n_equal_digests() {
     struct Row {
         name: &'static str,
@@ -256,7 +253,6 @@ fn stall_after_n_equal_digests() {
 }
 
 #[test]
-#[ignore = "closes with the cua-run fill (LeaseBook)"]
 fn lease_book_one_run_per_window() {
     let (w1, w2) = (
         ToplevelIdent::parse("w1").unwrap(),
@@ -357,7 +353,6 @@ fn form_tree() -> A11ySnapshot {
 }
 
 #[test]
-#[ignore = "closes with the cua-run fill (turn)"]
 fn turn_renders_tree_without_secret_values_and_notes_masked_regions() {
     let (request, attachment) = turn(&observation(form_tree(), 2));
     let TreeText::Present(text) = &request.tree else {

@@ -7,6 +7,9 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt;
 use std::sync::Arc;
 
+/// Bytes per pixel of every format cua-action names (all four are 32-bit).
+pub(crate) const BYTES_PER_PIXEL: usize = 4;
+
 /// A frame counter within one capture session.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(transparent)]

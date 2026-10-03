@@ -66,10 +66,13 @@ keyboard-types = { version = "0.7", features = ["serde"] }
 zbus = { version = "5.19", default-features = false, features = ["tokio"] }  # shell repos only; they also enable ds-settings/tokio. quire itself builds zbus with its async-io default so app consumers keep their own executor.
 rustix = { version = "1.1", default-features = false, features = ["std", "fs"] }  # porter's line, narrowed to what cuad names: memfd_create and its seals
 wayland-client = "0.31"
+# libxkbcommon, narrowed: seat-input reads the keymap text only (no wayland keymap fds).
+xkbcommon = { version = "0.8", default-features = false }
 wayland-protocols = { version = "0.32.13", features = ["client", "staging", "unstable"] }
 # The minor cosmic-comp's lock resolves.
 reis = "0.7"
 base64 = "0.22"
+blake3 = "1"
 atspi = { version = "0.30", default-features = false, features = ["connection", "proxies", "tokio"] }
 # Dev-dependencies.
 proptest = "1"

@@ -1,5 +1,4 @@
-//! What the tree functions must do, over the fixtures. They are frozen with `todo!()` bodies,
-//! so each test is ignored with the work that closes it and carries the real assertions.
+//! What the tree functions must do, over the fixtures.
 
 mod support;
 
@@ -10,7 +9,6 @@ use a11y_tree::{
 use cua_action::NodeId;
 
 #[test]
-#[ignore = "closes with the a11y-tree fill (prune, render, diff, secret_rects)"]
 fn prune_keeps_actionable_visible_first_within_budget() {
     let form = support::firefox_form();
     let total = form.nodes.len();
@@ -33,7 +31,6 @@ fn prune_keeps_actionable_visible_first_within_budget() {
 }
 
 #[test]
-#[ignore = "closes with the a11y-tree fill (prune, render, diff, secret_rects)"]
 fn render_is_stable_golden_and_never_prints_a_secret_value() {
     let form = support::firefox_form();
     let text = render(&form);
@@ -53,7 +50,6 @@ fn render_is_stable_golden_and_never_prints_a_secret_value() {
 }
 
 #[test]
-#[ignore = "closes with the a11y-tree fill (prune, render, diff, secret_rects)"]
 fn secret_rects_cover_password_text() {
     let form = support::firefox_form();
     let password = form
@@ -66,7 +62,6 @@ fn secret_rects_cover_password_text() {
 }
 
 #[test]
-#[ignore = "closes with the a11y-tree fill (prune, render, diff, secret_rects)"]
 fn diff_reports_added_removed_changed() {
     let before = support::gtk4_dialog();
     let mut after = before.clone();
@@ -80,7 +75,6 @@ fn diff_reports_added_removed_changed() {
 }
 
 #[test]
-#[ignore = "closes with the procedures wave (selector resolution)"]
 fn selector_resolution_table() {
     let dialog = support::gtk4_dialog();
     let step = |role, name: &str| SelectorStep {

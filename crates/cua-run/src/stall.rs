@@ -17,6 +17,15 @@ pub enum Stall {
 /// `Stalled` when the newest `limit` digests are all equal; `Moving` otherwise, and always
 /// `Moving` for a limit of zero or fewer digests than the limit. Pure.
 pub fn stalled(history: &[FrameDigest], limit: Count) -> Stall {
-    let _ = (history, limit);
-    todo!("stall_after_n_equal_digests")
+    let Ok(limit) = usize::try_from(limit.0) else {
+        return Stall::Moving;
+    };
+    if limit == 0 || history.len() < limit {
+        return Stall::Moving;
+    }
+    let newest = &history[history.len() - limit..];
+    match newest.split_first() {
+        Some((first, rest)) if rest.iter().all(|d| d == first) => Stall::Stalled,
+        _ => Stall::Moving,
+    }
 }

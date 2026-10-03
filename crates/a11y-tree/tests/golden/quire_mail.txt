@@ -1,0 +1,7 @@
+[0] window "Inbox" enabled,visible,showing @0,0 900x600
+  [1] tool_bar "Toolbar" enabled,visible,showing @0,0 900x48
+    [2] button "Archive" enabled,focusable,visible,showing @12,8 80x32 -> mail.thread.archive
+  [3] list "Threads" enabled,visible,showing @0,48 400x552
+    [4] list_item "Lisbon receipts, March" enabled,focusable,visible,showing @0,0 400x56
+    [5] list_item "Re: invoice 2291" enabled,focusable,visible,showing @0,56 400x56
+    [6] list_item "Lunch on Friday?" enabled,focusable,selected,visible,showing @0,112 400x56

@@ -22,9 +22,10 @@ porter-infer = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
 
+keyboard-types = { workspace = true }
+
 [dev-dependencies]
 serde_json = { workspace = true }
-keyboard-types = { workspace = true }
 
 [lints]
 workspace = true

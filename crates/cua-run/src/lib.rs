@@ -49,4 +49,4 @@ pub use seams::{
     Clock, GateCheck, GateEvent, GateLink, LinkError, MessageLink, Parts, RecordSink, Seams,
 };
 pub use stall::{Stall, stalled};
-pub use turn::{FrameAttachment, turn};
+pub use turn::{FrameAttachment, note_of, turn};

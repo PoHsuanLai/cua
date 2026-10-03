@@ -13,6 +13,7 @@ cua-action = { workspace = true }
 cua-desktop = { workspace = true }
 porter-core = { workspace = true }
 keyboard-types = { workspace = true }
+xkbcommon = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
 reis = { workspace = true, optional = true, features = ["tokio"] }

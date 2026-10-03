@@ -1,0 +1,5 @@
+[0] dialog "Save changes?" enabled,visible,showing @0,0 420x180
+  [1] label "Your changes will be lost if you do not save." enabled,visible,showing @20,40 380x40
+  [2] button "Cancel" enabled,focusable,visible,showing @140,120 80x32
+  [3] button "Discard" enabled,focusable,visible,showing @230,120 80x32
+  [4] button "Save" enabled,focusable,visible,showing @320,120 80x32

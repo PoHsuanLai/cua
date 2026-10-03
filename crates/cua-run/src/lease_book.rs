@@ -41,22 +41,60 @@ pub struct LeaseBook {
 
 impl LeaseBook {
     /// The book after `run` takes `window`; refused when another run holds the window or `run`
-    /// already holds a window.
+    /// already holds a window (the holder in the way is named).
     pub fn claim(&self, window: &ToplevelIdent, run: &RunId) -> Result<LeaseBook, LeaseHeld> {
-        let _ = (window, run);
-        todo!("lease_book_one_run_per_window")
+        if let Some(slot) = self.slots.get(window) {
+            return Err(LeaseHeld {
+                by: slot.run.clone(),
+            });
+        }
+        if let Some(slot) = self.slots.values().find(|slot| slot.run == *run) {
+            return Err(LeaseHeld {
+                by: slot.run.clone(),
+            });
+        }
+        let mut slots = self.slots.clone();
+        slots.insert(
+            window.clone(),
+            Slot {
+                run: run.clone(),
+                state: SlotState::Held,
+            },
+        );
+        Ok(LeaseBook { slots })
     }
 
-    /// The book after the holder's input is stopped or restarted.
+    /// The book after the holder's input is stopped or restarted. A run that holds nothing
+    /// changes nothing.
     pub fn set_state(&self, run: &RunId, state: SlotState) -> LeaseBook {
-        let _ = (run, state);
-        todo!("lease_book_one_run_per_window")
+        let slots = self
+            .slots
+            .iter()
+            .map(|(window, slot)| {
+                let slot = if slot.run == *run {
+                    Slot {
+                        run: slot.run.clone(),
+                        state,
+                    }
+                } else {
+                    slot.clone()
+                };
+                (window.clone(), slot)
+            })
+            .collect();
+        LeaseBook { slots }
     }
 
     /// The book after `run` lets go of its window.
     pub fn release(&self, run: &RunId) -> LeaseBook {
-        let _ = run;
-        todo!("lease_book_one_run_per_window")
+        LeaseBook {
+            slots: self
+                .slots
+                .iter()
+                .filter(|(_, slot)| slot.run != *run)
+                .map(|(window, slot)| (window.clone(), slot.clone()))
+                .collect(),
+        }
     }
 
     /// The run holding `window`, if any.

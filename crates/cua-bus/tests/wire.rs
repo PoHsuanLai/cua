@@ -344,7 +344,10 @@ fn a_handed_back_record_carries_the_events_the_person_made_and_pins_its_json() {
         json.contains(r#""user_events":[{"space":"desktop","replica":"#),
         "{json}"
     );
-    assert!(json.contains(r#""seq":41"#) && json.contains(r#""seq":42"#), "{json}");
+    assert!(
+        json.contains(r#""seq":41"#) && json.contains(r#""seq":42"#),
+        "{json}"
+    );
     let back: CuaRecord = serde_json::from_str(&json).unwrap();
     let CuaRecord::HandedBack { user_events, .. } = back else {
         panic!("not a hand-back")

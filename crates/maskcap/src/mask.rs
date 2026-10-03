@@ -1,9 +1,10 @@
 //! What is hidden from the model, and what was actually hidden.
 
-use crate::pixels::PixelBuf;
-use cua_action::{Rect, Scale120, WindowSpace};
+use crate::pixels::{BYTES_PER_PIXEL, PixelBuf};
+use cua_action::{Coord, Rect, Scale120, Size, WindowSpace};
 use cua_desktop::MaskWhere;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 /// Why a region is masked.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
@@ -70,17 +71,69 @@ pub struct MaskReport {
     pub regions: Vec<MaskRegion>,
 }
 
+/// The black of a masked pixel: opaque, whichever of the four formats.
+const BLACK: [u8; BYTES_PER_PIXEL] = [0, 0, 0, 255];
+
+/// A device-pixel edge for a logical one: `round(logical * scale / 120)`.
+fn device_edge(logical: u32, scale: Scale120) -> u64 {
+    (u64::from(logical) * u64::from(scale.0) + 60) / 120
+}
+
 /// Blacks the exact device pixels of `regions` (the rounding is `round(logical * scale / 120)`
 /// per edge, so a 2-lpx region at 1.5 becomes exactly 3 device pixels) and returns a new buffer
-/// and the regions as applied, clamped to the buffer. Pure.
+/// and the regions as applied, clamped to the buffer's logical size. A region wholly outside the
+/// buffer is not applied and not reported. Pure.
 pub fn apply_masks(
     buf: PixelBuf,
     scale: Scale120,
     regions: &[MaskRegion],
 ) -> (PixelBuf, Vec<MaskRegion>) {
-    let _ = (buf, scale, regions);
-    todo!(
-        "black the device pixels of each region, clamp, return a new buffer (apply_masks_blacks_exact_device_pixels_at_scale_150)"
+    let stride = usize::try_from(buf.stride).unwrap_or(usize::MAX);
+    let logical_w =
+        (u64::from(buf.size.w) * 120 + u64::from(scale.0) / 2) / u64::from(scale.0.max(1));
+    let logical_h =
+        (u64::from(buf.size.h) * 120 + u64::from(scale.0) / 2) / u64::from(scale.0.max(1));
+    let mut data = buf.data.to_vec();
+    let mut applied = Vec::new();
+    for region in regions {
+        let (origin, size) = (region.rect.origin, region.rect.size);
+        let x1 = (u64::from(origin.x.0) + u64::from(size.w.0)).min(logical_w);
+        let y1 = (u64::from(origin.y.0) + u64::from(size.h.0)).min(logical_h);
+        let (x0, y0) = (u64::from(origin.x.0), u64::from(origin.y.0));
+        if x0 >= x1 || y0 >= y1 {
+            continue;
+        }
+        let to_u32 = |n: u64| u32::try_from(n).unwrap_or(u32::MAX);
+        applied.push(MaskRegion {
+            rect: Rect {
+                origin,
+                size: Size::new(Coord(to_u32(x1 - x0)), Coord(to_u32(y1 - y0))),
+            },
+            why: region.why,
+        });
+        let dev =
+            |logical: u64, limit: u32| device_edge(to_u32(logical), scale).min(u64::from(limit));
+        let (dx0, dx1) = (dev(x0, buf.size.w), dev(x1, buf.size.w));
+        let (dy0, dy1) = (dev(y0, buf.size.h), dev(y1, buf.size.h));
+        for y in dy0..dy1 {
+            let row = usize::try_from(y)
+                .unwrap_or(usize::MAX)
+                .saturating_mul(stride);
+            for x in dx0..dx1 {
+                let at =
+                    row.saturating_add(usize::try_from(x).unwrap_or(usize::MAX) * BYTES_PER_PIXEL);
+                if let Some(pixel) = data.get_mut(at..at + BYTES_PER_PIXEL) {
+                    pixel.copy_from_slice(&BLACK);
+                }
+            }
+        }
+    }
+    (
+        PixelBuf {
+            data: Arc::from(data),
+            ..buf
+        },
+        applied,
     )
 }
 

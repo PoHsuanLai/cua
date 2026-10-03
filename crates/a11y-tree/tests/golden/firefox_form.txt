@@ -1,0 +1,8 @@
+[0] document "Sign in to Example" enabled,visible,showing @0,0 1000x700
+  [1] heading "Sign in" enabled,visible,showing @40,40 200x40
+  [2] other(116) "Account form" enabled,visible,showing @30,100 340x220
+  [3] entry "Email" enabled,focusable,editable,visible,showing @40,120 320x32 = "ada@example.org"
+  [4] password_text "Password" enabled,focusable,editable,visible,showing @40,170 320x32 = <hidden>
+  [5] check_box "Remember me" enabled,focusable,checked,visible,showing @40,220 140x24
+  [6] button "Sign in" enabled,focusable,visible,showing @40,260 120x36
+  [7] link "Forgot password?" enabled,focusable,visible,showing @180,268 160x20
