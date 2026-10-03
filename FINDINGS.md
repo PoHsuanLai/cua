@@ -168,8 +168,8 @@ docket `InProcess` feature ask (it is behind `in_process`), and the porter `Step
 - `seat_input::region` is a public module (its `GlobalPoint` is named nowhere else).
 - Acceptance scripts `scripts/dev/accept-{agent-seat,masking}.sh` are stubs: they check
   preconditions (`COSMIC_COMP`, the harness) and exit 2, with the pass criteria written in them.
-- `Label::{trusted_user, untrusted, join}` are `todo!()` in prov, so tests use `Label` literals and
-  machine tests that would need them are ignored.
+- `Label::{trusted_user, untrusted, join}` are built in prov now; the machine joins the screen's
+  label into a run's taint with them.
 - Nothing was pushed; no GitHub repo.
 
 ## Following porter's client fill (ask 82)
