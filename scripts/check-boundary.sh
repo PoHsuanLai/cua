@@ -23,7 +23,7 @@ RULES=(
   "a11y-tree: $EFFECTS"
   "cua-bus: $EFFECTS"
   "cua-run: $EFFECTS"
-  # The generated bindings reach wayland and nothing else.
+  # The re-export reaches casement-protocols (and, through it, wayland) and nothing else.
   "quire-agent-protocol: zbus zvariant tokio reqwest hyper hyper-util rustls pipewire reis atspi oo7 ort fastembed rusqlite notify rmcp cedar-policy toml"
   # zbus (with its tokio feature) lives in cua-dbus; no wayland, no EIS, no accessibility stack.
   "cua-dbus: reqwest hyper hyper-util rustls pipewire wayland-client wayland-backend wayland-server reis atspi oo7 ort fastembed rusqlite notify rmcp cedar-policy"
@@ -93,7 +93,7 @@ EDGES=(
   "maskcap: cua-action cua-desktop quire-agent-protocol"
   "seat-input: cua-action cua-desktop porter-core"
   "a11y-tree: cua-action cua-desktop porter-core prov"
-  "quire-agent-protocol:"
+  "quire-agent-protocol: casement-protocols"
   "cua-bus: a11y-tree almanac-core cua-action cua-desktop docket-core maskcap porter-core porter-infer prov seat-input"
   "cua-run: a11y-tree cua-action cua-bus cua-desktop docket-core maskcap porter-core porter-infer prov seat-input"
   "cua-dbus: cua-bus prov"

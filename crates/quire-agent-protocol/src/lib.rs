@@ -1,27 +1,22 @@
-//! Bindings for `protocols/quire-agent-v1.xml`.
+//! The paths cua has always used for `quire-agent-v1`, now served by `casement-protocols`.
 //!
-//! The XML is the interface; this crate only runs wayland-scanner over it. The protocol builds on
-//! `ext_foreign_toplevel_list_v1` (the toplevel a lease names) and `ext_image_capture_source_v1`
-//! (the masked source a lease returns), both from wayland-protocols.
-//!
-//! The crate is MIT OR Apache-2.0 so the GPL fork can depend on it by git rev while nothing of
-//! ours depends on the fork.
+//! The XML and its wayland-scanner bindings live in the `casement-protocols` repo, the one home
+//! of every `quire_*_v1` protocol. This crate only re-exports them under the names cua's crates
+//! already import (`client::quire_agent_manager_v1`, `client::quire_agent_lease_v1`,
+//! `v1::client`), so none of them moved. The feature `client` is cuad's side; `server` is the
+//! compositor's.
 
-#[macro_use]
-mod protocol_macro;
+pub use casement_protocols::vocab;
 
 pub mod v1 {
-    //! `quire-agent-v1`.
-    wayland_protocol!(
-        "../../protocols/quire-agent-v1.xml",
-        [
-            wayland_protocols::ext::foreign_toplevel_list::v1,
-            wayland_protocols::ext::image_capture_source::v1
-        ]
-    );
+    //! `quire-agent-v1`, under its original module path.
+    #[cfg(feature = "client")]
+    pub use casement_protocols::client::quire_agent_v1 as client;
+    #[cfg(feature = "server")]
+    pub use casement_protocols::server::quire_agent_v1 as server;
 }
 
 #[cfg(feature = "client")]
-pub use v1::client;
+pub use casement_protocols::client::quire_agent_v1 as client;
 #[cfg(feature = "server")]
-pub use v1::server;
+pub use casement_protocols::server::quire_agent_v1 as server;

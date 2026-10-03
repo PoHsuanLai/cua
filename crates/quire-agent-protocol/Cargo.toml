@@ -1,6 +1,6 @@
 [package]
 name = "quire-agent-protocol"
-description = "Generated bindings for quire-agent-v1, the private protocol between cuad and the quire fork of cosmic-comp. Features `client` (cuad) and `server` (the fork)."
+description = "cua's paths for quire-agent-v1: a re-export of casement-protocols, where the XML and the bindings live. Features `client` (cuad) and `server` (the compositor)."
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -9,17 +9,14 @@ repository.workspace = true
 publish.workspace = true
 
 [dependencies]
-wayland-scanner = { workspace = true }
-wayland-backend = { workspace = true }
-wayland-client = { workspace = true, optional = true }
-wayland-server = { workspace = true, optional = true }
-wayland-protocols = { workspace = true }
+# The one home of the XML. Sibling checkouts sit side by side, as stoker, porter and docket do.
+casement-protocols = { path = "../../../casement-protocols" }
 
 [features]
 # cuad's side.
-client = ["dep:wayland-client", "wayland-protocols/client"]
-# The fork's side. The fork depends on this crate by git rev with only this feature.
-server = ["dep:wayland-server", "wayland-protocols/server"]
+client = ["casement-protocols/client"]
+# The compositor's side.
+server = ["casement-protocols/server"]
 
 [lints]
 workspace = true

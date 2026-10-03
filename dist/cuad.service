@@ -10,7 +10,7 @@ Description=Quire computer-use daemon (org.quire.Cua1)
 Type=dbus
 BusName=org.quire.Cua1
 ExecStart=/usr/libexec/quire/cuad --config /etc/quire/cuad.toml
-# The compositor to connect to. The fork offers `quire_agent_manager_v1` (protocols/quire-agent-v1.xml)
+# The compositor to connect to. The fork offers `quire_agent_manager_v1` (casement-protocols/protocols/quire-agent-v1.xml)
 # only to the client its security context names as this unit; stock cosmic-comp offers
 # ext-image-copy-capture and the Ei D-Bus method to any client on the session bus.
 PassEnvironment=WAYLAND_DISPLAY

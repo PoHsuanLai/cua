@@ -30,7 +30,7 @@ What cua adds or decides differently, each with its reason:
    tree reaches one.
 5. **cua sits above docket and below sill.** It depends on stoker, porter, almanac and docket by
    sibling path; it depends on no sill crate and on nothing of the cosmic-comp fork, and the
-   boundary script checks it. The fork depends on `quire-agent-protocol` alone.
+   boundary script checks it. The fork depends on `casement-protocols` alone.
 6. **One message model.** A run's progress and its result are `prov::Message`s of kind
    `Report` (`Progress`, `Done`, `Failed`, `Cancelled`), sent to the requester through the router
    (`RunEffect::Report`, `cua_bus::report_draft`). cua defines no result or return type of its

@@ -13,7 +13,7 @@ is the map of the code that freezes those interfaces. `CONVENTIONS.md` holds the
 moves the person's cursor and steals focus), masking is cuad's, and a confirmation shows only
 after cuad has stopped its own input. **The fork adds the agent seat later** (`~/cosmic-comp`,
 branch `quire`, GPL, not a dependency of anything here); the protocol it implements is this
-repo's `quire-agent-protocol`.
+`casement-protocols` repo's `quire-agent-v1.xml`, which `quire-agent-protocol` re-exports.
 
 Reading order: section 1 (find the crate), section 3 (find the home), section 5 (a run in one
 picture), section 6 (copy the recipe).
@@ -26,7 +26,7 @@ picture), section 6 (copy the recipe).
 | `maskcap` | `Frame`, `PixelBuf`, `MaskReport`, `apply_masks`, `FrameDigest`, `settle`, `pixel_diff`, the `WindowCapture` and `CaptureSession` seams. Feature `wayland`: `StockToplevelCapture`, `QuireMaskedCapture` | none (`wayland`: wayland-client) |
 | `seat-input` | `InputOp`, `Keymap`, `SeatCaps`, `plan`, `InputReceipt`, `region`, the `AgentSeat` seam. Feature `ei`: `EiSeat` | none (`ei`: reis) |
 | `a11y-tree` | `A11ySnapshot`, `A11yNode`, `prune`, `render`, `diff`, `secret_rects`, selectors, the `A11ySource` seam. Feature `atspi`: `AtspiSource` | none (`atspi`: atspi) |
-| `quire-agent-protocol` | `protocols/quire-agent-v1.xml` and its wayland-scanner bindings; features `client` (cuad) and `server` (the fork) | none |
+| `quire-agent-protocol` | a shim: re-exports `casement_protocols::client::quire_agent_v1` (and `server`, and `vocab`) under the paths cua always used; features `client` (cuad) and `server` (the compositor) | none |
 | `cua-bus` | what crosses the bus and the log, serde only: the `Start` body (`CuaTask`), `RunStateSlug`, `CuaOutcome`, `ModeSupport`, `CuaRecord`, `ActionResult`, `RunBudget`, `ControlRefusal`, `permits`, `report_draft` | none |
 | `cua-run` | the pure run machine (`Run`, `RunTrack`, `RunPhase`, `RunInput`, `RunEffect`), `Observation`, `classify_effect`, `window_class_of`, `mode_support`, `choose_mode`, `LeaseBook`, `stalled`, `turn` and `note_of`, `CuaConfig` and `SETTING_ROWS`, `CuaModel`, the seams a run is carried out against (`Seams`, `Clock`, `GateLink`, `RecordSink`, `MessageLink`), and `Exec`, which carries a run's effects out against them (it awaits nothing but seam futures, so it needs no runtime) | none |
 | `cua-dbus` | `org.quire.Cua1` (`Manager`, `Run`) as zbus proxies and skeletons, `introspection`, `CuaError`, bus names and paths | zbus |
@@ -42,7 +42,7 @@ dev-dependencies are outside it):
 | `maskcap` | `cua-action`, `cua-desktop`; `quire-agent-protocol` with feature `wayland` |
 | `seat-input` | `cua-action`, `cua-desktop`, `porter-core` |
 | `a11y-tree` | `cua-action`, `cua-desktop`, `prov`, `porter-core` |
-| `quire-agent-protocol` | nothing of ours |
+| `quire-agent-protocol` | `casement-protocols` (sibling path) |
 | `cua-bus` | `a11y-tree`, `almanac-core`, `cua-action`, `cua-desktop`, `maskcap`, `seat-input`, `docket-core`, `prov`, `porter-core`, `porter-infer` |
 | `cua-run` | `a11y-tree`, `cua-action`, `cua-bus`, `cua-desktop`, `maskcap`, `seat-input`, `docket-core`, `prov`, `porter-core`, `porter-infer` |
 | `cua-dbus` | `cua-bus`, `prov` |
@@ -100,7 +100,7 @@ only; the pure set never reaches an effect crate; `wayland-client` is behind the
 | the machine, the phase table, effects, `mode_support`, `classify_effect` | `cua-run` |
 | the proposed values | `cua_run::CuaConfig` and `SETTING_ROWS`; the keys are sill's |
 | the D-Bus interface | `cua-dbus` and `dbus/org.quire.Cua1.xml` |
-| the Wayland protocol | `protocols/quire-agent-v1.xml` and `quire-agent-protocol`; the fork's server side is `~/cosmic-comp` |
+| the Wayland protocol | `quire-agent-v1.xml` in `~/casement-protocols` (the one home), re-exported by `quire-agent-protocol`; the server side is the fork's, later casement's |
 | the `cua.run.start` action | `manifests/org.quire.Cua.toml`, served by `cuad::CuaProvider` |
 | the event-log record | `cua_bus::CuaRecord`; `cuad::record_of` makes the almanac `EventBody::Area { area: Cua }` |
 | views of the above for the shell | sill's `sill-model` (`run_state_of(slug, outcome)`); cua defines none |

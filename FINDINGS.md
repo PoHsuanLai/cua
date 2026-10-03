@@ -2,7 +2,7 @@
 
 Open items and standing facts. An entry names the condition that closes it. `cua-bus`,
 `cua-dbus` and `quire-agent-protocol` have no `todo!()`: their behaviour is serde, tables and
-generated code.
+a re-export of `casement-protocols`.
 
 ## Stubs behind frozen interfaces
 
@@ -87,8 +87,9 @@ wake}`, and `Exec`, which carries a run's effects out against the seams), `run_h
 
 ## Dependencies added to this workspace (not in quire's pinned block)
 
-- `wayland-scanner 0.31`, `wayland-server 0.31`, `wayland-backend 0.3`: `quire-agent-protocol`
-  generates its own bindings; all are already in every wayland tree.
+- `wayland-scanner 0.31`, `wayland-server 0.31`, `wayland-backend 0.3`: no longer used here since
+  S0-CU2 (`quire-agent-protocol` re-exports `casement-protocols`, which generates the bindings);
+  the lines can leave the workspace table.
 - `atspi` is pinned with `default-features = false, features = ["connection", "proxies", "tokio"]`
   (the block's bare `0.30` cannot be narrowed by a member); `reis` gains `tokio` in seat-input;
   `base64 0.22` is already in the block (maskcap's serde form).
@@ -149,7 +150,7 @@ docket `InProcess` feature ask (it is behind `in_process`), and the porter `Step
 - **almanac `Memory1`:** `HandedBack.user_events` needs a read of the person's events between two
   instants for the cua caller; `Caller::Cuad` records `Area(Cua)` only. Ask: a bounded `Recent`
   for `Caller::Cuad`, limited to events of the window's app after a given `Seq`.
-- **cosmic-comp fork:** serve `quire_agent_manager_v1` from `protocols/quire-agent-v1.xml`; the
+- **cosmic-comp fork:** serve `quire_agent_manager_v1` from `~/casement-protocols/protocols/quire-agent-v1.xml` (the XML left cua at S0-CU2); the
   `mask_reason`, `glow_state`, `suspend_reason`, `revoke_reason`, `lease_mode` values are pinned by
   tests here.
 
