@@ -7,6 +7,14 @@ use cua_desktop::{
 };
 use std::collections::VecDeque;
 use std::sync::Mutex;
+use std::task::{Poll, Waker};
+
+/// The events raised and not yet read, and who is waiting for the next one.
+#[derive(Debug, Default)]
+struct Events {
+    queue: VecDeque<DesktopEvent>,
+    waiting: Option<Waker>,
+}
 
 /// What a fake desktop was asked to do, in order.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -28,7 +36,7 @@ pub enum DesktopCall {
 pub struct FakeDesktop {
     caps: BackendCaps,
     windows: Vec<ToplevelInfo>,
-    events: Mutex<VecDeque<DesktopEvent>>,
+    events: Mutex<Events>,
     calls: Mutex<Vec<DesktopCall>>,
     next_lease: Mutex<u64>,
 }
@@ -39,7 +47,7 @@ impl FakeDesktop {
         Self {
             caps: BackendCaps::of(kind),
             windows,
-            events: Mutex::new(VecDeque::new()),
+            events: Mutex::new(Events::default()),
             calls: Mutex::new(Vec::new()),
             next_lease: Mutex::new(1),
         }
@@ -47,10 +55,11 @@ impl FakeDesktop {
 
     /// Queues an event for `next_event`.
     pub fn raise(&self, event: DesktopEvent) {
-        self.events
-            .lock()
-            .expect("fake desktop lock")
-            .push_back(event);
+        let mut events = self.events.lock().expect("fake desktop lock");
+        events.queue.push_back(event);
+        if let Some(waker) = events.waiting.take() {
+            waker.wake();
+        }
     }
 
     /// What it was asked to do, in order.
@@ -73,11 +82,17 @@ impl Desktop for FakeDesktop {
     }
 
     async fn next_event(&self) -> DesktopEvent {
-        let next = self.events.lock().expect("fake desktop lock").pop_front();
-        match next {
-            Some(event) => event,
-            None => std::future::pending().await,
-        }
+        std::future::poll_fn(|cx| {
+            let mut events = self.events.lock().expect("fake desktop lock");
+            match events.queue.pop_front() {
+                Some(event) => Poll::Ready(event),
+                None => {
+                    events.waiting = Some(cx.waker().clone());
+                    Poll::Pending
+                }
+            }
+        })
+        .await
     }
 }
 

@@ -12,9 +12,11 @@ mod session;
 
 use crate::machine::effect::{CuaSignal, RunEffect};
 use crate::machine::input::RunInput;
-use crate::seams::{Clock, GateCheck, GateEvent, GateLink, MessageLink, Parts, RecordSink, Seams};
-use cua_bus::{CuaRecord, CuaTask};
-use docket_core::{Delivery, GrantAsk};
+use crate::seams::{
+    Clock, GateCheck, GateEvent, GateLink, LinkError, MessageLink, Parts, RecordSink, Seams,
+};
+use cua_bus::{CuaRecord, CuaTask, ReportDelivery};
+use docket_core::{Delivery, GrantAsk, SendRefusal, WireRefusal};
 use maskcap::DamageAt;
 use prov::{MessageId, RunId};
 use session::Held;
@@ -97,11 +99,19 @@ enum ModelSession {
     Open,
 }
 
+/// Whether the record sink has been told of the run.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Opened {
+    No,
+    Yes,
+}
+
 /// How the last report ended, for the record of the end.
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum Reported {
     Nothing,
     Delivered(Delivery),
+    Refused(SendRefusal),
 }
 
 /// Carries out one run's effects.
@@ -117,6 +127,7 @@ pub struct Exec<'a, S: Seams> {
     model: ModelSession,
     announced: Option<porter_infer::ServedBy>,
     reported: Reported,
+    opened: Opened,
 }
 
 impl<S: Seams> std::fmt::Debug for Exec<'_, S> {
@@ -142,6 +153,7 @@ impl<'a, S: Seams> Exec<'a, S> {
             model: ModelSession::NotYet,
             announced: None,
             reported: Reported::Nothing,
+            opened: Opened::No,
         }
     }
 
@@ -168,6 +180,10 @@ impl<'a, S: Seams> Exec<'a, S> {
         model: Option<&mut S::Model>,
         out: &mut impl Outlet,
     ) {
+        if self.opened == Opened::No {
+            self.opened = Opened::Yes;
+            self.seam.events.open(&self.run, &self.task).await;
+        }
         match effect {
             RunEffect::Grant { app, space } => {
                 let answer = self.seam.gate.grant(GrantAsk { app, space }).await;
@@ -257,8 +273,19 @@ impl<'a, S: Seams> Exec<'a, S> {
             .await;
         self.reported = match sent {
             Ok(delivery) => Reported::Delivered(delivery),
+            Err(LinkError::Refused(WireRefusal::Send(why))) => Reported::Refused(why),
             Err(_) => Reported::Nothing,
         };
+    }
+
+    /// What became of the last report: the message that carried it, or why none did (a router
+    /// that could not be reached counts as nobody to receive it).
+    pub fn report_delivery(&self) -> ReportDelivery {
+        match &self.reported {
+            Reported::Delivered(delivery) => ReportDelivery::Sent(delivery.clone()),
+            Reported::Refused(why) => ReportDelivery::Refused(*why),
+            Reported::Nothing => ReportDelivery::Refused(SendRefusal::NoRecipient),
+        }
     }
 
     /// The clock the run is on.

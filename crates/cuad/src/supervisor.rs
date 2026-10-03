@@ -1,11 +1,17 @@
 //! The supervisor: every live run, the lease book, and the control calls on them.
 
 use crate::config::CuadConfig;
-use cua_bus::{ControlRefusal, CuaCaller, CuaTask, QuestionId};
-use cua_run::{LeaseBook, Parts, Seams};
+use crate::drive::{Drivable, LiveRun, Shared, drive};
+use crate::events::{RunView, SupervisorEvent};
+use crate::guard::guard;
+use cua_bus::{
+    BudgetBody, ControlRefusal, CuaCaller, CuaMember, CuaTask, ModeSupport, QuestionId, TaskTarget,
+};
+use cua_desktop::Desktop;
+use cua_run::{Clock, LeaseBook, Parts, Run, RunEnv, RunInput, RunPhase, Seams, mode_support};
 use prov::{Labelled, RunId};
-use std::collections::BTreeMap;
-use std::sync::Mutex;
+use std::sync::Arc;
+use tokio::sync::{broadcast, mpsc};
 
 /// The id of the `n`th run cuad starts: `r-<n>`.
 pub fn mint_run_id(n: u64) -> RunId {
@@ -14,18 +20,12 @@ pub fn mint_run_id(n: u64) -> RunId {
 
 /// Owns the runs. Each run is one task over one `Run` machine; the supervisor carries out its
 /// effects against the seams and feeds the answers back.
+///
+/// The model is one seam for all runs and holds one session, so a run keeps it for as long as it
+/// lasts: runs on different windows work side by side, but their model turns take turns, one
+/// run at a time (FINDINGS, upstream asks).
 pub struct Supervisor<S: Seams> {
-    parts: Parts<S>,
-    config: CuadConfig,
-    state: Mutex<SupervisorState>,
-}
-
-/// What the supervisor keeps between calls.
-#[derive(Debug, Default)]
-struct SupervisorState {
-    next: u64,
-    leases: LeaseBook,
-    live: BTreeMap<RunId, cua_run::RunPhase>,
+    shared: Arc<Shared<S>>,
 }
 
 impl<S: Seams> std::fmt::Debug for Supervisor<S> {
@@ -34,39 +34,128 @@ impl<S: Seams> std::fmt::Debug for Supervisor<S> {
     }
 }
 
+impl<S: Seams> Drop for Supervisor<S> {
+    fn drop(&mut self) {
+        let mut state = self.shared.state.lock().expect("supervisor lock");
+        if let Some(pump) = state.pump.take() {
+            pump.abort();
+        }
+        for live in state.live.values_mut() {
+            if let Some(task) = live.task.take() {
+                task.abort();
+            }
+        }
+    }
+}
+
+/// Whether a control call makes sense in a phase: the shell's buttons only show what applies,
+/// but a call can arrive late.
+fn applies(member: CuaMember, phase: &RunPhase) -> bool {
+    let live = !phase.is_finished();
+    match member {
+        CuaMember::Cancel => live,
+        CuaMember::Pause => matches!(
+            phase,
+            RunPhase::Observing(_)
+                | RunPhase::Thinking(_)
+                | RunPhase::Authorising(_)
+                | RunPhase::Confirming(..)
+                | RunPhase::Acting(_)
+                | RunPhase::Settling(..)
+                | RunPhase::Verifying(_)
+                | RunPhase::WaitingForUser(..)
+        ),
+        CuaMember::Resume => matches!(phase, RunPhase::Paused(_)),
+        CuaMember::TakeOver => {
+            live && !matches!(
+                phase,
+                RunPhase::Granting | RunPhase::Leasing | RunPhase::TakenOver(..)
+            )
+        }
+        CuaMember::HandBack => matches!(phase, RunPhase::TakenOver(..)),
+        CuaMember::Start | CuaMember::Runs | CuaMember::StopAll | CuaMember::Answer => false,
+    }
+}
+
+/// The input a control member is.
+fn input_of(member: CuaMember) -> Option<RunInput> {
+    match member {
+        CuaMember::Cancel => Some(RunInput::UserCancel),
+        CuaMember::Pause => Some(RunInput::UserPause),
+        CuaMember::Resume => Some(RunInput::UserResume),
+        CuaMember::TakeOver => Some(RunInput::UserTakeOver),
+        CuaMember::HandBack => Some(RunInput::UserHandBack),
+        CuaMember::Start | CuaMember::Runs | CuaMember::StopAll | CuaMember::Answer => None,
+    }
+}
+
 impl<S: Seams> Supervisor<S> {
     /// A supervisor over `parts` under `config`.
     pub fn new(parts: Parts<S>, config: CuadConfig) -> Self {
         Self {
-            parts,
-            config,
-            state: Mutex::new(SupervisorState::default()),
+            shared: Arc::new(Shared::of(parts, config)),
         }
     }
 
     /// The configuration.
     pub fn config(&self) -> &CuadConfig {
-        &self.config
+        &self.shared.config
     }
 
-    /// The seams.
-    pub fn parts(&self) -> &Parts<S> {
-        &self.parts
+    /// The desktop.
+    pub fn desktop(&self) -> &S::Desktop {
+        &self.shared.desktop
+    }
+
+    /// The seat.
+    pub fn seat(&self) -> &S::Seat {
+        &self.shared.seat
+    }
+
+    /// Capture.
+    pub fn capture(&self) -> &S::Capture {
+        &self.shared.capture
+    }
+
+    /// The accessibility source.
+    pub fn a11y(&self) -> &S::A11y {
+        &self.shared.a11y
+    }
+
+    /// The router's gate.
+    pub fn gate(&self) -> &S::Gate {
+        &self.shared.gate
+    }
+
+    /// The event log and the message path.
+    pub fn events(&self) -> &S::Events {
+        &self.shared.events
+    }
+
+    /// The clock.
+    pub fn clock(&self) -> &S::Time {
+        &self.shared.clock
     }
 
     /// Which run holds which window now.
     pub fn lease_book(&self) -> LeaseBook {
-        self.state.lock().expect("supervisor lock").leases.clone()
+        self.shared
+            .state
+            .lock()
+            .expect("supervisor lock")
+            .leases
+            .clone()
     }
 
     /// How many runs have been started (the next id is `r-<this + 1>`).
     pub fn started(&self) -> u64 {
-        self.state.lock().expect("supervisor lock").next
+        self.shared.state.lock().expect("supervisor lock").next
     }
 
     /// The ids of the runs now.
     pub fn runs(&self) -> Vec<RunId> {
-        self.state
+        self.shared
+            .state
             .lock()
             .expect("supervisor lock")
             .live
@@ -75,12 +164,103 @@ impl<S: Seams> Supervisor<S> {
             .collect()
     }
 
+    /// What the bus shows of one live run.
+    pub fn view(&self, run: &RunId) -> Option<RunView> {
+        self.shared
+            .state
+            .lock()
+            .expect("supervisor lock")
+            .live
+            .get(run)
+            .map(|live| live.view.clone())
+    }
+
+    /// Everything that happens from now on, in order. A listener that falls too far behind
+    /// misses the oldest events and is told so.
+    pub fn subscribe(&self) -> broadcast::Receiver<SupervisorEvent> {
+        self.shared.bus.subscribe()
+    }
+}
+
+impl<S: Drivable> Supervisor<S> {
     /// Starts a run for `task` (`guard` first; one run per window; the mode must be supported).
     pub async fn start(&self, caller: CuaCaller, task: CuaTask) -> Result<RunId, ControlRefusal> {
-        let _ = (caller, task);
-        todo!(
-            "guard, LeaseBook::claim, mint the id, Run::start, spawn the effect loop (end_to_end_scripted_run_done)"
-        )
+        guard(
+            caller,
+            CuaMember::Start,
+            self.shared.config.settings.enabled,
+        )?;
+        let caps = self.shared.desktop.caps();
+        if let ModeSupport::Unsupported(_) = mode_support(&caps, task.mode) {
+            return Err(ControlRefusal::ModeUnsupported);
+        }
+        if let TaskTarget::Window(ident) = &task.target {
+            let known = self
+                .shared
+                .desktop
+                .windows()
+                .await
+                .map_err(|_| ControlRefusal::WindowUnknown)?;
+            if !known.iter().any(|w| &w.ident == ident) {
+                return Err(ControlRefusal::WindowUnknown);
+            }
+        }
+        let env = RunEnv::new(&self.shared.config.settings, caps);
+        let (control, inbox) = mpsc::unbounded_channel();
+        let (run, effects) = {
+            let mut state = self.shared.state.lock().expect("supervisor lock");
+            let id = mint_run_id(state.next + 1);
+            if let TaskTarget::Window(ident) = &task.target {
+                state.leases = state
+                    .leases
+                    .claim(ident, &id)
+                    .map_err(|_| ControlRefusal::LeaseHeld)?;
+            }
+            state.next += 1;
+            let (run, effects) = Run::start(id.clone(), task.clone(), env, self.shared.clock.now());
+            state.live.insert(
+                id.clone(),
+                LiveRun {
+                    control,
+                    view: RunView {
+                        phase: run.phase.clone(),
+                        task,
+                        title: String::new(),
+                        budget: BudgetBody {
+                            limits: run.task.budget,
+                            used: run.used,
+                        },
+                    },
+                    task: None,
+                },
+            );
+            if state.pump.is_none() {
+                state.pump = Some(tokio::spawn(pump(self.shared.clone())));
+            }
+            (run, effects)
+        };
+        let id = run.id.clone();
+        self.shared.tell(SupervisorEvent::Added(id.clone()));
+        let handle = tokio::spawn(drive(self.shared.clone(), run, effects, inbox));
+        if let Some(live) = self
+            .shared
+            .state
+            .lock()
+            .expect("supervisor lock")
+            .live
+            .get_mut(&id)
+        {
+            live.task = Some(handle);
+        }
+        Ok(id)
+    }
+
+    fn send(&self, run: &RunId, input: RunInput) -> Result<(), ControlRefusal> {
+        let state = self.shared.state.lock().expect("supervisor lock");
+        let live = state.live.get(run).ok_or(ControlRefusal::WrongState)?;
+        live.control
+            .send(input)
+            .map_err(|_| ControlRefusal::WrongState)
     }
 
     /// A control call on one run: cancel, pause, resume, take over, hand back.
@@ -88,10 +268,15 @@ impl<S: Seams> Supervisor<S> {
         &self,
         caller: CuaCaller,
         run: &RunId,
-        member: cua_bus::CuaMember,
+        member: CuaMember,
     ) -> Result<(), ControlRefusal> {
-        let _ = (caller, run, member);
-        todo!("guard, then the matching RunInput")
+        guard(caller, member, self.shared.config.settings.enabled)?;
+        let view = self.view(run).ok_or(ControlRefusal::WrongState)?;
+        let input = input_of(member).ok_or(ControlRefusal::WrongState)?;
+        if !applies(member, &view.phase) {
+            return Err(ControlRefusal::WrongState);
+        }
+        self.send(run, input)
     }
 
     /// The shell's answer to a question the model asked.
@@ -102,16 +287,46 @@ impl<S: Seams> Supervisor<S> {
         question: QuestionId,
         answer: Labelled<String>,
     ) -> Result<(), ControlRefusal> {
-        let _ = (caller, run, question, answer);
-        todo!(
-            "guard (shell only), UnknownQuestion unless the run waits on it, RunInput::UserAnswer"
-        )
+        guard(
+            caller,
+            CuaMember::Answer,
+            self.shared.config.settings.enabled,
+        )?;
+        let view = self.view(run).ok_or(ControlRefusal::WrongState)?;
+        match view.phase {
+            RunPhase::WaitingForUser(_, asked) if asked == question => {
+                self.send(run, RunInput::UserAnswer(question, answer))
+            }
+            _ => Err(ControlRefusal::UnknownQuestion),
+        }
     }
 
     /// Every run is cancelled (the kill chord and the control centre).
     pub async fn stop_all(&self, caller: CuaCaller) -> Result<(), ControlRefusal> {
-        let _ = caller;
-        todo!("guard, RunInput::Desktop(KillChord) to every run (kill_chord_finishes_all_runs)")
+        guard(
+            caller,
+            CuaMember::StopAll,
+            self.shared.config.settings.enabled,
+        )?;
+        let state = self.shared.state.lock().expect("supervisor lock");
+        for live in state.live.values() {
+            let _ = live
+                .control
+                .send(RunInput::Desktop(cua_desktop::DesktopEvent::KillChord));
+        }
+        Ok(())
+    }
+}
+
+/// The desktop's events, for every run: each machine keeps what is its own (its lease, its
+/// window) and the kill chord is everyone's.
+async fn pump<S: Drivable>(shared: Arc<Shared<S>>) {
+    loop {
+        let event = shared.desktop.next_event().await;
+        let state = shared.state.lock().expect("supervisor lock");
+        for live in state.live.values() {
+            let _ = live.control.send(RunInput::Desktop(event.clone()));
+        }
     }
 }
 

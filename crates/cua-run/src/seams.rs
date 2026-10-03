@@ -3,7 +3,7 @@
 
 use crate::model::CuaModel;
 use a11y_tree::A11ySource;
-use cua_bus::CuaRecord;
+use cua_bus::{CuaRecord, CuaTask};
 use cua_desktop::{Desktop, LeaseControl, Stamp};
 use docket_core::{
     CuaAsk, Delivery, GateAnswer, GrantAnswer, GrantAsk, InboundLine, InboxAsk, MessageDraft,
@@ -11,7 +11,7 @@ use docket_core::{
 };
 use maskcap::WindowCapture;
 use porter_core::UnixSeconds;
-use prov::{ConfirmId, SessionId};
+use prov::{ConfirmId, RunId, SessionId};
 use seat_input::AgentSeat;
 use serde::{Deserialize, Serialize};
 use std::future::Future;
@@ -75,6 +75,14 @@ pub trait GateLink: Send + Sync {
 pub trait RecordSink: Send + Sync {
     /// Appends one record of a run.
     fn record(&self, record: CuaRecord) -> impl Future<Output = Result<(), LinkError>> + Send;
+
+    /// A run is about to begin: what a sink needs to know about it besides each record (the
+    /// session it acts for, its Space and app), which a run that is blocked before it has a
+    /// window never says in a record of its own. Nothing to do by default.
+    fn open(&self, run: &RunId, task: &CuaTask) -> impl Future<Output = ()> + Send {
+        let _ = (run, task);
+        async {}
+    }
 }
 
 /// The message path: a run's reports out, the person's and the planner's messages in. A message

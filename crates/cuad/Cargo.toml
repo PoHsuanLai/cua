@@ -44,6 +44,7 @@ zbus = { workspace = true }
 [dev-dependencies]
 cua-action = { workspace = true }
 cua-fake = { workspace = true }
+tokio = { workspace = true, features = ["test-util"] }
 
 [lints]
 workspace = true

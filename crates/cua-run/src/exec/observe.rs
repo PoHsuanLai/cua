@@ -69,19 +69,19 @@ fn visibility_of(info: &ToplevelInfo) -> Visibility {
 
 impl<S: Seams> Exec<'_, S> {
     /// The window as the desktop reports it now; the lease's own record when it is not listed.
-    async fn window_now(&self) -> Option<ToplevelInfo> {
-        let held = self.held.as_ref()?;
+    async fn window_now(&mut self) -> Option<ToplevelInfo> {
+        let leased = self.held.as_ref()?.grant.window.clone();
         let listed = self
             .seam
             .desktop
             .windows()
             .await
             .ok()
-            .and_then(|all| all.into_iter().find(|w| w.ident == held.grant.window.ident));
-        listed.or_else(|| Some(held.grant.window.clone()))
+            .and_then(|all| all.into_iter().find(|w| w.ident == leased.ident));
+        listed.or(Some(leased))
     }
 
-    async fn tree_of(&self, budget: NodeBudget) -> TreeObs {
+    async fn tree_of(&mut self, budget: NodeBudget) -> TreeObs {
         if budget.0 == 0 {
             return TreeObs::Absent(TreeAbsence::Off);
         }

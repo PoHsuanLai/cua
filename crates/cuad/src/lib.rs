@@ -21,6 +21,8 @@ mod backend;
 mod callers;
 mod clock;
 mod config;
+mod drive;
+mod events;
 mod frame_fd;
 mod gate;
 mod guard;
@@ -35,6 +37,8 @@ pub use backend::{CaptureBackend, CaptureKind, CaptureSessionKind, SeatBackend, 
 pub use callers::CallerNames;
 pub use clock::SystemClock;
 pub use config::{BackendChoice, ConfigError, CuadConfig};
+pub use drive::Drivable;
+pub use events::{RunView, SupervisorEvent};
 pub use frame_fd::{FrameFdError, frame_fd};
 pub use gate::{IntentsCheck, IntentsGate};
 pub use guard::guard;

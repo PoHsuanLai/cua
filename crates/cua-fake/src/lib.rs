@@ -18,6 +18,7 @@ mod events;
 mod gate;
 mod harness;
 mod model;
+pub mod scene;
 mod seat;
 
 pub use a11y::{FakeA11y, Fixture};

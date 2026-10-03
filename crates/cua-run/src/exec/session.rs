@@ -79,16 +79,16 @@ impl<S: Seams> Exec<'_, S> {
     }
 
     pub(super) async fn glow(&mut self, glow: GlowState) {
-        if let Some(held) = &self.held {
-            let _ = self.seam.desktop.glow(held.grant.id, glow).await;
-        }
+        let Some(lease) = self.held.as_ref().map(|held| held.grant.id) else {
+            return;
+        };
+        let _ = self.seam.desktop.glow(lease, glow).await;
     }
 
     pub(super) async fn inject(&mut self, planned: PlannedAction, out: &mut impl Outlet) {
-        let Some(held) = &self.held else {
+        let Some(lease) = self.held.as_ref().map(|held| held.grant.id) else {
             return out.input(RunInput::InjectFailed(SeatError::NotConnected));
         };
-        let lease = held.grant.id;
         let ops: Vec<InputOp> =
             match plan(&planned, self.seam.seat.keymap(), &self.seam.seat.caps()) {
                 Ok(ops) => ops,
