@@ -42,6 +42,8 @@ struct Scripted {
     turns: Mutex<VecDeque<Vec<InferEvent>>>,
     log: Arc<Mutex<Log>>,
     down: bool,
+    /// inferd refuses the caller, with this text.
+    denied: Option<String>,
 }
 
 struct Session {
@@ -57,6 +59,7 @@ impl Scripted {
             turns: Mutex::new(turns.into()),
             log: log.clone(),
             down: false,
+            denied: None,
         };
         (scripted, log)
     }
@@ -66,6 +69,16 @@ impl Scripted {
             turns: Mutex::default(),
             log: Arc::default(),
             down: true,
+            denied: None,
+        }
+    }
+
+    fn denying(why: &str) -> Self {
+        Self {
+            turns: Mutex::default(),
+            log: Arc::default(),
+            down: false,
+            denied: Some(why.to_owned()),
         }
     }
 }
@@ -122,6 +135,9 @@ impl Transport for Scripted {
     ) -> Result<Session, TransportError> {
         if self.down {
             return Err(TransportError::Unreachable);
+        }
+        if let Some(why) = &self.denied {
+            return Err(TransportError::Denied(why.clone()));
         }
         self.log
             .lock()
@@ -447,6 +463,13 @@ async fn faults_before_and_around_the_session() {
     assert_eq!(down.begin(begin()).await, Err(CuaModelError::Transient));
     assert_eq!(
         down.step(request("x"), attachment(), &mut Collect::default())
+            .await,
+        Err(CuaModelError::Fatal)
+    );
+    // inferd refusing the caller (its table does not name cuad) is not worth retrying.
+    assert_eq!(
+        InferdCuaModel::over(Scripted::denying("the caller is not in its caller table"))
+            .begin(begin())
             .await,
         Err(CuaModelError::Fatal)
     );

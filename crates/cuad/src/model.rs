@@ -57,11 +57,14 @@ fn need_for(env: CuaEnv) -> Need {
     })
 }
 
-/// An unreachable inferd is worth retrying; a hung-up or confused one is not.
+/// An unreachable inferd is worth retrying; a hung-up, confused or refusing one is not (a refused
+/// caller stays refused until inferd's caller table names cuad).
 fn transport_failure(error: TransportError) -> CuaModelError {
     match error {
         TransportError::Unreachable => CuaModelError::Transient,
-        TransportError::Closed | TransportError::Malformed(_) => CuaModelError::Fatal,
+        TransportError::Closed | TransportError::Denied(_) | TransportError::Malformed(_) => {
+            CuaModelError::Fatal
+        }
     }
 }
 
