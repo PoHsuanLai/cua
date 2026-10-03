@@ -13,7 +13,9 @@ pub struct FrameAttachment(pub PixelBuf);
 
 /// The step request for `obs`: the window geometry, the frame described and attached, the cursor,
 /// how the previous actions ended, how many regions were masked, and the tree rendered to text
-/// (secret values never rendered). Pure.
+/// (secret values never rendered). `notes` is the messages that reached the run since the last
+/// step as `StepNote`s, oldest first (empty when none: an agent's note is untrusted text, a
+/// person's is their own words, and neither is authority). Pure.
 pub fn turn(obs: &Observation) -> (CuaStepRequest, FrameAttachment) {
     let _ = obs;
     todo!("turn_renders_tree_without_secret_values, turn_notes_masked_regions")

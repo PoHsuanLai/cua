@@ -87,6 +87,7 @@ fn planning_types_and_errors_round_trip() {
         PlanError::Unmappable('你'),
         PlanError::NotAnInput,
         PlanError::UnknownKey("Hyper".into()),
+        PlanError::Unresolved,
     ] {
         round_trip(&error);
     }

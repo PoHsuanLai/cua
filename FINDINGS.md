@@ -15,8 +15,7 @@ serde, tables and generated code.
 | cua-desktop `CosmicDesktop::{windows, next_event, lease, release, suspend, resume, glow}` (feature `cosmic`) | 7 | the cua-desktop fill, after the fork: toplevel info and workspaces, `quire-agent-v1` leases (fork), `GetSenderSocket` with the `CosmicOSK` name workaround (stock) |
 | maskcap `apply_masks`, `digest`, `settle`, `pixel_diff` | 4 | the maskcap fill: `tests/behaviour.rs` (exact device pixels at 1.5, digest, quiet/waiting/timeout table, pixel diff) |
 | maskcap `StockToplevelCapture::open`, `QuireMaskedCapture::open`, `WaylandSession::{frame, damage}` (feature `wayland`) | 4 | the maskcap `wayland` fill: ext-image-copy-capture, 8-bit shm formats only |
-| seat-input `plan` | 1 | the seat-input fill: `tests/plan.rs` |
-| seat-input `Keymap::{parse_xkb, stroke_for, code_of}` | 3 | the seat-input fill (adds `xkbcommon`, below) |
+| seat-input `Keymap::parse_xkb` | 1 | the seat-input fill (adds `xkbcommon`, below); `stroke_for` and `code_of` are built |
 | seat-input `EiSeat::{attach, perform, emulation, detach}` (feature `ei`) | 4 | the `ei` fill against `FakeEis` (`ei_seat_against_fake_eis`) |
 | cua-run `Run::{start, step, wake}` | 3 | the run machine fill: `tests/machine.rs` |
 | cua-run `classify_effect`, `turn`, `stalled` | 3 | the cua-run fill: `tests/tables.rs` |
@@ -25,15 +24,14 @@ serde, tables and generated code.
 | cua-fake `ScriptedModel::from_cassette` | 1 | with stoker's `cua-parse` fill |
 | cua-fake `run_harness` | 1 | the run machine fill: `end_to_end_scripted_run_done` |
 | cuad `IntentsGate::{grant, check}`, `IntentsCheck::{next, proceed}` | 4 | cuad fill 3, with docket-client's `DbusTransport` |
-| cuad `InferdCuaModel::{begin, step}` | 2 | with porter's `DbusTransport::open` and the fd session (memfd frames) |
 | cuad `DaemonLinks::{record, send, inbox}` | 3 | cuad fill 3: `record_of` (built) then `Memory::record`; `Intents::send`/`inbox` |
 | cuad `CuaProvider::perform` | 1 | cuad fill 3: `cua.run.start` into a `CuaTask` (`choose_mode` resolves `auto`) |
 | cuad `Supervisor::{start, control, answer, stop_all}` | 4 | cuad fill 3: `end_to_end_scripted_run_done`, `kill_chord_finishes_all_runs`, `stock_consent_guard_injects_nothing_while_prompt_shown` |
 | cuad `serve` | 1 | cuad fill 3: one handler per `Cua1` member |
 | daemon binary | | a skeleton that exits 2 |
 
-Per crate: a11y-tree 6, cua-bus 0, cua-desktop 7, cua-dbus 0, cua-fake 3, cua-run 9, cuad 15,
-maskcap 8, quire-agent-protocol 0, seat-input 8; total 56.
+Per crate: a11y-tree 6, cua-bus 0, cua-desktop 7, cua-dbus 0, cua-fake 3, cua-run 9, cuad 13,
+maskcap 8, quire-agent-protocol 0, seat-input 5; total 51.
 
 What is built, not stubbed: `BackendCaps::of`, `LeaseRequest::check`, glow, revoke, suspend and
 mode wire codes (pinned against the generated protocol enums under the `cosmic` feature),
@@ -94,6 +92,7 @@ mode wire codes (pinned against the generated protocol enums under the `cosmic` 
 - `atspi` is pinned with `default-features = false, features = ["connection", "proxies", "tokio"]`
   (the block's bare `0.30` cannot be narrowed by a member); `reis` gains `tokio` in seat-input;
   `base64 0.22` is already in the block (maskcap's serde form).
+- `rustix 1.1` (`std`, `fs`), porter's line narrowed: cuad makes the frame memfd (`memfd_create` and its seals).
 - Not yet added, closed by their fills: `xkbcommon 0.8` (seat-input `Keymap::parse_xkb`),
   `cosmic-client-toolkit` (cua-desktop `cosmic`), `ashpd`, `pipewire` (KWin).
 
@@ -139,3 +138,30 @@ mode wire codes (pinned against the generated protocol enums under the `cosmic` 
 - `Label::{trusted_user, untrusted, join}` are `todo!()` in prov, so tests use `Label` literals and
   machine tests that would need them are ignored.
 - Nothing was pushed; no GitHub repo.
+
+## Following porter's client fill (ask 82)
+
+- `InferdCuaModel::{begin, step}` are built over `Transport::open(Need::ComputerUse, Screen, tier)`
+  (the tier is `Balanced`, `on_tier` sets `CuadConfig::tier`). `begin` sends `CuaBegin` and reads
+  to the empty `CuaStepReply` that acknowledges it (a reply with actions in it is `Fatal`). `step`
+  puts the frame in a sealed memfd (`frame_fd`: written whole, offset back at 0 because
+  SCM_RIGHTS shares it, sealed against writes and resizing), sends `CuaStep` with
+  `send_attached(.., vec![fd])`, forces `FrameImage.source` to `Attached(AttachIndex(0))` and the
+  layout to the buffer's own, forwards `ThoughtDelta` and `ActionProposed` to the sink and ends on
+  `Finished`. A model failure leaves the session usable; a closed or broken session is dropped and
+  every later step is `Fatal` (the history it was pinned to is gone). Sorting: unreachable
+  inferd, an engine not ready or rate limited, `Refused(Unavailable)` and `Cancelled` are
+  `Transient`; unreadable and unparseable replies are `Parse`; every other refusal and failure is
+  `Fatal`. Tested over a scripted session that reads the descriptor back (`cuad/tests/model.rs`).
+- `seat_input::plan` is filled (it was `todo!()`, and `Keymap::{stroke_for, code_of}` with it). A
+  `Target::Centre` is `centre_of(action.window)` (half of each side, rounded down; the caller's
+  `ResolvedPoints` never overrides it); a node is the point the caller resolved (`PlanError::
+  Unresolved` when it did not); every point is checked against the window. The old chord test
+  expected key code 49 for `s`; the test keymap lays `a` at 30, so `s` is 48.
+- `CuaStepRequest.notes` is carried by the fakes' literals (`cua-fake` `blank_request`) and by
+  `InferdCuaModel` (it sends the request as given). `cua_run::turn` is still `todo!()`, and
+  `Observation` has no field for the run's inbound messages, so there is nothing yet to turn into
+  `StepNote`s: see the ask below.
+- No exhaustive match on `DropReason` exists in this repo (the machine reads `dropped` as data).
+- Asks: `Observation` needs `notes: Vec<StepNote>` (or `turn` a second argument), filled by the
+  supervisor from `RunInput::Inbound`, oldest first, so `turn` can set `CuaStepRequest.notes`.

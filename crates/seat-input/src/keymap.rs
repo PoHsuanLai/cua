@@ -59,13 +59,36 @@ impl Keymap {
 
     /// The key that types `c`, and whether Shift is needed.
     pub fn stroke_for(&self, c: char) -> Option<(Keycode, ShiftLevel)> {
-        let _ = c;
-        todo!("find the entry producing Char(c) (text_to_keycodes_on_us_keymap)")
+        self.entries
+            .iter()
+            .find(|e| e.produces == Produces::Char(c))
+            .map(|e| (e.code, e.level))
     }
 
     /// The key code of a named key or a character key by its W3C `key` value.
     pub fn code_of(&self, key: &keyboard_types::Key) -> Option<Keycode> {
-        let _ = key;
-        todo!("map a chord's key to its evdev code (chord_parse_table)")
+        use keyboard_types::Key;
+        let wanted = match key {
+            Key::Character(text) => {
+                let mut chars = text.chars();
+                match (chars.next(), chars.next()) {
+                    (Some(c), None) => Produces::Char(c),
+                    _ => return None,
+                }
+            }
+            named => Produces::Named(named.to_string()),
+        };
+        // A shifted letter names the same key as its lower case.
+        let lower = match &wanted {
+            Produces::Char(c) => Some(Produces::Char(c.to_ascii_lowercase())),
+            Produces::Named(_) => None,
+        };
+        let find = |p: &Produces| {
+            self.entries
+                .iter()
+                .find(|e| &e.produces == p && e.level == ShiftLevel::Plain)
+                .map(|e| e.code)
+        };
+        find(&wanted).or_else(|| lower.as_ref().and_then(find))
     }
 }

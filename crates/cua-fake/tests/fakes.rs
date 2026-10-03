@@ -322,6 +322,7 @@ fn blank_request() -> porter_infer::CuaStepRequest {
         prev: vec![],
         masked: porter_infer::MaskedRegions(0),
         tree: porter_infer::TreeText::Absent,
+        notes: vec![],
     }
 }
 

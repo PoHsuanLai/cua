@@ -23,6 +23,6 @@ pub use caps::{ScrollKind, SeatCaps, TextPath};
 pub use ei::EiSeat;
 pub use keymap::{Keymap, KeymapEntry, KeymapError, Produces, ShiftLevel};
 pub use op::{InputOp, Keycode, Press};
-pub use plan::{PlanError, PlannedAction, ResolvedPoints, plan};
+pub use plan::{PlanError, PlannedAction, ResolvedPoints, centre_of, plan};
 pub use receipt::{InputOrigin, InputReceipt};
 pub use seat::{AgentSeat, Emulation, SeatError};

@@ -36,11 +36,13 @@ wayland-client = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 toml = { workspace = true }
+rustix = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
 zbus = { workspace = true }
 
 [dev-dependencies]
+cua-action = { workspace = true }
 cua-fake = { workspace = true }
 
 [lints]
