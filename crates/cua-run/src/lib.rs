@@ -21,6 +21,7 @@
 
 mod config;
 mod effect_class;
+mod exec;
 mod lease_book;
 mod machine;
 mod mode;
@@ -36,6 +37,7 @@ pub use config::{
     SettingValue, SettleLimits,
 };
 pub use effect_class::classify_effect;
+pub use exec::{Collected, Exec, Outlet, Seam};
 pub use lease_book::{LeaseBook, LeaseHeld, Slot, SlotState};
 pub use machine::effect::{CuaSignal, HintSource, RunEffect};
 pub use machine::input::{CheckResult, ModelReply, RunInput};

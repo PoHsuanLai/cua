@@ -1,0 +1,268 @@
+//! Carrying out the machine's effects against the seams.
+//!
+//! The machine decides; [`Exec`] does: it holds the lease, the capture session and the check in
+//! flight of one run, and turns each [`RunEffect`] into calls on the seams and the
+//! [`RunInput`]s they answer with. It is runtime-free (it only awaits seam futures), so the
+//! harness in `cua-fake` and the supervisor in `cuad` drive the very same code; what differs
+//! is how they wait (the supervisor races an effect against the person's controls and the
+//! clock, the harness has none of either).
+
+mod observe;
+mod session;
+
+use crate::machine::effect::{CuaSignal, RunEffect};
+use crate::machine::input::RunInput;
+use crate::seams::{Clock, GateCheck, GateEvent, GateLink, MessageLink, Parts, RecordSink, Seams};
+use cua_bus::{CuaRecord, CuaTask};
+use docket_core::{Delivery, GrantAsk};
+use maskcap::DamageAt;
+use prov::{MessageId, RunId};
+use session::Held;
+
+/// Where an effect's answers go: the inputs of the machine, and the signals of the bus.
+pub trait Outlet: Send {
+    /// An input for the machine, in the order it happened.
+    fn input(&mut self, input: RunInput);
+
+    /// A signal for the bus.
+    fn signal(&mut self, signal: CuaSignal);
+}
+
+/// Inputs and signals kept in order, for a driver that has nothing to race.
+#[derive(Debug, Default)]
+pub struct Collected {
+    /// The inputs.
+    pub inputs: std::collections::VecDeque<RunInput>,
+    /// The signals.
+    pub signals: Vec<CuaSignal>,
+}
+
+impl Outlet for Collected {
+    fn input(&mut self, input: RunInput) {
+        self.inputs.push_back(input);
+    }
+
+    fn signal(&mut self, signal: CuaSignal) {
+        self.signals.push(signal);
+    }
+}
+
+/// The seams of a run, by reference: everything of [`Parts`] but the model, which a run holds
+/// by `&mut` for as long as it lasts.
+#[derive(Debug)]
+pub struct Seam<'a, S: Seams> {
+    /// The desktop.
+    pub desktop: &'a S::Desktop,
+    /// The seat.
+    pub seat: &'a S::Seat,
+    /// Capture.
+    pub capture: &'a S::Capture,
+    /// The accessibility source.
+    pub a11y: &'a S::A11y,
+    /// The gate.
+    pub gate: &'a S::Gate,
+    /// The event log and the message path.
+    pub events: &'a S::Events,
+    /// The clock.
+    pub clock: &'a S::Time,
+}
+
+impl<'a, S: Seams> Clone for Seam<'a, S> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<'a, S: Seams> Copy for Seam<'a, S> {}
+
+impl<'a, S: Seams> Seam<'a, S> {
+    /// The seams of `parts`.
+    pub fn of(parts: &'a Parts<S>) -> Self {
+        Self {
+            desktop: &parts.desktop,
+            seat: &parts.seat,
+            capture: &parts.capture,
+            a11y: &parts.a11y,
+            gate: &parts.gate,
+            events: &parts.events,
+            clock: &parts.clock,
+        }
+    }
+}
+
+/// Whether the model's session has been opened (`CuaModel::begin`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ModelSession {
+    NotYet,
+    Open,
+}
+
+/// How the last report ended, for the record of the end.
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum Reported {
+    Nothing,
+    Delivered(Delivery),
+}
+
+/// Carries out one run's effects.
+pub struct Exec<'a, S: Seams> {
+    seam: Seam<'a, S>,
+    run: RunId,
+    task: CuaTask,
+    held: Option<Held<S>>,
+    staged: observe::Staged,
+    check: Option<<S::Gate as GateLink>::Check>,
+    notes: Vec<porter_infer::StepNote>,
+    last_message: Option<MessageId>,
+    model: ModelSession,
+    announced: Option<porter_infer::ServedBy>,
+    reported: Reported,
+}
+
+impl<S: Seams> std::fmt::Debug for Exec<'_, S> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Exec")
+            .field("run", &self.run)
+            .finish_non_exhaustive()
+    }
+}
+
+impl<'a, S: Seams> Exec<'a, S> {
+    /// An executor for `run` doing `task`.
+    pub fn new(seam: Seam<'a, S>, run: RunId, task: CuaTask) -> Self {
+        Self {
+            seam,
+            run,
+            task,
+            held: None,
+            staged: observe::Staged::default(),
+            check: None,
+            notes: Vec::new(),
+            last_message: None,
+            model: ModelSession::NotYet,
+            announced: None,
+            reported: Reported::Nothing,
+        }
+    }
+
+    /// Whether `effect` talks to the model, and so needs it handed in.
+    pub fn needs_model(effect: &RunEffect) -> bool {
+        matches!(effect, RunEffect::CallModel { .. })
+    }
+
+    /// The next change of the screen, from the capture session; `None` when it has none to
+    /// give (no session, or the source went away).
+    pub async fn next_damage(&mut self) -> Option<DamageAt> {
+        use maskcap::CaptureSession;
+        match self.held.as_mut() {
+            Some(held) => held.capture.damage().await.ok(),
+            None => None,
+        }
+    }
+
+    /// Carries out one effect, pushing what it answers with into `out`. `model` is the run's
+    /// model, when the caller has it; a model call without one fails fatally.
+    pub async fn carry_out(
+        &mut self,
+        effect: RunEffect,
+        model: Option<&mut S::Model>,
+        out: &mut impl Outlet,
+    ) {
+        match effect {
+            RunEffect::Grant { app, space } => {
+                let answer = self.seam.gate.grant(GrantAsk { app, space }).await;
+                out.input(match answer {
+                    Ok(answer) => RunInput::Granted(answer),
+                    Err(error) => RunInput::GrantFailed(error),
+                });
+            }
+            RunEffect::AcquireLease(request) => self.acquire(request, out).await,
+            RunEffect::ReleaseLease(lease) => self.release(lease).await,
+            RunEffect::SuspendLease(lease, why) => self.suspend(lease, why).await,
+            RunEffect::ResumeLease(lease) => self.resume(lease).await,
+            RunEffect::Snapshot(budget) => self.snapshot(budget).await,
+            RunEffect::FetchContext => self.staged.no_context(),
+            RunEffect::Capture { want, hints } => self.capture(want, hints, out).await,
+            RunEffect::CallModel { request, frame } => match model {
+                Some(model) => self.call_model(model, *request, frame, out).await,
+                None => out.input(RunInput::ModelFailed(crate::model::CuaModelError::Fatal)),
+            },
+            RunEffect::CancelModel | RunEffect::CancelSettle | RunEffect::WatchSettle { .. } => {}
+            RunEffect::Check(ask) => self.check(*ask, out).await,
+            RunEffect::Proceed => self.proceed(out).await,
+            RunEffect::Inject(planned) => self.inject(planned, out).await,
+            RunEffect::VerifyTree(selector) => self.verify(selector, out).await,
+            RunEffect::Glow(glow) => self.glow(glow).await,
+            RunEffect::Emit(signal) => out.signal(signal),
+            RunEffect::Record(record) => self.record(*record).await,
+            RunEffect::Report(draft) => self.report(*draft).await,
+        }
+    }
+
+    async fn check(&mut self, ask: docket_core::CuaAsk, out: &mut impl Outlet) {
+        match self.seam.gate.check(ask).await {
+            Ok(check) => {
+                self.check = Some(check);
+                self.await_verdict(out).await;
+            }
+            Err(error) => out.input(RunInput::GateFailed(error)),
+        }
+    }
+
+    async fn proceed(&mut self, out: &mut impl Outlet) {
+        let Some(check) = self.check.as_mut() else {
+            return;
+        };
+        match check.proceed().await {
+            Ok(()) => self.await_verdict(out).await,
+            Err(error) => out.input(RunInput::GateFailed(error)),
+        }
+    }
+
+    /// Reads what the router says next: that it will ask the person (and waits for `Proceed`),
+    /// or its answer.
+    async fn await_verdict(&mut self, out: &mut impl Outlet) {
+        let Some(check) = self.check.as_mut() else {
+            return;
+        };
+        match check.next().await {
+            Ok(GateEvent::Confirming(id)) => out.input(RunInput::Confirming(id)),
+            Ok(GateEvent::Answered(answer)) => {
+                self.check = None;
+                out.input(RunInput::Verdict(answer));
+            }
+            Err(error) => {
+                self.check = None;
+                out.input(RunInput::GateFailed(error));
+            }
+        }
+    }
+
+    async fn record(&mut self, mut record: CuaRecord) {
+        if let CuaRecord::Finished { report, .. } = &mut record
+            && let Reported::Delivered(delivery) = &self.reported
+        {
+            *report = Some(delivery.message.clone());
+        }
+        // The log is the person's, not the run's: a record that cannot be written does not
+        // stop the run (memoryd may be away), and nothing here retries it.
+        let _ = self.seam.events.record(record).await;
+    }
+
+    async fn report(&mut self, draft: docket_core::MessageDraft) {
+        let sent = self
+            .seam
+            .events
+            .send(self.task.session.clone(), draft)
+            .await;
+        self.reported = match sent {
+            Ok(delivery) => Reported::Delivered(delivery),
+            Err(_) => Reported::Nothing,
+        };
+    }
+
+    /// The clock the run is on.
+    pub fn now(&self) -> cua_desktop::Stamp {
+        self.seam.clock.now()
+    }
+}

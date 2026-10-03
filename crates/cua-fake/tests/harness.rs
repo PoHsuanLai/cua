@@ -98,7 +98,6 @@ fn user_goal() -> Labelled<String> {
 }
 
 #[test]
-#[ignore = "closes with the cua-fake harness and the cua-run machine fill (cuad fill 3)"]
 fn end_to_end_scripted_run_done() {
     let click = CuaAction::Click {
         at: Target::Point(Point::new(Coord(10), Coord(10))),
