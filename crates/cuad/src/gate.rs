@@ -119,3 +119,146 @@ impl GateCheck for IntentsCheck {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use cua_action::{CuaAction, WindowSpace};
+    use docket_core::{CallRefusal, ConfirmEnd, EffectBasis, RunMode, WindowTrust, WireRefusal};
+    use prov::{Effect, Label, RunId, SpaceId};
+    use std::collections::VecDeque;
+    use std::sync::Mutex;
+
+    /// A router that says what it was told to say, and remembers what it was asked.
+    struct Scripted {
+        replies: Mutex<VecDeque<Result<IntentsReply, TransportError>>>,
+        asked: Mutex<Vec<IntentsRequest>>,
+    }
+
+    impl Scripted {
+        fn saying(replies: Vec<Result<IntentsReply, TransportError>>) -> Self {
+            Self {
+                replies: Mutex::new(replies.into()),
+                asked: Mutex::new(Vec::new()),
+            }
+        }
+    }
+
+    impl Transport for Scripted {
+        async fn call(&self, request: IntentsRequest) -> Result<IntentsReply, TransportError> {
+            self.asked.lock().expect("lock").push(request);
+            self.replies
+                .lock()
+                .expect("lock")
+                .pop_front()
+                .unwrap_or(Err(TransportError::Closed))
+        }
+    }
+
+    fn grant_ask() -> GrantAsk {
+        GrantAsk {
+            app: porter_core::AppName::parse("org.quire.Mail").unwrap(),
+            space: SpaceId::parse("work").unwrap(),
+        }
+    }
+
+    fn cua_ask() -> CuaAsk {
+        CuaAsk {
+            run: RunId::parse("r-1").unwrap(),
+            step: 1,
+            app: porter_core::AppName::parse("org.quire.Mail").unwrap(),
+            trust: WindowTrust::Quire,
+            mode: RunMode::InPlace,
+            space: SpaceId::parse("work").unwrap(),
+            action: CuaAction::<WindowSpace>::Observe,
+            node: None,
+            effect: Effect::Read,
+            basis: EffectBasis::DefaultTable,
+            screen: Label::trusted_user(),
+        }
+    }
+
+    #[tokio::test]
+    async fn the_routers_answers_are_the_runs_answers() {
+        let gate = IntentsGate::over(Scripted::saying(vec![
+            Ok(IntentsReply::Granted(GrantAnswer::Refused(
+                ConfirmEnd::Expired,
+            ))),
+            Ok(IntentsReply::Gate(GateAnswer::Refused(
+                CallRefusal::Timeout,
+            ))),
+        ]));
+        assert_eq!(
+            gate.grant(grant_ask()).await,
+            Ok(GrantAnswer::Refused(ConfirmEnd::Expired))
+        );
+        let mut check = gate.check(cua_ask()).await.expect("a check");
+        assert_eq!(
+            check.next().await,
+            Ok(GateEvent::Answered(GateAnswer::Refused(
+                CallRefusal::Timeout
+            )))
+        );
+        let asked = gate.transport().asked.lock().expect("lock").clone();
+        assert!(matches!(asked[0], IntentsRequest::GateGrant(_)));
+        assert!(matches!(asked[1], IntentsRequest::GateCheck(_)));
+    }
+
+    #[tokio::test]
+    async fn a_call_that_did_not_come_back_is_unavailable_or_a_protocol_fault() {
+        type Row = (
+            &'static str,
+            Result<IntentsReply, TransportError>,
+            LinkError,
+        );
+        let rows: Vec<Row> = vec![
+            (
+                "closed",
+                Err(TransportError::Closed),
+                LinkError::Unavailable,
+            ),
+            (
+                "malformed",
+                Err(TransportError::Malformed("x".into())),
+                LinkError::Protocol("malformed message: x".into()),
+            ),
+            (
+                "bus",
+                Err(TransportError::Bus("y".into())),
+                LinkError::Protocol("bus: y".into()),
+            ),
+            (
+                "refused",
+                Ok(IntentsReply::Refused(WireRefusal::NotAllowed)),
+                LinkError::Refused(WireRefusal::NotAllowed),
+            ),
+            (
+                "the wrong reply",
+                Ok(IntentsReply::Done),
+                LinkError::Protocol("unexpected reply".into()),
+            ),
+        ];
+        for (name, reply, want) in rows {
+            let gate = IntentsGate::over(Scripted::saying(vec![reply.clone(), reply]));
+            assert_eq!(
+                gate.grant(grant_ask()).await,
+                Err(want.clone()),
+                "{name}: grant"
+            );
+            let mut check = gate.check(cua_ask()).await.expect("a check starts");
+            assert_eq!(check.next().await, Err(want), "{name}: check");
+        }
+    }
+
+    #[tokio::test]
+    async fn an_answered_check_has_nothing_more_to_say_and_proceed_is_a_no_op() {
+        let gate = IntentsGate::over(Scripted::saying(vec![Ok(IntentsReply::Gate(
+            GateAnswer::Run,
+        ))]));
+        let mut check = gate.check(cua_ask()).await.expect("a check");
+        assert_eq!(check.request(), "");
+        assert_eq!(check.proceed().await, Ok(()));
+        assert_eq!(check.next().await, Ok(GateEvent::Answered(GateAnswer::Run)));
+        assert!(matches!(check.next().await, Err(LinkError::Protocol(_))));
+    }
+}

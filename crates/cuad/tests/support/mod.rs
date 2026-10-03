@@ -1,6 +1,8 @@
 #![allow(dead_code)] // each test binary uses a subset of the shared builders
 //! A supervisor over the fakes, and the waits a test needs.
 
+pub mod bus;
+
 use cua_bus::RunEnd;
 use cua_desktop::BackendKind;
 use cua_fake::scene::world;

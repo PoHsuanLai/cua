@@ -28,10 +28,10 @@ picture), section 6 (copy the recipe).
 | `a11y-tree` | `A11ySnapshot`, `A11yNode`, `prune`, `render`, `diff`, `secret_rects`, selectors, the `A11ySource` seam. Feature `atspi`: `AtspiSource` | none (`atspi`: atspi) |
 | `quire-agent-protocol` | `protocols/quire-agent-v1.xml` and its wayland-scanner bindings; features `client` (cuad) and `server` (the fork) | none |
 | `cua-bus` | what crosses the bus and the log, serde only: the `Start` body (`CuaTask`), `RunStateSlug`, `CuaOutcome`, `ModeSupport`, `CuaRecord`, `ActionResult`, `RunBudget`, `ControlRefusal`, `permits`, `report_draft` | none |
-| `cua-run` | the pure run machine (`Run`, `RunPhase`, `RunInput`, `RunEffect`), `Observation`, `classify_effect`, `mode_support`, `choose_mode`, `LeaseBook`, `stalled`, `turn`, `CuaConfig` and `SETTING_ROWS`, `CuaModel`, and the seams a run is carried out against (`Seams`, `Clock`, `GateLink`, `RecordSink`, `MessageLink`) | none |
+| `cua-run` | the pure run machine (`Run`, `RunTrack`, `RunPhase`, `RunInput`, `RunEffect`), `Observation`, `classify_effect`, `window_class_of`, `mode_support`, `choose_mode`, `LeaseBook`, `stalled`, `turn` and `note_of`, `CuaConfig` and `SETTING_ROWS`, `CuaModel`, the seams a run is carried out against (`Seams`, `Clock`, `GateLink`, `RecordSink`, `MessageLink`), and `Exec`, which carries a run's effects out against them (it awaits nothing but seam futures, so it needs no runtime) | none |
 | `cua-dbus` | `org.quire.Cua1` (`Manager`, `Run`) as zbus proxies and skeletons, `introspection`, `CuaError`, bus names and paths | zbus |
-| `cua-fake` | test only: `FakeSeat`, `FakeEis`, `FakeCapture`, `FakeDesktop`, `FakeA11y`, `ScriptedModel`, `FakePdp`, `MemoryEvents`, `FixedClock`, `FakeSeams`, `run_harness` | none (`FakeEis`: reis) |
-| `cuad` | the daemon and its library: `SeatBackend`, `CaptureBackend`, `Supervisor`, `IntentsGate`, `InferdCuaModel`, `DaemonLinks`, `CuaProvider` (`org.quire.Cua`), `guard`, `CallerNames`, `CuadConfig`, `SystemSeams`, `serve`. The binary is a skeleton | everything |
+| `cua-fake` | test only: `FakeSeat`, `FakeEis`, `FakeCapture`, `FakeDesktop`, `FakeA11y`, `ScriptedModel`, `FakePdp`, `MemoryEvents`, `FixedClock`, `FakeSeams`, `run_harness`, and `scene` (a window, frames, a world, a task) | none (`FakeEis`: reis) |
+| `cuad` | the daemon and its library: `SeatBackend`, `CaptureBackend`, `Supervisor` (a task per run), `IntentsGate`, `InferdCuaModel`, `DaemonLinks`, `Links` (the three daemon links over one connection), `CuaProvider` (`org.quire.Cua`), `guard`, `CallerNames`, `CuadConfig`, `SystemSeams`, `serve` and `serve_on`. The binary is a skeleton | everything |
 
 Allowed direct edges between our own crates (checked by `scripts/check-boundary.sh`;
 dev-dependencies are outside it):
@@ -76,10 +76,10 @@ only; the pure set never reaches an effect crate; `wayland-client` is behind the
 | `seat-input` | `op`, `keymap`, `caps`, `plan`, `receipt`, `seat`, `region`, `ei/` |
 | `a11y-tree` | `model`, `selector`, `ops`, `source`, `atspi/` |
 | `cua-bus` | `ids`, `budget`, `state`, `action`, `task`, `report`, `record`, `bodies`, `control` |
-| `cua-run` | `config`, `observation`, `effect_class`, `mode`, `turn`, `lease_book`, `stall`, `model`, `seams`, `machine/{phase, input, effect, run}` |
+| `cua-run` | `config`, `observation`, `effect_class`, `window_class`, `mode`, `turn`, `lease_book`, `stall`, `model`, `seams`, `machine/{phase, input, effect, run, track, step, control, finish, ops}`, `exec/{observe, session}` |
 | `cua-dbus` | `names`, `error`, `manager`, `run`, `introspect` |
-| `cua-fake` | `clock`, `seat`, `eis`, `capture`, `desktop`, `a11y`, `model`, `gate`, `events`, `harness` |
-| `cuad` | `clock`, `config`, `callers`, `guard`, `backend`, `gate`, `model`, `links`, `provider`, `supervisor`, `system`, `serve` |
+| `cua-fake` | `clock`, `seat`, `eis`, `capture`, `desktop`, `a11y`, `model`, `gate`, `events`, `harness`, `scene` |
+| `cuad` | `clock`, `config`, `callers`, `guard`, `backend`, `gate`, `model`, `links`, `connect`, `provider`, `supervisor`, `drive`, `events`, `bus`, `system`, `serve` |
 
 ## 3. One home per concept
 
@@ -115,7 +115,7 @@ only; the pure set never reaches an effect crate; `wayland-client` is behind the
 | `A11ySource` | `a11y-tree` | `AtspiSource`, `FakeA11y` |
 | `CuaModel`, `StepSink` | `cua-run` | `InferdCuaModel`, `ScriptedModel` |
 | `GateLink`, `GateCheck` | `cua-run` | `IntentsGate`, `FakePdp` |
-| `RecordSink`, `MessageLink` | `cua-run` | `DaemonLinks`, `MemoryEvents` |
+| `RecordSink` (`record`, and `open` by default nothing), `MessageLink` | `cua-run` | `DaemonLinks`, `MemoryEvents` |
 | `Clock` | `cua-run` | `SystemClock`, `FixedClock` |
 | `Seams` | `cua-run` | `SystemSeams`, `FakeSeams` |
 | `IntentProvider` | docket `docket-client` | `CuaProvider` |
@@ -136,6 +136,8 @@ Cua1.Manager.Start (router or planner only; Disabled while cua.enabled = off)
     Authorising  classify_effect -> Gate.Check(CuaAsk)  (screen label always Untrusted)
        Confirming(id)  router will ask the person: stock stops its own input (SuspendLease(Consent)),
                        then Request.Proceed; the router shows the sheet; Verdict arrives
+                       (docket-client does not hand Progress out yet: the real gate answers
+                       with the Verdict alone, see FINDINGS)
        Verdict(Run)    -> Acting      Verdict(Refused(..)) -> rest NotExecuted, observe again
     Acting     seat-input plan -> AgentSeat::perform (EI)
     Settling   pixel diff on stock (frames are not damage-gated), damage on the fork
@@ -152,8 +154,10 @@ router's gate never learns of it, and nothing in it widens what the run may do.
 
 **Add a run input, effect or phase.** (1) The variant in `cua-run/src/machine/{input,effect,phase}.rs`
 (every type `Serialize + Eq`); (2) its row in the phase table (`cua.md` section 4, as changed here)
-and in `Run::step`; (3) a table test in `cua-run/tests/machine.rs`; (4) the effect carried out
-in `cuad::Supervisor`, and a fake behaviour in `cua-fake` if a seam changed.
+and in `machine/step.rs`; (3) a row test in `cua-run/tests/transitions*.rs`; (4) the effect carried
+out in `cua_run::Exec` (the supervisor and the harness both use it), and a fake behaviour in
+`cua-fake` if a seam changed. A look at the window ends with `Capture`: the capture builds the
+observation, so no effect of a look follows it.
 
 **Add a backend.** A `BackendKind` variant and its row in `BackendCaps::of`; its rows in the
 `mode_support` table test; a `CaptureKind` row in `cuad::capture_kind`; the `Desktop` and
@@ -163,7 +167,8 @@ in `cuad::Supervisor`, and a fake behaviour in `cua-fake` if a seam changed.
 on the proxy and the skeleton; run `cargo test -p cua-dbus`, which prints the new XML; replace
 `dbus/org.quire.Cua1.xml` with it in the same commit; (2) a `CuaMember` and its row in
 `cua_bus::permits` (and the wildcard-free list test); (3) the body type in `cua-bus` with a
-round-trip test; (4) its handler in `cuad::serve`.
+round-trip test; (4) its handler in `cuad::bus` (a unit test holds the served interfaces to the
+XML) and, for a signal, its line in `cuad::serve`'s relay.
 
 **Add a record.** A `CuaRecord` variant with `#[serde(rename = "cua.<name>")]`, its row in
 `tests/wire.rs` (the slugs are pinned), and its production in the machine. `cuad::record_of`

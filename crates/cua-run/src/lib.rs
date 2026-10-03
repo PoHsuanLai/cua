@@ -15,9 +15,11 @@
 //! `Cancelled` at the end. [`RunInput::Inbound`] carries the messages that arrive for it; a
 //! message carries no authority and widens nothing.
 //!
-//! What is real here is the vocabulary and its tables ([`mode_support`], [`CuaConfig`], the
-//! phase facts); the machine's transitions, [`classify_effect`], [`turn`], [`LeaseBook`] and
-//! [`stalled`] are frozen `todo!()` signatures.
+//! The machine is the phase table; [`Exec`] carries a run's effects out against the seams
+//! ([`Seams`]), and a driver (cuad's supervisor, `cua-fake`'s harness) feeds the answers back.
+//! Besides the machine: [`classify_effect`], [`turn`] (the model's turn from an observation, with
+//! the messages that reached the run as notes), [`mode_support`], [`CuaConfig`], [`LeaseBook`] and
+//! [`stalled`].
 
 mod config;
 mod effect_class;

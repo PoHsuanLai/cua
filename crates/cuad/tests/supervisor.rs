@@ -190,10 +190,7 @@ async fn the_person_answers_a_question_and_the_run_goes_on() {
     assert_eq!(end.outcome, CuaOutcome::Done);
     let notes = &sup.events().sent();
     assert_eq!(
-        notes
-            .iter()
-            .map(|(_, d)| d.kind)
-            .collect::<Vec<_>>(),
+        notes.iter().map(|(_, d)| d.kind).collect::<Vec<_>>(),
         vec![
             MessageKind::Report {
                 status: ReportStatus::Progress

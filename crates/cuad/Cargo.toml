@@ -40,11 +40,20 @@ rustix = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
 zbus = { workspace = true }
+futures-util = { workspace = true }
 
 [dev-dependencies]
 cua-action = { workspace = true }
 cua-fake = { workspace = true }
 tokio = { workspace = true, features = ["test-util"] }
+tempfile = { workspace = true }
+serde_json = { workspace = true }
+intentd = { workspace = true }
+docket-fake = { workspace = true }
+docket-router = { workspace = true }
+almanac-fake = { workspace = true }
+almanac-service = { workspace = true }
+almanac-client = { workspace = true, features = ["dbus", "in_process"] }
 
 [lints]
 workspace = true

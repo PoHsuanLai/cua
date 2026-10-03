@@ -31,11 +31,11 @@ RULES=(
   # never a bus, a wayland connection, the accessibility stack or a database.
   "cua-fake: zbus zvariant wayland-client wayland-backend wayland-server atspi oo7 ort fastembed rusqlite notify rmcp cedar-policy"
   # The daemon reaches the bus, a runtime, wayland, EIS and AT-SPI. It never reaches HTTP,
-  # an embedding runtime or the MCP SDK. One decision point lives in the router and cuad asks
-  # it through `Intents1.Gate` (SPEC C10): cuad has no edge to `policy-point` (EDGES below), but
-  # `cedar-policy` still arrives through docket-client's `InProcess` transport, which links
-  # docket-router (FINDINGS, upstream asks: put it behind a feature).
-  "cuad: reqwest hyper hyper-util rustls pipewire ort fastembed rmcp"
+  # an embedding runtime, the MCP SDK or the policy engine. One decision point lives in the router
+  # and cuad asks it through `Intents1.Gate` (SPEC C10): cuad has no edge to `policy-point`
+  # (EDGES below), and docket-client's `InProcess` (which links docket-router, hence cedar) is
+  # behind its `in_process` feature, which only cuad's tests turn on (a dev-dependency).
+  "cuad: reqwest hyper hyper-util rustls pipewire ort fastembed rmcp cedar-policy"
 )
 fail=0
 

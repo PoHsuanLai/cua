@@ -225,6 +225,22 @@ fn run_end<S: Seams>(exec: &Exec<'_, S>, run: &Run) -> RunEnd {
     }
 }
 
+/// Lets go of a run's window and its place in the list when its task ends, however it ends (a
+/// task that panics must not leave its window held for good).
+struct Cleanup<S: Seams> {
+    shared: Arc<Shared<S>>,
+    run: RunId,
+}
+
+impl<S: Seams> Drop for Cleanup<S> {
+    fn drop(&mut self) {
+        if let Ok(mut state) = self.shared.state.lock() {
+            state.leases = state.leases.release(&self.run);
+            state.live.remove(&self.run);
+        }
+    }
+}
+
 /// Runs one run to its end: the machine's effects one at a time, each raced against the
 /// controls, the desktop's events and the clock; then the bookkeeping of its end.
 pub(crate) async fn drive<S: Drivable>(
@@ -234,6 +250,10 @@ pub(crate) async fn drive<S: Drivable>(
     mut control: mpsc::UnboundedReceiver<RunInput>,
 ) {
     let id = run.id.clone();
+    let _cleanup = Cleanup {
+        shared: shared.clone(),
+        run: id.clone(),
+    };
     let mut exec = Exec::<S>::new(shared.seam(), id.clone(), run.task.clone());
     let (tx, mut wire) = mpsc::unbounded_channel::<Wire>();
     let mut outlet = Channel(tx);
