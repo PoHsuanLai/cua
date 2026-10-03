@@ -113,6 +113,12 @@ fn line(from: AgentRef, parts: Vec<InboundPart>) -> InboundLine {
     InboundLine {
         id: MessageId::parse("m-1").unwrap(),
         thread: ThreadId::parse("m-1").unwrap(),
+        to: Address::new(
+            AgentRef::Cua {
+                run: prov::RunId::parse("r-1").unwrap(),
+            },
+            space(),
+        ),
         from: Address::new(from, space()),
         crossing: Crossing::Within,
         kind: MessageKind::Note,

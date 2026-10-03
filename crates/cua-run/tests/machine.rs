@@ -291,6 +291,7 @@ fn a_message_changes_no_authority() {
         id: prov::MessageId::parse("m-1").unwrap(),
         thread: prov::ThreadId::parse("m-1").unwrap(),
         from: Address::new(AgentRef::User, space()),
+        to: Address::new(AgentRef::Cua { run: run_id() }, space()),
         crossing: prov::Crossing::Within,
         kind: MessageKind::Request,
         parts: vec![],

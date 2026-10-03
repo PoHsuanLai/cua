@@ -119,6 +119,12 @@ fn a_message_that_arrived_becomes_a_note_on_the_next_turn_and_the_run_is_told_no
     w.events.deliver(InboundLine {
         id: MessageId::parse("m-5").unwrap(),
         thread: ThreadId::parse("m-5").unwrap(),
+        to: Address::new(
+            AgentRef::Cua {
+                run: prov::RunId::parse("r-1").unwrap(),
+            },
+            space(),
+        ),
         from: Address::new(AgentRef::User, space()),
         crossing: Crossing::Within,
         kind: MessageKind::Note,
