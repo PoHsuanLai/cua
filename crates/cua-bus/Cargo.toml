@@ -15,6 +15,7 @@ a11y-tree = { workspace = true }
 seat-input = { workspace = true }
 maskcap = { workspace = true }
 docket-core = { workspace = true }
+almanac-core = { workspace = true }
 prov = { workspace = true }
 porter-core = { workspace = true }
 porter-infer = { workspace = true }

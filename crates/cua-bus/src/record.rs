@@ -11,6 +11,7 @@ use crate::action::{ActionResult, TargetedAction};
 use crate::budget::RunBudget;
 use crate::ids::{ProcedureId, QuestionId};
 use crate::state::CuaOutcome;
+use almanac_core::EventRef;
 use cua_action::DeviceSize;
 use cua_desktop::{BackendKind, Digest32};
 use docket_core::{EffectBasis, RunMode};
@@ -164,6 +165,9 @@ pub enum CuaRecord {
         run: RunId,
         /// Which step.
         n: StepIndex,
+        /// What the person did to the window meanwhile, as the log's own addresses (the events
+        /// cuad's `Memory1` call finds between the take-over and now), oldest first.
+        user_events: Vec<EventRef>,
     },
     /// The run ended.
     #[serde(rename = "cua.run.finished")]

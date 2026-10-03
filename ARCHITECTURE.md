@@ -43,7 +43,7 @@ dev-dependencies are outside it):
 | `seat-input` | `cua-action`, `cua-desktop`, `porter-core` |
 | `a11y-tree` | `cua-action`, `cua-desktop`, `prov`, `porter-core` |
 | `quire-agent-protocol` | nothing of ours |
-| `cua-bus` | `a11y-tree`, `cua-action`, `cua-desktop`, `maskcap`, `seat-input`, `docket-core`, `prov`, `porter-core`, `porter-infer` |
+| `cua-bus` | `a11y-tree`, `almanac-core`, `cua-action`, `cua-desktop`, `maskcap`, `seat-input`, `docket-core`, `prov`, `porter-core`, `porter-infer` |
 | `cua-run` | `a11y-tree`, `cua-action`, `cua-bus`, `cua-desktop`, `maskcap`, `seat-input`, `docket-core`, `prov`, `porter-core`, `porter-infer` |
 | `cua-dbus` | `cua-bus`, `prov` |
 | `cua-fake` | `a11y-tree`, `cua-action`, `cua-bus`, `cua-desktop`, `cua-run`, `maskcap`, `seat-input`, `docket-core`, `prov`, `porter-core`, `porter-infer`, `model-replay` |

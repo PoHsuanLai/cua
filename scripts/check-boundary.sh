@@ -94,7 +94,7 @@ EDGES=(
   "seat-input: cua-action cua-desktop porter-core"
   "a11y-tree: cua-action cua-desktop porter-core prov"
   "quire-agent-protocol:"
-  "cua-bus: a11y-tree cua-action cua-desktop docket-core maskcap porter-core porter-infer prov seat-input"
+  "cua-bus: a11y-tree almanac-core cua-action cua-desktop docket-core maskcap porter-core porter-infer prov seat-input"
   "cua-run: a11y-tree cua-action cua-bus cua-desktop docket-core maskcap porter-core porter-infer prov seat-input"
   "cua-dbus: cua-bus prov"
   "cua-fake: a11y-tree cua-action cua-bus cua-desktop cua-run docket-core maskcap model-replay porter-core porter-infer prov seat-input"

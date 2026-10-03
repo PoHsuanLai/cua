@@ -360,6 +360,7 @@ name = "cua-bus"
 version = "0.1.0"
 dependencies = [
  "a11y-tree",
+ "almanac-core",
  "cua-action",
  "cua-desktop",
  "docket-core",
@@ -475,8 +476,12 @@ version = "0.1.0"
 dependencies = [
  "docket-core",
  "docket-dbus",
+ "futures-util",
  "prov",
+ "serde",
+ "serde_json",
  "thiserror",
+ "zbus",
 ]
 
 [[package]]

@@ -327,6 +327,7 @@ fn observation(tree: A11ySnapshot, masked: usize) -> Observation {
         context: ContextObs::Absent,
         cursor: CursorObs::Unknown,
         prev: vec![],
+        notes: vec![],
     }
 }
 

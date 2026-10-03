@@ -6,7 +6,7 @@ use cua_bus::{ActionOutcome, WindowRef};
 use docket_core::{ContextSnapshot, WindowTrust};
 use maskcap::Frame;
 use porter_core::AppName;
-use porter_infer::StepIndex;
+use porter_infer::{StepIndex, StepNote};
 use prov::Labelled;
 use serde::{Deserialize, Serialize};
 
@@ -116,4 +116,8 @@ pub struct Observation {
     pub cursor: CursorObs,
     /// How the previous step's actions ended.
     pub prev: Vec<ActionOutcome>,
+    /// The messages that reached the run since the last step, as the model reads them, oldest
+    /// first (the supervisor builds them from `RunInput::Inbound`). Text only: a note is
+    /// untrusted words or the person's own, and never authority.
+    pub notes: Vec<StepNote>,
 }
