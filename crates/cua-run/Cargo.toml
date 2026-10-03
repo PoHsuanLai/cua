@@ -23,6 +23,7 @@ serde = { workspace = true }
 thiserror = { workspace = true }
 
 keyboard-types = { workspace = true }
+blake3 = { workspace = true }
 
 [dev-dependencies]
 serde_json = { workspace = true }

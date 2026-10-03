@@ -24,5 +24,6 @@ pub use model::{
     Sensitivity, TreeSource, Truncation, TypedHint,
 };
 pub use ops::{TreeDiff, diff, prune, render, resolve, secret_rects};
+pub use render::role_word;
 pub use selector::{NameMatch, NodeSelector, Resolution, SelectorStep, SlotName};
 pub use source::{A11yError, A11ySource, A11yTarget};

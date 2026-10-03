@@ -4,6 +4,8 @@ use crate::config::{Autopause, CuaConfig, SettleLimits};
 use crate::machine::effect::RunEffect;
 use crate::machine::input::RunInput;
 use crate::machine::phase::{ActionQueue, RunPhase};
+use crate::machine::step;
+use crate::machine::track::RunTrack;
 use crate::observation::Observation;
 use a11y_tree::NodeBudget;
 use cua_bus::{BudgetUse, CuaTask, RunStateSlug};
@@ -70,6 +72,8 @@ pub struct Run {
     pub working: Option<Box<Observation>>,
     /// The last instant the machine saw: active time is counted between instants.
     pub last_at: Stamp,
+    /// The machine's own notes: the step's outcomes so far, the settle watch, the rate window.
+    pub track: RunTrack,
 }
 
 impl Run {
@@ -78,22 +82,20 @@ impl Run {
     /// `Blocked(ModeUnsupported(mode))`, and a target of `TaskTarget::App` as
     /// `Blocked(NeedsCapability)` until launching into a mode lands.
     pub fn start(id: RunId, task: CuaTask, env: RunEnv, at: Stamp) -> (Run, Vec<RunEffect>) {
-        let _ = (id, task, env, at);
-        todo!("run_transitions_table, the (start) row")
+        step::start(id, task, env, at)
     }
 
     /// One transition: the next run and the effects to carry out. Every input in every phase has
     /// a row; `Finished` ignores every input (same run, no effects). Active time is counted from
     /// `at` against the previous instant, and only in active phases.
     pub fn step(self, input: RunInput, at: Stamp) -> (Run, Vec<RunEffect>) {
-        let _ = (input, at);
-        todo!("run_transitions_table: every row of the phase table, finished_ignores_every_input")
+        step::step(self, input, at)
     }
 
     /// The next instant the machine wants a `Tick`: a settle wake-up or the active-budget
     /// deadline; none when it is waiting for the world.
     pub fn wake(&self) -> Option<Stamp> {
-        todo!("settle wake, active deadline")
+        step::wake(self)
     }
 
     /// The bus slug of the current phase.

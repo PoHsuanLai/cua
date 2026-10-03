@@ -7,8 +7,8 @@ use cua_action::NodeId;
 use std::collections::BTreeMap;
 use std::fmt::Write;
 
-/// The word a role is written as: its snake_case slug, and `other(<number>)` for a raw role.
-fn role_word(role: Role) -> String {
+/// The word a role is written as in the rendered tree and in the router's `NodeFacts`: its snake_case slug, and `other(<number>)` for a raw role.
+pub fn role_word(role: Role) -> String {
     match role {
         Role::Window => "window".to_owned(),
         Role::Dialog => "dialog".to_owned(),

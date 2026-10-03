@@ -424,6 +424,7 @@ name = "cua-run"
 version = "0.1.0"
 dependencies = [
  "a11y-tree",
+ "blake3",
  "cua-action",
  "cua-bus",
  "cua-desktop",

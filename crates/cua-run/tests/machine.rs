@@ -10,7 +10,9 @@ use cua_bus::{
 use cua_desktop::{
     BackendCaps, BackendKind, ConsentGuard, DesktopEvent, LeaseId, Stamp, Suspend, ToplevelIdent,
 };
-use cua_run::{ActionQueue, CuaConfig, CuaSignal, Run, RunEffect, RunEnv, RunInput, RunPhase};
+use cua_run::{
+    ActionQueue, CuaConfig, CuaSignal, Run, RunEffect, RunEnv, RunInput, RunPhase, RunTrack,
+};
 use docket_core::{GrantAnswer, RunMode};
 use porter_core::{AppName, DataClass};
 use porter_infer::StepIndex;
@@ -97,6 +99,7 @@ fn in_phase(phase: RunPhase, kind: BackendKind) -> Run {
         served: None,
         working: None,
         last_at: Stamp(0),
+        track: RunTrack::default(),
     }
 }
 
@@ -130,7 +133,6 @@ fn finished_signal(effects: &[RunEffect]) -> Option<CuaOutcome> {
 }
 
 #[test]
-#[ignore = "closes with the run machine fill (cua-run, wave F1)"]
 fn a_started_run_asks_for_the_consent_first() {
     let (run, effects) = Run::start(
         run_id(),
@@ -149,7 +151,6 @@ fn a_started_run_asks_for_the_consent_first() {
 }
 
 #[test]
-#[ignore = "closes with the run machine fill (cua-run, wave F1)"]
 fn a_mode_the_backend_cannot_run_or_an_app_target_ends_the_run_at_once() {
     let (run, effects) = Run::start(
         run_id(),
@@ -177,7 +178,6 @@ fn a_mode_the_backend_cannot_run_or_an_app_target_ends_the_run_at_once() {
 }
 
 #[test]
-#[ignore = "closes with the run machine fill (cua-run, wave F1)"]
 fn a_refused_consent_ends_the_run_blocked_and_reports_failed() {
     let (run, _) = Run::start(
         run_id(),
@@ -205,7 +205,6 @@ fn a_refused_consent_ends_the_run_blocked_and_reports_failed() {
 }
 
 #[test]
-#[ignore = "closes with the run machine fill (cua-run, wave F1)"]
 fn finished_ignores_every_input() {
     let finished = RunPhase::Finished(CuaOutcome::Cancelled(CancelledBy::User));
     let inputs = [
@@ -226,7 +225,6 @@ fn finished_ignores_every_input() {
 }
 
 #[test]
-#[ignore = "closes with the run machine fill (cua-run, wave F1)"]
 fn a_confirmation_suspends_the_lease_on_stock_only() {
     let confirm = ConfirmId::parse("c-1").unwrap();
     let n = StepIndex(2);
@@ -264,7 +262,6 @@ fn a_confirmation_suspends_the_lease_on_stock_only() {
 }
 
 #[test]
-#[ignore = "closes with the run machine fill (cua-run, wave F1)"]
 fn pause_drops_the_queue_and_resume_observes_afresh() {
     let n = StepIndex(2);
     let mut run = in_phase(RunPhase::Authorising(n), BackendKind::CosmicStock);
@@ -294,7 +291,6 @@ fn pause_drops_the_queue_and_resume_observes_afresh() {
 }
 
 #[test]
-#[ignore = "closes with the run machine fill (cua-run, wave F1)"]
 fn a_message_changes_no_authority() {
     let n = StepIndex(2);
     let before = in_phase(RunPhase::Observing(n), BackendKind::CosmicStock);
