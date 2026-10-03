@@ -206,9 +206,9 @@ fn the_fake_desktop_leases_what_the_backend_supports_and_refuses_the_rest() {
         window("shell", WindowTrust::Shell),
     ];
     let stock = FakeDesktop::new(BackendKind::CosmicStock, windows.clone());
-    let leased = ready(stock.lease(request("w1", RunMode::InPlace))).expect("in place works");
-    assert_eq!(leased.grant.seat, cua_desktop::SeatIsolation::SharedSeat);
-    assert_eq!(leased.grant.ei, cua_desktop::EiOrigin::SenderSocket);
+    let first = ready(stock.lease(request("w1", RunMode::InPlace))).expect("in place works");
+    assert_eq!(first.grant.seat, cua_desktop::SeatIsolation::SharedSeat);
+    assert_eq!(first.grant.ei, cua_desktop::EiOrigin::SenderSocket);
     assert_eq!(
         ready(stock.lease(request("w1", RunMode::AgentWorkspace))).unwrap_err(),
         DesktopError::ModeUnsupported(RunMode::AgentWorkspace),
@@ -222,22 +222,20 @@ fn the_fake_desktop_leases_what_the_backend_supports_and_refuses_the_rest() {
         ready(stock.lease(request("nope", RunMode::InPlace))).unwrap_err(),
         DesktopError::NoSuchWindow
     );
-    let fork = FakeDesktop::new(BackendKind::CosmicFork, windows);
-    let leased =
-        ready(fork.lease(request("w1", RunMode::AgentWorkspace))).expect("the fork has a seat");
-    assert_eq!(leased.grant.ei, cua_desktop::EiOrigin::LeaseSocket);
-    ready(fork.suspend(leased.grant.id, cua_desktop::Suspend::Consent)).unwrap();
-    ready(fork.release(leased.grant.id)).unwrap();
+    let leased = ready(stock.lease(request("w1", RunMode::InPlace))).unwrap();
+    ready(stock.suspend(leased.grant.id, cua_desktop::Suspend::Consent)).unwrap();
+    ready(stock.release(leased.grant.id)).unwrap();
     assert_eq!(
-        fork.calls(),
+        stock.calls(),
         vec![
+            DesktopCall::Leased(first.grant.id),
             DesktopCall::Leased(leased.grant.id),
             DesktopCall::Suspended(leased.grant.id, cua_desktop::Suspend::Consent),
             DesktopCall::Released(leased.grant.id),
         ]
     );
-    fork.raise(DesktopEvent::KillChord);
-    assert_eq!(ready(fork.next_event()), DesktopEvent::KillChord);
+    stock.raise(DesktopEvent::KillChord);
+    assert_eq!(ready(stock.next_event()), DesktopEvent::KillChord);
 }
 
 fn frame(seq: u64) -> Frame {

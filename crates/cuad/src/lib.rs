@@ -6,7 +6,7 @@
 //! `org.quire.IntentProvider1` as `org.quire.Cua` with one action, `cua.run.start` ([`CuaProvider`]).
 //!
 //! Backends are closed sets: [`SeatBackend`] (`Ei`), [`CaptureBackend`] (`StockToplevel`,
-//! `QuireMasked`), and [`cua_desktop::BackendKind`] (`CosmicFork`, `CosmicStock`, `KwinStock`).
+//! `QuireMasked`), and [`cua_desktop::BackendKind`] (`CosmicStock`, `KwinStock`).
 //! On stock cosmic-comp masking is cuad's (`MaskReport::applied_by = Cuad`) and the consent
 //! guard is cuad stopping its own input; the fork moves both into the compositor.
 //!

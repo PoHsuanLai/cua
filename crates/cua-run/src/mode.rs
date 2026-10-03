@@ -56,7 +56,7 @@ mod tests {
     use super::*;
     use ModeSupport::{Full, HandsOff, Unsupported};
     use cua_bus::ModeGap::{HiddenCaptureWithheld, NoHiddenInput, NoNestedHost};
-    use cua_desktop::BackendKind;
+    use cua_desktop::{BackendKind, ConsentGuard, GlowDraw, MaskWhere};
 
     struct Row {
         name: &'static str,
@@ -65,33 +65,44 @@ mod tests {
         want: ModeSupport,
     }
 
+    /// A compositor with an agent seat of its own; no backend is one until casement lands.
+    fn agent_seat() -> BackendCaps {
+        BackendCaps {
+            seat: SeatIsolation::AgentSeat,
+            masking: MaskWhere::Compositor,
+            consent: ConsentGuard::CompositorOrigin,
+            glow: GlowDraw::Compositor,
+            ..BackendCaps::of(BackendKind::CosmicStock)
+        }
+    }
+
     fn withheld() -> BackendCaps {
         BackendCaps {
             hidden: HiddenCapture::Withheld,
-            ..BackendCaps::of(BackendKind::CosmicFork)
+            ..agent_seat()
         }
     }
 
     #[test]
     fn mode_support_table() {
-        let fork = BackendCaps::of(BackendKind::CosmicFork);
+        let fork = agent_seat();
         let stock = BackendCaps::of(BackendKind::CosmicStock);
         let kwin = BackendCaps::of(BackendKind::KwinStock);
         let rows = [
             Row {
-                name: "fork in place",
+                name: "agent seat in place",
                 caps: fork,
                 mode: RunMode::InPlace,
                 want: Full,
             },
             Row {
-                name: "fork workspace",
+                name: "agent seat workspace",
                 caps: fork,
                 mode: RunMode::AgentWorkspace,
                 want: Full,
             },
             Row {
-                name: "fork nested",
+                name: "agent seat nested",
                 caps: fork,
                 mode: RunMode::NestedSession,
                 want: Unsupported(NoNestedHost),
@@ -146,7 +157,7 @@ mod tests {
 
     #[test]
     fn auto_means_the_workspace_where_supported_else_in_place() {
-        let fork = BackendCaps::of(BackendKind::CosmicFork);
+        let fork = agent_seat();
         let stock = BackendCaps::of(BackendKind::CosmicStock);
         assert_eq!(
             choose_mode(DefaultMode::Auto, &fork),

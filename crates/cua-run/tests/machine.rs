@@ -228,18 +228,11 @@ fn finished_ignores_every_input() {
 fn a_confirmation_suspends_the_lease_on_stock_only() {
     let confirm = ConfirmId::parse("c-1").unwrap();
     let n = StepIndex(2);
-    let cases = [
-        (
-            BackendKind::CosmicStock,
-            ConsentGuard::CuadSuspendsInput,
-            true,
-        ),
-        (
-            BackendKind::CosmicFork,
-            ConsentGuard::CompositorOrigin,
-            false,
-        ),
-    ];
+    let cases = [(
+        BackendKind::CosmicStock,
+        ConsentGuard::CuadSuspendsInput,
+        true,
+    )];
     for (kind, guard, suspends) in cases {
         assert_eq!(BackendCaps::of(kind).consent, guard);
         let run = in_phase(RunPhase::Authorising(n), kind);

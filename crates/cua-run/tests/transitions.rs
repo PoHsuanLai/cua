@@ -23,7 +23,6 @@ use seat_input::{InputOrigin, InputReceipt, SeatError};
 use support::*;
 
 const STOCK: BackendKind = BackendKind::CosmicStock;
-const FORK: BackendKind = BackendKind::CosmicFork;
 
 fn model_says() -> SuccessCheck {
     SuccessCheck::ModelSays
@@ -788,31 +787,30 @@ fn input_that_cannot_be_delivered_looks_again_unless_the_window_is_gone() {
 }
 
 #[test]
-fn a_confirmation_suspends_input_on_stock_and_leaves_the_fork_to_its_compositor() {
-    for (kind, suspends) in [(STOCK, true), (FORK, false)] {
-        let mut d = Drive::thinking(kind, task(model_says()), tree(vec![]));
-        d.feed(RunInput::ModelReplied(reply(vec![click_at(1, 1)])));
-        d.feed(RunInput::Confirming(ConfirmId::parse("c-1").unwrap()));
-        assert_eq!(
-            d.has(|e| matches!(e, RunEffect::SuspendLease(_, Suspend::Consent))),
-            suspends,
-            "{kind:?}"
-        );
-        assert!(d.has(|e| matches!(e, RunEffect::Proceed)));
-        d.feed(RunInput::Verdict(GateAnswer::Run));
-        assert_eq!(
-            d.has(|e| matches!(e, RunEffect::ResumeLease(_))),
-            suspends,
-            "{kind:?} resumes only what it suspended"
-        );
-        d.feed(RunInput::Injected(receipt(0)));
-        let by = d.effects.iter().find_map(|e| match e {
-            RunEffect::Record(r) => match &**r {
-                CuaRecord::Step { authorised_by, .. } => Some(*authorised_by),
-                _ => None,
-            },
+fn a_confirmation_suspends_input_on_stock() {
+    let (kind, suspends) = (STOCK, true);
+    let mut d = Drive::thinking(kind, task(model_says()), tree(vec![]));
+    d.feed(RunInput::ModelReplied(reply(vec![click_at(1, 1)])));
+    d.feed(RunInput::Confirming(ConfirmId::parse("c-1").unwrap()));
+    assert_eq!(
+        d.has(|e| matches!(e, RunEffect::SuspendLease(_, Suspend::Consent))),
+        suspends,
+        "{kind:?}"
+    );
+    assert!(d.has(|e| matches!(e, RunEffect::Proceed)));
+    d.feed(RunInput::Verdict(GateAnswer::Run));
+    assert_eq!(
+        d.has(|e| matches!(e, RunEffect::ResumeLease(_))),
+        suspends,
+        "{kind:?} resumes only what it suspended"
+    );
+    d.feed(RunInput::Injected(receipt(0)));
+    let by = d.effects.iter().find_map(|e| match e {
+        RunEffect::Record(r) => match &**r {
+            CuaRecord::Step { authorised_by, .. } => Some(*authorised_by),
             _ => None,
-        });
-        assert_eq!(by, Some(cua_bus::AuthorisedBy::User));
-    }
+        },
+        _ => None,
+    });
+    assert_eq!(by, Some(cua_bus::AuthorisedBy::User));
 }

@@ -151,7 +151,6 @@ mod tests {
     #[test]
     fn capture_follows_who_masks() {
         let table = [
-            (BackendKind::CosmicFork, CaptureKind::QuireMasked),
             (BackendKind::CosmicStock, CaptureKind::StockToplevel),
             (BackendKind::KwinStock, CaptureKind::StockToplevel),
         ];

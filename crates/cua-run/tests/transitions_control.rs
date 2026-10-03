@@ -20,7 +20,6 @@ use seat_input::{InputOrigin, InputReceipt, SeatError};
 use support::*;
 
 const STOCK: BackendKind = BackendKind::CosmicStock;
-const FORK: BackendKind = BackendKind::CosmicFork;
 
 fn model_says() -> SuccessCheck {
     SuccessCheck::ModelSays
@@ -250,15 +249,6 @@ fn physical_input_pauses_a_run_on_a_shared_seat_only_while_autopause_is_on() {
         lease: LeaseId(1),
     }));
     assert!(matches!(off.phase(), RunPhase::Thinking(_)));
-
-    let mut fork = Drive::thinking(FORK, task(model_says()), tree(vec![]));
-    fork.feed(RunInput::Desktop(DesktopEvent::PhysicalInput {
-        lease: LeaseId(1),
-    }));
-    assert!(
-        matches!(fork.phase(), RunPhase::Thinking(_)),
-        "an agent seat has no physical input of its own to confuse with the person's"
-    );
 }
 
 #[test]
@@ -354,10 +344,12 @@ fn the_mode_and_the_target_decide_at_the_start_what_a_run_may_do() {
     );
     let mut hidden = task(model_says());
     hidden.mode = docket_core::RunMode::AgentWorkspace;
-    let d = Drive::start(FORK, hidden);
+    let d = Drive::start(STOCK, hidden);
     assert_eq!(
-        *d.phase(),
-        RunPhase::Granting,
-        "the fork runs the agent workspace"
+        finished_with(&d),
+        Some(CuaOutcome::Blocked(BlockedOn::ModeUnsupported(
+            docket_core::RunMode::AgentWorkspace
+        ))),
+        "stock cannot run the agent workspace"
     );
 }

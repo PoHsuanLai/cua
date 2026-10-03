@@ -325,7 +325,7 @@ mod tests {
             modes.get("agent_workspace").map(String::as_str),
             Some("unsupported:no_hidden_input")
         );
-        assert_eq!(backend_wire(Some(BackendKind::CosmicFork)), "cosmic_fork");
+        assert_eq!(backend_wire(Some(BackendKind::CosmicStock)), "cosmic_stock");
         assert_eq!(backend_wire(Some(BackendKind::KwinStock)), "kwin_stock");
         assert_eq!(backend_wire(None), "none");
     }

@@ -1,4 +1,4 @@
-//! What a backend can do. The values for the three backends are a table (`BackendCaps::of`) so
+//! What a backend can do. The values for the backends are a table (`BackendCaps::of`) so
 //! `mode_support` and the tests ask the table rather than a copy of it.
 
 use crate::lease::SeatIsolation;
@@ -8,8 +8,6 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum BackendKind {
-    /// The quire fork of cosmic-comp: agent seat, masked capture source, compositor-drawn glow.
-    CosmicFork,
     /// Stock cosmic-comp 1.8: a shared seat, masking in cuad, input steals focus.
     CosmicStock,
     /// Stock KWin: the nested-session host and the portability reference.
@@ -80,14 +78,6 @@ impl BackendCaps {
     /// is unverified until Spike B.
     pub fn of(kind: BackendKind) -> BackendCaps {
         match kind {
-            BackendKind::CosmicFork => BackendCaps {
-                kind,
-                seat: SeatIsolation::AgentSeat,
-                masking: MaskWhere::Compositor,
-                consent: ConsentGuard::CompositorOrigin,
-                hidden: HiddenCapture::Renders,
-                glow: GlowDraw::Compositor,
-            },
             BackendKind::CosmicStock | BackendKind::KwinStock => BackendCaps {
                 kind,
                 seat: SeatIsolation::SharedSeat,
@@ -115,27 +105,13 @@ mod tests {
     }
 
     #[test]
-    fn the_fork_alone_has_a_seat_a_masked_source_and_a_compositor_guard() {
-        for kind in [
-            BackendKind::CosmicFork,
-            BackendKind::CosmicStock,
-            BackendKind::KwinStock,
-        ] {
+    fn every_backend_is_a_shared_seat_masked_by_cuad() {
+        for kind in [BackendKind::CosmicStock, BackendKind::KwinStock] {
             let caps = BackendCaps::of(kind);
             assert_eq!(caps.kind, kind);
-            let fork = kind == BackendKind::CosmicFork;
-            assert_eq!(caps.seat == SeatIsolation::AgentSeat, fork, "{kind:?} seat");
-            assert_eq!(
-                caps.masking == MaskWhere::Compositor,
-                fork,
-                "{kind:?} masking"
-            );
-            assert_eq!(
-                caps.consent == ConsentGuard::CompositorOrigin,
-                fork,
-                "{kind:?} consent"
-            );
-            assert_eq!(caps.glow == GlowDraw::Compositor, fork, "{kind:?} glow");
+            assert_eq!(caps.seat, SeatIsolation::SharedSeat, "{kind:?} seat");
+            assert_eq!(caps.masking, MaskWhere::Cuad, "{kind:?} masking");
+            assert_eq!(caps.glow, GlowDraw::ShellOnly, "{kind:?} glow");
         }
     }
 }
