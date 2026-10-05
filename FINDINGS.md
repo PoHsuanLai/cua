@@ -6,10 +6,9 @@ a re-export of `casement-protocols`.
 
 ## Stubs behind frozen interfaces
 
-At the fill of 2026-10-03 (lane w4-cua) **18 `todo!()` bodies** are left in library and daemon
+At the f4-cua-seat fill (2026-10-06) **12 `todo!()` bodies** are left (they were 18 at the w4-cua fill of 2026-10-03) in library and daemon
 code (lines that begin with `todo!(`); the tests contain none. All of them are the backends that
-need a compositor, a seat or a bus that cannot be had in a test; every one of the 51 that were
-behaviour over fakes is built. Two tests are `#[ignore]`d on purpose: they regenerate fixture
+need a compositor or a bus that cannot be had in a test; every behaviour over fakes is built. Two tests are `#[ignore]`d on purpose: they regenerate fixture
 files (`a11y-tree` fixtures and golden renders).
 
 | Where | Count | Closes when |
@@ -17,12 +16,9 @@ files (`a11y-tree` fixtures and golden renders).
 | a11y-tree `AtspiSource::snapshot` (feature `atspi`) | 1 | after Spike E: find the window by pid and title, walk to the budget, window-local bounds |
 | cua-desktop `CosmicDesktop::{windows, next_event, lease, release, suspend, resume, glow}` (feature `cosmic`) | 7 | the cua-desktop fill, after the fork: toplevel info and workspaces, `quire-agent-v1` leases (fork), `GetSenderSocket` with the `CosmicOSK` name workaround (stock) |
 | maskcap `StockToplevelCapture::open`, `QuireMaskedCapture::open`, `WaylandSession::{frame, damage}` (feature `wayland`) | 4 | the maskcap `wayland` fill: ext-image-copy-capture, 8-bit shm formats only |
-| seat-input `EiSeat::{attach, perform, emulation, detach}` (feature `ei`) | 4 | the `ei` fill against `FakeEis` (`ei_seat_against_fake_eis`) |
-| cua-fake `FakeEis::serve` | 1 | with `EiSeat` |
-| cua-fake `ScriptedModel::from_cassette` | 1 | with stoker's `cua-parse` fill |
 | daemon binary | | a skeleton that exits 2: it needs `SystemSeams` (`CosmicDesktop`, `CaptureBackend`, `SeatBackend`, `AtspiSource` over their backends); `cuad::Links::over` builds the three daemon links from one connection |
 
-Per crate: a11y-tree 1, cua-desktop 7, cua-fake 2, maskcap 4, seat-input 4; total 18.
+Per crate: a11y-tree 1, cua-desktop 7, maskcap 4; total 12. (`EiSeat`, `FakeEis::serve` and `ScriptedModel::from_cassette` are built: see "The f4-cua-seat fill".)
 
 What is built, not stubbed (all behind the frozen signatures): `BackendCaps::of`, `LeaseRequest::check`,
 glow, revoke, suspend and mode wire codes (pinned against the generated protocol enums under the
@@ -106,7 +102,7 @@ wake}`, and `Exec`, which carries a run's effects out against the seams), `run_h
 
 ## Upstream asks (nothing was edited in another repo)
 
-Closed by the w4-cua fill, from the asks lists: 62 (cuad calls `Intents::gate_grant` and
+Closed by the w4-cua fill, from the asks lists (and by f4-cua-seat: 114, 149): 62 (cuad calls `Intents::gate_grant` and
 `gate_check`), 72 (`HandedBack.user_events`, cua-bus on almanac-core), 92 (`Observation.notes`), the
 docket label ask (the router joins `Untrusted(Screen)` into the run's session at `Gate.Check`), the
 docket `InProcess` feature ask (it is behind `in_process`), and the porter `StepNote` ask
@@ -117,7 +113,7 @@ docket `InProcess` feature ask (it is behind `in_process`), and the porter `Step
   `#[derive(Hash, PartialOrd, Ord)]` on the three markers.
 - **stoker `cua-action`:** `PixelFormat` lacks `Abgr2101010`/`Xbgr2101010` (stock offers them);
   not needed, noted.
-- **docket `docket-client`:** `Intents::gate_check` waits for the router's final answer inside one
+- ~~**docket `docket-client`:** `Intents::gate_check` waits for the router's final answer inside one
   call and hands out neither the Request's `Progress(Confirming(id))` nor `Proceed`, and the router
   does not implement `Request.Proceed` yet. So a check here never says `Confirming`: the stock
   consent guard (cuad stops its own input before the router's sheet shows) is built in the machine
@@ -125,8 +121,8 @@ docket `InProcess` feature ask (it is behind `in_process`), and the porter `Step
   `User`, and a run that is paused during a confirmation cannot withdraw it (the call is aborted;
   the router's Request waits out its expiry). cuad injects one action at a time and only after the
   verdict, so its input is idle while the router asks. Ask: `Intents::gate_check_watched(ask, on_confirming)`
-  that reports the `ConfirmId` and returns a handle with `proceed()` and `close()`.
-- **docket router / spec:** no one can open the session a run's steps are ruled in. `Gate.Check`
+  that reports the `ConfirmId` and returns a handle with `proceed()` and `close()`.~~ Closed by the f4-cua-seat fill (ask 149).
+- ~~**docket router / spec:** no one can open the session a run's steps are ruled in. `Gate.Check`
   finds the session whose actor is `Companion { role: Cua { run } }` and answers `Halted(Any)`
   without it; `Session.Open` is for the launcher, field and companion roles (not cua), and the run
   id is minted by cuad after `cua.run.start`. cuad's tests open the session as the companion does,
@@ -134,7 +130,7 @@ docket `InProcess` feature ask (it is behind `in_process`), and the porter `Step
   open the session of its own run (`Session.Open { agent: Cua { run } }`, only for a run it started),
   or have `cua.run.start`'s perform open it and return both. `CuaTask.session`, `Message.Send` and
   every record carry that session, so the same answer fixes the sender of the reports (today a
-  report sent in the planner's session would go out as the planner).
+  report sent in the planner's session would go out as the planner). ~~ Closed: the cua role opens its run's session (docket ask 124) and cuad does it before the first check (ask 149).
 - **docket `Run.Perform` / Intents1 XML:** `inv.actor` carries the planner's session, which
   `cua.run.start` uses as the task's session until the ask above is settled (ask 62: any copy of
   the XML gains `session` on `Run.Perform` and `app` on `Context.Current`).
@@ -268,3 +264,46 @@ the machine under it. What was decided:
   there is no price for a cloud model (`ModelReply.cost` is zero), so the spend budget only guards
   a free local model.
 
+
+## The f4-cua-seat fill (2026-10-06)
+
+- **`EiSeat` is built over reis 0.7** (`seat_input::ei`, tested in `cua-fake/tests/ei.rs` against
+  `FakeEis` over socketpairs; no compositor). reis proxies are not `Send` (their callback handlers are
+  `Box<dyn FnOnce>`) and `AgentSeat`'s futures must be, so every attached lease gets a thread of its own
+  with a current-thread runtime (`ei/actor.rs`); the seat talks to it over a channel and waits on one-shot
+  replies. `attach` handshakes as a sender, binds `PointerAbsolute | Button | Scroll | Keyboard` (never
+  `Text`: S10), waits until a keyboard device with a keymap and an absolute pointer device with a region
+  have both been resumed, parses the keymap text with `Keymap::parse_xkb` and calls
+  `start_emulating(last_serial, sequence)` on each device in use. `perform` sends one frame per op
+  (button `Left/Right/Middle` = evdev 0x110/0x111/0x112, a detent is 120 units, up is negative y, `Gap`
+  sleeps on the connection thread's clock), checks every point against the pointer device's regions
+  (`OutsideLease`), refuses `Text` (`Refused`: no Unicode path over EI on stock), answers `Suspended`
+  while stopped and `NotConnected` after the server went away or for another lease. The stock region map
+  is the lease window's geometry at attach (a window that moves keeps the offset of attach until the next
+  lease). `detach` stops emulating and sends `disconnect`; dropping the seat does the same. The receipt's
+  `at` is milliseconds since the connection opened (the seat has no cuad clock).
+- **`FakeEis::serve`** runs the reis server side by hand (`EisHandshaker`, `EisRequestConverter`) on a
+  tokio `AsyncFd`, offers one seat with a keyboard (a small US keymap written out in full in
+  `eis_keymap.rs`, sent through a memfd) and an absolute pointer with button and scroll and the stock
+  region `(0, 0, 1280, 800)` at scale 1, and logs `Handshake`, `Bind`, `StartEmulating`, input and
+  `StopEmulating` until the sender disconnects or drops the socket.
+- **`ScriptedModel::from_cassette`** reads each interaction's events: tool calls first as Qwen's
+  `computer_use` and then as Holo 3.1's, else the text as UI-TARS, through `cua-parse`; the first reading
+  that yields an action wins. Points are window pixels as recorded (replayed frames are the window at scale
+  1); grid-space replies are not read (`NotAStep`). A provider failure replays as the matching
+  `CuaModelError`. `cua-parse` and `model-provider` are new edges of `cua-fake`.
+- **Ask 92 was already built** at the w4-cua fill (`Observation.notes`, `turn` fills
+  `CuaStepRequest.notes`, `tests/turn.rs`); `a_message_changes_no_authority` has run since then.
+- **Ask 149: the gate is watched and a run opens its own session.** `IntentsGate` uses
+  `Intents::gate_check_watched`: `Confirming(id)` reaches the machine, which suspends the lease and calls
+  `proceed`; the verdict ends the check. `GateCheck` gains `close` (the run is paused: `Exec::suspend(.., Paused)`
+  takes the check back and the router withdraws the sheet; an unanswered check that is dropped is closed
+  too, on the current runtime). `GateLink` gains `open_session(run, space)`; `Supervisor::start` calls it
+  after the id is minted and before the run's machine starts, and the opened session replaces the
+  planner's in `CuaTask.session` (so records, `Message.Send` and the report go out as the run). A router
+  that will not open it makes the start `NotPermitted` and the lease claim is released. `FakePdp` opens
+  `s-1` (or `opening(session)`), records `opened()` and `closes()`, and `Verdict::AskAndHang` leaves a
+  confirmation up. `cua.run.start` still answers the run's id (the planner's handle on it, and what
+  `Cua1` calls name); the session is `Supervisor::view(run).task.session`.
+- **Ask 114**: `Cargo.lock` is refreshed (adds `tokio`, `futures-util`, `rustix`, `cua-parse` edges) and
+  `--locked` passes against porter, docket, stoker and almanac master.

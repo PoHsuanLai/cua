@@ -24,13 +24,13 @@ picture), section 6 (copy the recipe).
 | --- | --- | --- |
 | `cua-desktop` | the base: windows (`ToplevelInfo`), leases (`LeaseRequest`, `LeaseGrant`, `Leased`, `EiSocket`), `BackendKind` and `BackendCaps::of`, `GlowState` and the protocol codes, `DesktopEvent`, the `Desktop` and `LeaseControl` seams, and the units every crate shares (`Stamp`, `Ms`, `Digest32`, `GlobalRect`). Re-exports `RunMode` and `WindowTrust` from docket. Feature `cosmic`: `CosmicDesktop` | none (`cosmic`: wayland-client) |
 | `maskcap` | `Frame`, `PixelBuf`, `MaskReport`, `apply_masks`, `FrameDigest`, `settle`, `pixel_diff`, the `WindowCapture` and `CaptureSession` seams. Feature `wayland`: `StockToplevelCapture`, `QuireMaskedCapture` | none (`wayland`: wayland-client) |
-| `seat-input` | `InputOp`, `Keymap`, `SeatCaps`, `plan`, `InputReceipt`, `region`, the `AgentSeat` seam. Feature `ei`: `EiSeat` | none (`ei`: reis) |
+| `seat-input` | `InputOp`, `Keymap`, `SeatCaps`, `plan`, `InputReceipt`, `region`, the `AgentSeat` seam. Feature `ei`: `EiSeat` | none (`ei`: reis, tokio, futures-util) |
 | `a11y-tree` | `A11ySnapshot`, `A11yNode`, `prune`, `render`, `diff`, `secret_rects`, selectors, the `A11ySource` seam. Feature `atspi`: `AtspiSource` | none (`atspi`: atspi) |
 | `quire-agent-protocol` | a shim: re-exports `casement_protocols::client::quire_agent_v1` (and `server`, and `vocab`) under the paths cua always used; features `client` (cuad) and `server` (the compositor) | none |
 | `cua-bus` | what crosses the bus and the log, serde only: the `Start` body (`CuaTask`), `RunStateSlug`, `CuaOutcome`, `ModeSupport`, `CuaRecord`, `ActionResult`, `RunBudget`, `ControlRefusal`, `permits`, `report_draft` | none |
 | `cua-run` | the pure run machine (`Run`, `RunTrack`, `RunPhase`, `RunInput`, `RunEffect`), `Observation`, `classify_effect`, `window_class_of`, `mode_support`, `choose_mode`, `LeaseBook`, `stalled`, `turn` and `note_of`, `CuaConfig` and `SETTING_ROWS`, `CuaModel`, the seams a run is carried out against (`Seams`, `Clock`, `GateLink`, `RecordSink`, `MessageLink`), and `Exec`, which carries a run's effects out against them (it awaits nothing but seam futures, so it needs no runtime) | none |
 | `cua-dbus` | `org.quire.Cua1` (`Manager`, `Run`) as zbus proxies and skeletons, `introspection`, `CuaError`, bus names and paths | zbus |
-| `cua-fake` | test only: `FakeSeat`, `FakeEis`, `FakeCapture`, `FakeDesktop`, `FakeA11y`, `ScriptedModel`, `FakePdp`, `MemoryEvents`, `FixedClock`, `FakeSeams`, `run_harness`, and `scene` (a window, frames, a world, a task) | none (`FakeEis`: reis) |
+| `cua-fake` | test only: `FakeSeat`, `FakeEis`, `FakeCapture`, `FakeDesktop`, `FakeA11y`, `ScriptedModel`, `FakePdp`, `MemoryEvents`, `FixedClock`, `FakeSeams`, `run_harness`, and `scene` (a window, frames, a world, a task) | none (`FakeEis`: reis, tokio) |
 | `cuad` | the daemon and its library: `SeatBackend`, `CaptureBackend`, `Supervisor` (a task per run), `IntentsGate`, `InferdCuaModel`, `DaemonLinks`, `Links` (the three daemon links over one connection), `CuaProvider` (`org.quire.Cua`), `guard`, `CallerNames`, `CuadConfig`, `SystemSeams`, `serve` and `serve_on`. The binary is a skeleton | everything |
 
 Allowed direct edges between our own crates (checked by `scripts/check-boundary.sh`;
@@ -46,7 +46,7 @@ dev-dependencies are outside it):
 | `cua-bus` | `a11y-tree`, `almanac-core`, `cua-action`, `cua-desktop`, `maskcap`, `seat-input`, `docket-core`, `prov`, `porter-core`, `porter-infer` |
 | `cua-run` | `a11y-tree`, `cua-action`, `cua-bus`, `cua-desktop`, `maskcap`, `seat-input`, `docket-core`, `prov`, `porter-core`, `porter-infer` |
 | `cua-dbus` | `cua-bus`, `prov` |
-| `cua-fake` | `a11y-tree`, `cua-action`, `cua-bus`, `cua-desktop`, `cua-run`, `maskcap`, `seat-input`, `docket-core`, `prov`, `porter-core`, `porter-infer`, `model-replay` |
+| `cua-fake` | `a11y-tree`, `cua-action`, `cua-bus`, `cua-desktop`, `cua-run`, `maskcap`, `seat-input`, `docket-core`, `prov`, `porter-core`, `porter-infer`, `model-replay`, `model-provider`, `cua-parse` |
 | `cuad` | `a11y-tree`, `cua-bus`, `cua-dbus`, `cua-desktop`, `cua-run`, `maskcap`, `seat-input`, `docket-core`, `docket-client`, `prov`, `porter-core`, `porter-infer`, `porter-client`, `almanac-core`, `almanac-client` |
 
 The edges differ from SPEC 1.3 in one way, forced by its own types: `seat-input`, `maskcap` and
@@ -73,7 +73,7 @@ only; the pure set never reaches an effect crate; `wayland-client` is behind the
 | --- | --- |
 | `cua-desktop` | `units`, `window`, `lease`, `caps`, `glow`, `event`, `error`, `traits`, `cosmic/` |
 | `maskcap` | `pixels`, `mask`, `digest`, `settle`, `frame`, `capture`, `wayland/` |
-| `seat-input` | `op`, `keymap`, `caps`, `plan`, `receipt`, `seat`, `region`, `ei/` |
+| `seat-input` | `op`, `keymap`, `caps`, `plan`, `receipt`, `seat`, `region`, `ei/` (`conn`: the reis connection, `actor`: the thread that owns it) |
 | `a11y-tree` | `model`, `selector`, `ops`, `source`, `atspi/` |
 | `cua-bus` | `ids`, `budget`, `state`, `action`, `task`, `report`, `record`, `bodies`, `control` |
 | `cua-run` | `config`, `observation`, `effect_class`, `window_class`, `mode`, `turn`, `lease_book`, `stall`, `model`, `seams`, `machine/{phase, input, effect, run, track, step, control, finish, ops}`, `exec/{observe, session}` |
