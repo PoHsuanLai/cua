@@ -1,28 +1,26 @@
 # Findings
 
 Open items and standing facts. An entry names the condition that closes it. `cua-bus`,
-`cua-dbus` and `quire-agent-protocol` have no `todo!()`: their behaviour is serde, tables and
-a re-export of `casement-protocols`.
+`cua-dbus` has no `todo!()`: its behaviour is serde and tables. `quire-agent-protocol` is gone
+(S0-CU2): cua-desktop and maskcap name `casement-protocols` directly.
 
 ## Stubs behind frozen interfaces
 
-At the f4-cua-seat fill (2026-10-06) **12 `todo!()` bodies** are left (they were 18 at the w4-cua fill of 2026-10-03) in library and daemon
+At the f4-cua-capture fill (2026-10-06) **2 `todo!()` bodies** are left (12 after f4-cua-seat, 18 at the w4-cua fill of 2026-10-03) in library and daemon
 code (lines that begin with `todo!(`); the tests contain none. All of them are the backends that
 need a compositor or a bus that cannot be had in a test; every behaviour over fakes is built. Two tests are `#[ignore]`d on purpose: they regenerate fixture
 files (`a11y-tree` fixtures and golden renders).
 
 | Where | Count | Closes when |
 | --- | --- | --- |
-| a11y-tree `AtspiSource::snapshot` (feature `atspi`) | 1 | after Spike E: find the window by pid and title, walk to the budget, window-local bounds |
-| cua-desktop `CosmicDesktop::{windows, next_event, lease, release, suspend, resume, glow}` (feature `cosmic`) | 7 | the cua-desktop fill, after the fork: toplevel info and workspaces, `quire-agent-v1` leases (fork), `GetSenderSocket` with the `CosmicOSK` name workaround (stock) |
-| maskcap `StockToplevelCapture::open`, `QuireMaskedCapture::open`, `WaylandSession::{frame, damage}` (feature `wayland`) | 4 | the maskcap `wayland` fill: ext-image-copy-capture, 8-bit shm formats only |
-| daemon binary | | a skeleton that exits 2: it needs `SystemSeams` (`CosmicDesktop`, `CaptureBackend`, `SeatBackend`, `AtspiSource` over their backends); `cuad::Links::over` builds the three daemon links from one connection |
+| a11y-tree `AtspiSource::snapshot` (feature `atspi`) | 1 | Spike E, and a pid: stock's protocols name no process (`ToplevelInfo.pid` is 0), so "find the window by pid and title" has nothing to match on. Plan: a zbus fake of `org.a11y.Bus` and a registry with one fake app (`org.a11y.atspi.Accessible`, `Component`, `Action`) on a private bus tests the walk; match windows by title, size and the app's bus-name pid (`GetConnectionUnixProcessID`) once the pid exists |
+| maskcap `QuireMaskedCapture::open` (feature `wayland`) | 1 | casement's agent socket (P2-Q2, `Compositor1.Connect("agent")`) exists: `lease.get_capture_source`, `create_session`, `set_mask_hints` before each frame |
 
-Per crate: a11y-tree 1, cua-desktop 7, maskcap 4; total 12. (`EiSeat`, `FakeEis::serve` and `ScriptedModel::from_cassette` are built: see "The f4-cua-seat fill".)
+Per crate: a11y-tree 1, maskcap 1; total 2. cua-desktop has none: the stock half is built, and the casement half (`Backend::Casement`, `quire_agent_v1` leases, suspend, resume and glow in the compositor, the agent workspace) is P4-Z-cua. There is no `BackendKind` for it yet, so no arm could hold a `todo!()` that is reachable; KWin (`KwinStock`) refuses every lease with `ModeUnsupported` until Spike B. (`EiSeat`, `FakeEis::serve` and `ScriptedModel::from_cassette` are built: see "The f4-cua-seat fill".)
 
 What is built, not stubbed (all behind the frozen signatures): `BackendCaps::of`, `LeaseRequest::check`,
 glow, revoke, suspend and mode wire codes (pinned against the generated protocol enums under the
-`cosmic` feature), `SeatCaps::for_isolation` (S10: stock offers no Unicode text path), `RegionMap`,
+`wayland` feature), `SeatCaps::for_isolation` (S10: stock offers no Unicode text path), `RegionMap`,
 `MaskReason::code`, `mode_support` and `choose_mode`, `CuaConfig` with `SETTING_ROWS`, `RunPhase`
 facts, the `ModeSupport` and `Modes`/`Backend` wire strings, `CuaOutcome::status`, `permits`,
 `report_draft`, `ControlRefusal` names, `cuad::guard`, `CallerNames::classify`, `manifest_for`,
@@ -83,9 +81,7 @@ wake}`, and `Exec`, which carries a run's effects out against the seams), `run_h
 
 ## Dependencies added to this workspace (not in quire's pinned block)
 
-- `wayland-scanner 0.31`, `wayland-server 0.31`, `wayland-backend 0.3`: no longer used here since
-  S0-CU2 (`quire-agent-protocol` re-exports `casement-protocols`, which generates the bindings);
-  the lines can leave the workspace table.
+- `wayland-scanner 0.31`, `wayland-backend 0.3` (cua-desktop generates the COSMIC bindings from the vendored XML) and `wayland-server 0.31` (dev-dependency: the fake compositors); see the f4-cua-capture fill.
 - `atspi` is pinned with `default-features = false, features = ["connection", "proxies", "tokio"]`
   (the block's bare `0.30` cannot be narrowed by a member); `reis` gains `tokio` in seat-input;
   `base64 0.22` is already in the block (maskcap's serde form).
@@ -97,8 +93,7 @@ wake}`, and `Exec`, which carries a run's effects out against the seams), `run_h
 - Dev-dependencies of cuad's tests only, so not in any tree the boundary script checks: `intentd`,
   `docket-fake`, `docket-router` (a real intentd over docket's fakes on a private bus) and
   `almanac-fake` with `almanac-client`'s `in_process` (a real memory service); `tokio`'s `test-util`.
-- Not yet added, closed by their fills: `cosmic-client-toolkit` (cua-desktop `cosmic`), `ashpd`,
-  `pipewire` (KWin).
+- Not added: `cosmic-client-toolkit` and `cosmic-protocols` (MIT, but unneeded: `cua-desktop/protocols/cosmic-toplevel-info-v1.xml` is the MIT XML, vendored with one change, and generated here), `ashpd`, `pipewire` (KWin).
 
 ## Upstream asks (nothing was edited in another repo)
 
@@ -307,3 +302,64 @@ the machine under it. What was decided:
   `Cua1` calls name); the session is `Supervisor::view(run).task.session`.
 - **Ask 114**: `Cargo.lock` is refreshed (adds `tokio`, `futures-util`, `rustix`, `cua-parse` edges) and
   `--locked` passes against porter, docket, stoker and almanac master.
+
+## The f4-cua-capture fill (2026-10-06): the stock wayland backends and the daemon's seams
+
+- **S0 done.** Feature `cosmic` is `wayland`; `crates/quire-agent-protocol` is deleted and
+  cua-desktop and maskcap depend on `casement-protocols` (optional, feature `client`) by sibling
+  path; the glow, revoke, suspend, mode and mask-reason tables are pinned against its generated
+  enums. check-boundary rows follow.
+- **One pump per connection (`cua_desktop::Pump`, public, feature `wayland`).** A wayland
+  connection has one event queue and one state behind an async mutex; callers take turns
+  (`drive(step)`), only the holder reads the socket (non-blocking guard), and a `Notify` wakes the
+  others when a turn dispatched something. Two queues on one connection would lose wake-ups.
+  So `windows` and `next_event` can wait at once, and several capture sessions share a connection.
+  cuad opens two connections (`WaylandPair`): the desktop's and capture's.
+- **cua-desktop stock half.** `windows` is three round trips (registry, binds, COSMIC handles),
+  then the record: a toplevel is listed once its first `done` came and it has an identifier.
+  Handles: `ext_foreign_toplevel_list_v1`, `zcosmic_toplevel_info_v1` bound at version 3 (older is
+  ignored: workspaces are ext handles from 3 on), `ext_workspace_v1` (the shown flag is the
+  active bit; no workspace means `id = ""`, `Shown`), `wl_output`s (the geometry event names one).
+  The COSMIC XML is vendored under `crates/cua-desktop/protocols/` (MIT, with its two deprecated
+  workspace events naming `ext_workspace_handle_v1`) and generated by wayland-scanner; no cosmic
+  crate is linked. `next_event` gives `WindowClosed` and `GeometryChanged` (not a toplevel's first
+  geometry); a lost connection ends every held lease once with `LeaseRevoked(Compositor)`, then
+  stays quiet.
+- **Facts the protocols do not give.** `ToplevelInfo.pid` is `Pid(0)` ("unknown"); `app` is the
+  app id, folded into `app.<id>` when it is not reverse-DNS; `trust` is from the app id alone
+  (`org.quire.Shell*`, `Sill*`, `Desktop*` are `Shell`, other `org.quire.*` `Quire`, the rest
+  `Native`; Flatpak cannot be told). Ask: a pid and a sandbox id on the toplevel (casement's
+  `quire_desktop_v1` can carry them).
+- **The stock lease.** In-place only (`AgentWorkspace`, `NestedSession` and KWin are
+  `ModeUnsupported`), one lease per window (`Busy`), the shared seat, `EiOrigin::SenderSocket`.
+  The socket comes from `SenderSocket`, a trait cua-desktop defines (no bus linked there):
+  `CosmicEiSockets` in cuad calls `com.system76.CosmicComp.Ei.GetSenderSocket(7)` and takes
+  `com.system76.CosmicOSK` once, before the first call, which stock requires of its caller
+  (`COSMIC_ENFORCE_DBUS_OWNERS`; not a boundary against other processes of the user). Suspend,
+  resume and glow only check the lease: on stock they are cuad's seat and the shell's orb.
+  `release` of an ended lease is `Ok`. `Desktop::backend()` (default `Some(caps().kind)`) lets
+  a desktop say `None`.
+- **maskcap stock capture.** `StockToplevelCapture::open` finds the toplevel by identifier,
+  `create_source`, `create_session`, waits for the constraints and picks `ABGR8888`, `XBGR8888`,
+  `ARGB8888`, `XRGB8888` in that order (`Format` if only the 10-bit ones are offered). The buffer
+  is a memfd the compositor maps and cuad reads with `pread` (no mapping, so no `unsafe`); a
+  failed frame with `buffer_constraints` waits for the new `done` and makes a new buffer; a
+  stopped session is `SourceGone`. `frame` applies the hints (`applied_by = Cuad`); damage is the
+  pixel diff against the previous raw frame (`FrameWant::AfterDamage` captures until one differs,
+  paced by the compositor, so a window that never changes never returns: the caller races it with
+  its timer, as `Exec` does); `at` is on the caller's clock (`with_clock`, cuad passes its own).
+- **cuad.** `SystemSeams` is built: `SystemDesktop` (COSMIC, or `Absent`: `Backend = none`, empty
+  `Modes`, no windows, no lease), `CaptureBackend::Unavailable`, `SeatBackend::Ei(EiSeat)`,
+  `SystemA11y` (`Unavailable` by default: `cuad.toml` `a11y = "off"`; `"atspi"` selects
+  `AtspiSource`, whose `snapshot` is still `todo!()`, so nothing turns it on). The binary reads
+  `--config`/`$CUAD_CONFIG` (missing file: defaults, `cua.enabled` off; malformed: exit 2),
+  tries the compositor (none is not fatal), serves `org.quire.Cua1` and `org.quire.Cua`, and
+  stops with 0 on SIGTERM or when the bus closes.
+- **Tests, all over an in-process wayland-server on socketpairs or a private bus.**
+  `cua-desktop/tests/wayland.rs` (11), `maskcap/tests/wayland.rs` (8), `cuad/tests/ei_socket.rs`
+  (4), `cuad/tests/binary.rs` (4: env cleared, no compositor).
+- **Dependencies added** (not in quire's block): `wayland-scanner`, `wayland-backend` for
+  cua-desktop (generation) and `wayland-server` as a dev-dependency of cua-desktop and maskcap
+  (the fake compositor; MIT, already in the lock through casement-protocols); `tokio` and
+  `rustix` become optional deps under the `wayland` features; `tokio`'s `signal` feature in cuad.
+  `wayland-protocols` gains `server` as a dev-dependency.

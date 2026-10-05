@@ -13,7 +13,7 @@ is the map of the code that freezes those interfaces. `CONVENTIONS.md` holds the
 moves the person's cursor and steals focus), masking is cuad's, and a confirmation shows only
 after cuad has stopped its own input. **The fork adds the agent seat later** (`~/cosmic-comp`,
 branch `quire`, GPL, not a dependency of anything here); the protocol it implements is this
-`casement-protocols` repo's `quire-agent-v1.xml`, which `quire-agent-protocol` re-exports.
+`casement-protocols` repo's `quire-agent-v1.xml`, which cua-desktop and maskcap name directly.
 
 Reading order: section 1 (find the crate), section 3 (find the home), section 5 (a run in one
 picture), section 6 (copy the recipe).
@@ -22,27 +22,25 @@ picture), section 6 (copy the recipe).
 
 | Crate | Purpose | I/O |
 | --- | --- | --- |
-| `cua-desktop` | the base: windows (`ToplevelInfo`), leases (`LeaseRequest`, `LeaseGrant`, `Leased`, `EiSocket`), `BackendKind` and `BackendCaps::of`, `GlowState` and the protocol codes, `DesktopEvent`, the `Desktop` and `LeaseControl` seams, and the units every crate shares (`Stamp`, `Ms`, `Digest32`, `GlobalRect`). Re-exports `RunMode` and `WindowTrust` from docket. Feature `cosmic`: `CosmicDesktop` | none (`cosmic`: wayland-client) |
-| `maskcap` | `Frame`, `PixelBuf`, `MaskReport`, `apply_masks`, `FrameDigest`, `settle`, `pixel_diff`, the `WindowCapture` and `CaptureSession` seams. Feature `wayland`: `StockToplevelCapture`, `QuireMaskedCapture` | none (`wayland`: wayland-client) |
+| `cua-desktop` | the base: windows (`ToplevelInfo`), leases (`LeaseRequest`, `LeaseGrant`, `Leased`, `EiSocket`), `BackendKind` and `BackendCaps::of`, `GlowState` and the protocol codes, `DesktopEvent`, the `Desktop` and `LeaseControl` seams, and the units every crate shares (`Stamp`, `Ms`, `Digest32`, `GlobalRect`). Re-exports `RunMode` and `WindowTrust` from docket. Feature `wayland`: `CosmicDesktop`, `Pump`, `SenderSocket` | none (`wayland`: wayland-client, tokio) |
+| `maskcap` | `Frame`, `PixelBuf`, `MaskReport`, `apply_masks`, `FrameDigest`, `settle`, `pixel_diff`, the `WindowCapture` and `CaptureSession` seams. Feature `wayland`: `StockToplevelCapture`, `QuireMaskedCapture`, `StampClock` | none (`wayland`: wayland-client) |
 | `seat-input` | `InputOp`, `Keymap`, `SeatCaps`, `plan`, `InputReceipt`, `region`, the `AgentSeat` seam. Feature `ei`: `EiSeat` | none (`ei`: reis, tokio, futures-util) |
 | `a11y-tree` | `A11ySnapshot`, `A11yNode`, `prune`, `render`, `diff`, `secret_rects`, selectors, the `A11ySource` seam. Feature `atspi`: `AtspiSource` | none (`atspi`: atspi) |
-| `quire-agent-protocol` | a shim: re-exports `casement_protocols::client::quire_agent_v1` (and `server`, and `vocab`) under the paths cua always used; features `client` (cuad) and `server` (the compositor) | none |
 | `cua-bus` | what crosses the bus and the log, serde only: the `Start` body (`CuaTask`), `RunStateSlug`, `CuaOutcome`, `ModeSupport`, `CuaRecord`, `ActionResult`, `RunBudget`, `ControlRefusal`, `permits`, `report_draft` | none |
 | `cua-run` | the pure run machine (`Run`, `RunTrack`, `RunPhase`, `RunInput`, `RunEffect`), `Observation`, `classify_effect`, `window_class_of`, `mode_support`, `choose_mode`, `LeaseBook`, `stalled`, `turn` and `note_of`, `CuaConfig` and `SETTING_ROWS`, `CuaModel`, the seams a run is carried out against (`Seams`, `Clock`, `GateLink`, `RecordSink`, `MessageLink`), and `Exec`, which carries a run's effects out against them (it awaits nothing but seam futures, so it needs no runtime) | none |
 | `cua-dbus` | `org.quire.Cua1` (`Manager`, `Run`) as zbus proxies and skeletons, `introspection`, `CuaError`, bus names and paths | zbus |
 | `cua-fake` | test only: `FakeSeat`, `FakeEis`, `FakeCapture`, `FakeDesktop`, `FakeA11y`, `ScriptedModel`, `FakePdp`, `MemoryEvents`, `FixedClock`, `FakeSeams`, `run_harness`, and `scene` (a window, frames, a world, a task) | none (`FakeEis`: reis, tokio) |
-| `cuad` | the daemon and its library: `SeatBackend`, `CaptureBackend`, `Supervisor` (a task per run), `IntentsGate`, `InferdCuaModel`, `DaemonLinks`, `Links` (the three daemon links over one connection), `CuaProvider` (`org.quire.Cua`), `guard`, `CallerNames`, `CuadConfig`, `SystemSeams`, `serve` and `serve_on`. The binary is a skeleton | everything |
+| `cuad` | the daemon and its library: `SeatBackend`, `CaptureBackend`, `Supervisor` (a task per run), `IntentsGate`, `InferdCuaModel`, `DaemonLinks`, `Links` (the three daemon links over one connection), `CuaProvider` (`org.quire.Cua`), `guard`, `CallerNames`, `CuadConfig`, `SystemSeams`, `SystemDesktop`, `SystemA11y`, `WaylandPair`, `CosmicEiSockets`, `serve` and `serve_on`. The binary serves both bus names | everything |
 
 Allowed direct edges between our own crates (checked by `scripts/check-boundary.sh`;
 dev-dependencies are outside it):
 
 | Crate | May depend on |
 | --- | --- |
-| `cua-desktop` | `cua-action`, `docket-core`, `prov`, `porter-core`; `quire-agent-protocol` with feature `cosmic` |
-| `maskcap` | `cua-action`, `cua-desktop`; `quire-agent-protocol` with feature `wayland` |
+| `cua-desktop` | `cua-action`, `docket-core`, `prov`, `porter-core`; `casement-protocols` with feature `wayland` |
+| `maskcap` | `cua-action`, `cua-desktop`; `casement-protocols` with feature `wayland` |
 | `seat-input` | `cua-action`, `cua-desktop`, `porter-core` |
 | `a11y-tree` | `cua-action`, `cua-desktop`, `prov`, `porter-core` |
-| `quire-agent-protocol` | `casement-protocols` (sibling path) |
 | `cua-bus` | `a11y-tree`, `almanac-core`, `cua-action`, `cua-desktop`, `maskcap`, `seat-input`, `docket-core`, `prov`, `porter-core`, `porter-infer` |
 | `cua-run` | `a11y-tree`, `cua-action`, `cua-bus`, `cua-desktop`, `maskcap`, `seat-input`, `docket-core`, `prov`, `porter-core`, `porter-infer` |
 | `cua-dbus` | `cua-bus`, `prov` |
@@ -64,22 +62,21 @@ sill may enter any tree here. cua never reaches `policy-point`: the router is th
 point and cuad asks it through `Intents1.Gate`.
 
 External boundaries: see `scripts/check-boundary.sh`. `zbus` is behind `cua-dbus` and `cuad`
-only; the pure set never reaches an effect crate; `wayland-client` is behind the `cosmic` and
-`wayland` features, `reis` behind `ei` (and `cua-fake`'s `FakeEis`), `atspi` behind `atspi`.
+only; the pure set never reaches an effect crate; `wayland-client` is behind the `wayland` features (cua-desktop, maskcap), `reis` behind `ei` (and `cua-fake`'s `FakeEis`), `atspi` behind `atspi`.
 
 ## 2. Modules
 
 | Crate | Modules |
 | --- | --- |
-| `cua-desktop` | `units`, `window`, `lease`, `caps`, `glow`, `event`, `error`, `traits`, `cosmic/` |
-| `maskcap` | `pixels`, `mask`, `digest`, `settle`, `frame`, `capture`, `wayland/` |
+| `cua-desktop` | `units`, `window`, `lease`, `caps`, `glow`, `event`, `error`, `traits`, `wayland/{pump, state, proto, toplevels, lease, socket}` |
+| `maskcap` | `pixels`, `mask`, `digest`, `settle`, `frame`, `capture`, `wayland/{state, shm, session}` |
 | `seat-input` | `op`, `keymap`, `caps`, `plan`, `receipt`, `seat`, `region`, `ei/` (`conn`: the reis connection, `actor`: the thread that owns it) |
 | `a11y-tree` | `model`, `selector`, `ops`, `source`, `atspi/` |
 | `cua-bus` | `ids`, `budget`, `state`, `action`, `task`, `report`, `record`, `bodies`, `control` |
 | `cua-run` | `config`, `observation`, `effect_class`, `window_class`, `mode`, `turn`, `lease_book`, `stall`, `model`, `seams`, `machine/{phase, input, effect, run, track, step, control, finish, ops}`, `exec/{observe, session}` |
 | `cua-dbus` | `names`, `error`, `manager`, `run`, `introspect` |
 | `cua-fake` | `clock`, `seat`, `eis`, `capture`, `desktop`, `a11y`, `model`, `gate`, `events`, `harness`, `scene` |
-| `cuad` | `clock`, `config`, `callers`, `guard`, `backend`, `gate`, `model`, `links`, `connect`, `provider`, `supervisor`, `drive`, `events`, `bus`, `system`, `serve` |
+| `cuad` | `clock`, `config`, `callers`, `guard`, `backend`, `gate`, `model`, `links`, `connect`, `provider`, `supervisor`, `drive`, `events`, `bus`, `desktop`, `ei_socket`, `system`, `serve` |
 
 ## 3. One home per concept
 
@@ -100,7 +97,7 @@ only; the pure set never reaches an effect crate; `wayland-client` is behind the
 | the machine, the phase table, effects, `mode_support`, `classify_effect` | `cua-run` |
 | the proposed values | `cua_run::CuaConfig` and `SETTING_ROWS`; the keys are sill's |
 | the D-Bus interface | `cua-dbus` and `dbus/org.quire.Cua1.xml` |
-| the Wayland protocol | `quire-agent-v1.xml` in `~/casement-protocols` (the one home), re-exported by `quire-agent-protocol`; the server side is the fork's, later casement's |
+| the Wayland protocol | `quire-agent-v1.xml` in `~/casement-protocols` (the one home), used by cua-desktop and maskcap (feature `wayland`); the server side is the fork's, later casement's |
 | the `cua.run.start` action | `manifests/org.quire.Cua.toml`, served by `cuad::CuaProvider` |
 | the event-log record | `cua_bus::CuaRecord`; `cuad::record_of` makes the almanac `EventBody::Area { area: Cua }` |
 | views of the above for the shell | sill's `sill-model` (`run_state_of(slug, outcome)`); cua defines none |
@@ -197,7 +194,7 @@ action it leads to is gated like any other.
 - Behaviour is `todo!()` behind frozen signatures, each listed in `FINDINGS.md`; shape tests
   (round trips, pinned JSON, introspection, tables) pass.
 - Tests never touch the real system: no real seat, no real capture, no real compositor, no real
-  bus, no real engine. The daemon's binary is a skeleton that exits with code 2.
+  bus, no real engine. The daemon's binary is tested on a private bus with a cleared environment.
 - The gate, with every exit code checked (`scripts/gate.sh` runs exactly this):
 
   ```bash
@@ -211,7 +208,7 @@ action it leads to is gated like any other.
   ```
 
   No crate is excluded: every crate builds and tests without hardware or a live compositor (the
-  `cosmic`, `wayland`, `ei` and `atspi` backends compile with their features and are exercised
+  `wayland`, `ei` and `atspi` backends compile with their features and are exercised
   only through fakes; the live checks are the dev scripts).
 - The `dist/` units carry their sandbox lines (`cuad.service`: Unix sockets only, no network, no
   files, no devices, no capabilities); the D-Bus activation files name the two bus names cuad

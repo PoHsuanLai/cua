@@ -479,7 +479,6 @@ dependencies = [
  "wayland-client",
  "wayland-protocols",
  "wayland-scanner",
- "wayland-server",
 ]
 
 [[package]]
@@ -712,15 +711,21 @@ dependencies = [
 name = "cua-desktop"
 version = "0.1.0"
 dependencies = [
+ "casement-protocols",
  "cua-action",
  "docket-core",
  "porter-core",
  "prov",
- "quire-agent-protocol",
+ "rustix",
  "serde",
  "serde_json",
  "thiserror",
+ "tokio",
+ "wayland-backend",
  "wayland-client",
+ "wayland-protocols",
+ "wayland-scanner",
+ "wayland-server",
 ]
 
 [[package]]
@@ -1652,14 +1657,18 @@ version = "0.1.0"
 dependencies = [
  "base64 0.22.1",
  "blake3",
+ "casement-protocols",
  "cua-action",
  "cua-desktop",
- "quire-agent-protocol",
+ "porter-core",
+ "rustix",
  "serde",
  "serde_json",
  "thiserror",
+ "tokio",
  "wayland-client",
  "wayland-protocols",
+ "wayland-server",
 ]
 
 [[package]]
@@ -2113,13 +2122,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e660451e55124f798a69a5af3f49ccfbefbd41910eefd25caf2393e1f3473ec1"
 dependencies = [
  "memchr",
-]
-
-[[package]]
-name = "quire-agent-protocol"
-version = "0.1.0"
-dependencies = [
- "casement-protocols",
 ]
 
 [[package]]

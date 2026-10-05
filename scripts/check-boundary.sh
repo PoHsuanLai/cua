@@ -13,7 +13,7 @@ cd "$(dirname "$0")/.."
 # The pure crates (cua-desktop, maskcap, seat-input, a11y-tree, cua-bus, cua-run) never reach a
 # bus, a runtime, an HTTP client, a wayland connection, an EIS client, an accessibility stack,
 # a database, a file watcher, an embedding runtime, the MCP SDK or the policy engine: their
-# backends (`cosmic`, `wayland`, `ei`, `atspi`) are features, and the default tree is what is
+# backends (`wayland`, `ei`, `atspi`) are features, and the default tree is what is
 # checked. `toml` is parsed at the edge (cuad), never below it.
 EFFECTS="zbus zvariant tokio reqwest hyper hyper-util rustls pipewire wayland-client wayland-backend wayland-server reis atspi oo7 ort fastembed rusqlite notify rmcp cedar-policy toml"
 RULES=(
@@ -23,8 +23,6 @@ RULES=(
   "a11y-tree: $EFFECTS"
   "cua-bus: $EFFECTS"
   "cua-run: $EFFECTS"
-  # The re-export reaches casement-protocols (and, through it, wayland) and nothing else.
-  "quire-agent-protocol: zbus zvariant tokio reqwest hyper hyper-util rustls pipewire reis atspi oo7 ort fastembed rusqlite notify rmcp cedar-policy toml"
   # zbus (with its tokio feature) lives in cua-dbus; no wayland, no EIS, no accessibility stack.
   "cua-dbus: reqwest hyper hyper-util rustls pipewire wayland-client wayland-backend wayland-server reis atspi oo7 ort fastembed rusqlite notify rmcp cedar-policy"
   # The fakes reach reis (the in-process EIS server) and, through model-replay, an HTTP stack;
@@ -63,8 +61,8 @@ for rule in "${RULES[@]}"; do
 done
 
 # cua sits above docket and below sill in the repo order (stoker, porter, almanac, docket, cua,
-# sill), and the cosmic-comp fork depends on `quire-agent-protocol` alone: nothing of sill's, and
-# nothing of the fork's (smithay, cosmic-comp itself), may enter any tree of this workspace,
+# sill), and the GPL compositors are separate processes: nothing of sill's, and
+# nothing of theirs (smithay, cosmic-comp itself), may enter any tree of this workspace,
 # dev-dependencies included.
 THEIRS="cosmic-comp smithay cosmic-comp-config"
 workspace_tree=$(cargo tree --workspace -e normal,build,dev --prefix none --all-features 2>/dev/null | awk '{print $1}' | sort -u)
@@ -89,11 +87,10 @@ fi
 # dependencies (all features), and nothing else. A dependency not listed is a leak; so is one
 # the crate no longer has, so the table stays exact. Dev dependencies are outside it.
 EDGES=(
-  "cua-desktop: cua-action docket-core porter-core prov quire-agent-protocol"
-  "maskcap: cua-action cua-desktop quire-agent-protocol"
+  "cua-desktop: casement-protocols cua-action docket-core porter-core prov"
+  "maskcap: casement-protocols cua-action cua-desktop"
   "seat-input: cua-action cua-desktop porter-core"
   "a11y-tree: cua-action cua-desktop porter-core prov"
-  "quire-agent-protocol: casement-protocols"
   "cua-bus: a11y-tree almanac-core cua-action cua-desktop docket-core maskcap porter-core porter-infer prov seat-input"
   "cua-run: a11y-tree cua-action cua-bus cua-desktop docket-core maskcap porter-core porter-infer prov seat-input"
   "cua-dbus: cua-bus prov"
