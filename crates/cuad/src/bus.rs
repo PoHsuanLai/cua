@@ -240,6 +240,12 @@ impl<S: Drivable> RunObject<S> {
         self.control(CuaMember::HandBack, &header, connection).await
     }
 
+    /// The run's `RunId` slug; the path spelling of it is lossy (`-` and `.` become `_`).
+    #[zbus(property)]
+    async fn id(&self) -> String {
+        self.id.as_str().to_owned()
+    }
+
     #[zbus(property)]
     async fn state(&self) -> fdo::Result<String> {
         Ok(slug_of(&self.view()?.phase.slug()).unwrap_or_default())

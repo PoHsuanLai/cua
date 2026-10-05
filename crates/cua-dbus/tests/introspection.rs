@@ -41,6 +41,7 @@ fn every_member_of_the_spec_is_declared() {
         "<method name=\"Answer\">",
         "<method name=\"TakeOver\">",
         "<method name=\"HandBack\">",
+        "<property name=\"Id\" type=\"s\" access=\"read\"/>",
         "<property name=\"State\" type=\"s\" access=\"read\"/>",
         "<property name=\"Step\" type=\"u\" access=\"read\"/>",
         "<property name=\"Goal\" type=\"s\" access=\"read\"/>",

@@ -66,6 +66,11 @@ wake}`, and `Exec`, which carries a run's effects out against the seams), `run_h
 - **`cua.default_mode`** is `auto` (U11), not design/22's `agent_workspace`; `cua.budget.denials`
   has no row (the router's breaker counts).
 - **`Cua1.Run.Finished` argument** is named `end` (body `RunEnd`), not `result`.
+- **`Cua1.Run.Id`** (read-only `s`, the `RunId` slug such as `r-3`) lets a client name a run without
+  parsing its path: the path maps `-` and `.` to `_` (`r-3` is `/org/quire/Cua1/run/r_3`), which
+  cannot be reversed. `RunAdded` and `RunRemoved` keep their single path argument (frozen); a
+  client reads `Id` after `RunAdded`, and keeps its path-to-id map for `RunRemoved` (the object is
+  gone by then).
 - **Records:** `Routed` and `Asked.question_id` were added; `HandedBack.user_events` is
   `Vec<EventRef>` (cua-bus depends on almanac-core, ask 72; the machine leaves it empty, the
   events of the person between the take-over and the hand-back are memoryd's to name once a seam

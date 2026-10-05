@@ -62,6 +62,7 @@
    </signal>
    <property name="Budget" type="s" access="read"/>
    <property name="Goal" type="s" access="read"/>
+   <property name="Id" type="s" access="read"/>
    <property name="Mode" type="s" access="read"/>
    <property name="State" type="s" access="read"/>
    <property name="Step" type="u" access="read"/>

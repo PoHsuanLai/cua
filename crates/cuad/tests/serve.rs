@@ -135,6 +135,8 @@ async fn the_planner_starts_a_run_the_shell_answers_it_and_the_end_is_told_on_th
     );
 
     // The properties say where the run is.
+    // The id is a property: the path spelling (`r_1`) is lossy, the slug is `r-1`.
+    assert_eq!(run_s.id().await.unwrap(), "r-1");
     assert_eq!(run_s.state().await.unwrap(), "waiting_for_user");
     assert_eq!(run_s.step().await.unwrap(), 1);
     assert_eq!(run_s.goal().await.unwrap(), "sign in");

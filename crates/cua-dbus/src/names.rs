@@ -11,7 +11,9 @@ pub const CUA_PATH: &str = "/org/quire/Cua1";
 pub const PROVIDER_BUS: &str = "org.quire.Cua";
 
 /// The object path of one run (`/org/quire/Cua1/run/<id>`). A run id is a slug with `.`, `_` and
-/// `-`, of which an object path allows only `_`, so `.` and `-` become `_`.
+/// `-`, of which an object path allows only `_`, so `.` and `-` become `_` (`r-4.a` is `r_4_a`).
+/// The mapping loses the original, so a client reads the `Id` property of the run object (the
+/// `RunId` slug) rather than parsing the path; `RunAdded` and `RunRemoved` carry the path.
 pub fn run_path(run: &RunId) -> String {
     let segment: String = run
         .as_str()

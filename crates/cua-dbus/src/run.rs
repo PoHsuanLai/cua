@@ -24,6 +24,12 @@ pub trait Run {
     /// The person hands it back; the run resumes.
     fn hand_back(&self) -> zbus::Result<()>;
 
+    /// The run's id, the `prov::RunId` slug (`r-3`). The object path spells it with `-` and `.`
+    /// as `_` (`/org/quire/Cua1/run/r_3`), which cannot be reversed, so read this instead of
+    /// parsing the path.
+    #[zbus(property)]
+    fn id(&self) -> zbus::Result<String>;
+
     /// The phase: a `RunStateSlug`.
     #[zbus(property)]
     fn state(&self) -> zbus::Result<String>;
@@ -106,6 +112,11 @@ impl RunSkeleton {
     }
 
     fn hand_back(&self) -> fdo::Result<()> {
+        Err(crate::introspect::frozen())
+    }
+
+    #[zbus(property)]
+    fn id(&self) -> fdo::Result<String> {
         Err(crate::introspect::frozen())
     }
 
