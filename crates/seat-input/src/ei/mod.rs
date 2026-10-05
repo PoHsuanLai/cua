@@ -4,19 +4,31 @@
 //! absolute regions are global logical coordinates, one per output; `start_emulating` takes
 //! `(last_serial, sequence)`.
 
+mod actor;
+mod conn;
+
 use crate::caps::SeatCaps;
 use crate::keymap::Keymap;
 use crate::op::InputOp;
-use crate::receipt::InputReceipt;
+use crate::receipt::{InputOrigin, InputReceipt};
 use crate::seat::{AgentSeat, Emulation, SeatError};
+use actor::{Cmd, Link};
 use cua_desktop::{EiSocket, LeaseGrant, LeaseId, SeatIsolation};
+use porter_core::Count;
+use std::sync::OnceLock;
+use tokio::sync::Mutex;
 
-/// A seat over one EIS connection.
+static NO_KEYMAP: Keymap = Keymap {
+    entries: Vec::new(),
+};
+
+/// A seat over one EIS connection. The connection lives on a thread of its own (reis proxies
+/// are not `Send`).
 #[derive(Debug)]
 pub struct EiSeat {
     caps: SeatCaps,
-    keymap: Keymap,
-    context: Option<reis::ei::Context>,
+    keymap: OnceLock<Keymap>,
+    link: Mutex<Option<Link>>,
 }
 
 impl EiSeat {
@@ -24,15 +36,29 @@ impl EiSeat {
     pub fn new(isolation: SeatIsolation) -> Self {
         Self {
             caps: SeatCaps::for_isolation(isolation),
-            keymap: Keymap::default(),
-            context: None,
+            keymap: OnceLock::new(),
+            link: Mutex::new(None),
         }
     }
 
-    /// Whether the seat holds an EIS connection.
+    /// Whether the seat holds an EIS connection. A seat busy in a call counts as connected.
     pub fn is_connected(&self) -> bool {
-        self.context.is_some()
+        self.link.try_lock().map_or(true, |l| l.is_some())
     }
+
+    fn origin(&self, lease: LeaseId) -> InputOrigin {
+        match self.caps.isolation {
+            SeatIsolation::AgentSeat => InputOrigin::AgentSeat(lease),
+            SeatIsolation::SharedSeat => InputOrigin::SharedSeatViaEi,
+        }
+    }
+}
+
+/// The link of `lease`, or `NotConnected`.
+fn of_lease(slot: &Option<Link>, lease: LeaseId) -> Result<&Link, SeatError> {
+    slot.as_ref()
+        .filter(|l| l.lease == lease)
+        .ok_or(SeatError::NotConnected)
 }
 
 impl AgentSeat for EiSeat {
@@ -41,30 +67,45 @@ impl AgentSeat for EiSeat {
     }
 
     fn keymap(&self) -> &Keymap {
-        &self.keymap
+        self.keymap.get().unwrap_or(&NO_KEYMAP)
     }
 
     async fn attach(&self, lease: &LeaseGrant, socket: EiSocket) -> Result<(), SeatError> {
-        let _ = (lease, socket);
-        todo!(
-            "handshake as a sender, bind seat devices, read the keymap, start_emulating (ei_seat_against_fake_eis)"
-        )
+        let (link, keymap) = actor::spawn(lease, socket.0).await?;
+        let _ = self.keymap.set(keymap);
+        // The old link, if any, is dropped here: its thread says goodbye and ends.
+        *self.link.lock().await = Some(link);
+        Ok(())
     }
 
     async fn perform(&self, lease: LeaseId, ops: &[InputOp]) -> Result<InputReceipt, SeatError> {
-        let _ = (lease, ops);
-        todo!(
-            "one frame per op: pointer_absolute through the RegionMap, button, scroll_discrete, key, text"
-        )
+        let mut slot = self.link.lock().await;
+        let result = of_lease(&slot, lease)?
+            .ask(|reply| Cmd::Perform(ops.to_vec(), reply))
+            .await;
+        if result == Err(SeatError::NotConnected) {
+            slot.take();
+        }
+        Ok(InputReceipt {
+            lease,
+            ops: Count(u32::try_from(ops.len()).unwrap_or(u32::MAX)),
+            text_path: None,
+            origin: self.origin(lease),
+            at: result?,
+        })
     }
 
     async fn emulation(&self, lease: LeaseId, state: Emulation) -> Result<(), SeatError> {
-        let _ = (lease, state);
-        todo!("start_emulating or stop_emulating; perform answers Suspended while stopped")
+        let slot = self.link.lock().await;
+        of_lease(&slot, lease)?
+            .ask(|reply| Cmd::Emulation(state, reply))
+            .await
     }
 
     async fn detach(&self, lease: LeaseId) -> Result<(), SeatError> {
-        let _ = lease;
-        todo!("stop_emulating, disconnect (held keys are released by the server)")
+        let mut slot = self.link.lock().await;
+        let result = of_lease(&slot, lease)?.ask(Cmd::Detach).await;
+        slot.take();
+        result
     }
 }

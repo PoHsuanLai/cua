@@ -17,13 +17,15 @@ xkbcommon = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
 reis = { workspace = true, optional = true, features = ["tokio"] }
+tokio = { workspace = true, optional = true }
+futures-util = { workspace = true, optional = true }
 
 [dev-dependencies]
 serde_json = { workspace = true }
 
 [features]
 # The EI client over reis: stock `GetSenderSocket` or the fork's lease socket.
-ei = ["dep:reis"]
+ei = ["dep:reis", "dep:tokio", "dep:futures-util"]
 
 [lints]
 workspace = true

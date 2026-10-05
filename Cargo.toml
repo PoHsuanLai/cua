@@ -38,6 +38,7 @@ cua-fake              = { path = "crates/cua-fake" }
 cua-action      = { path = "../stoker/crates/cua-action" }
 model-provider  = { path = "../stoker/crates/model-provider" }
 model-replay    = { path = "../stoker/crates/model-replay" }
+cua-parse       = { path = "../stoker/crates/cua-parse" }
 
 # porter's frozen interfaces.
 porter-core     = { path = "../porter/crates/porter-core" }
