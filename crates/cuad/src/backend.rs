@@ -4,8 +4,9 @@ use cua_desktop::{BackendCaps, BackendKind, LeaseGrant, MaskWhere};
 use cua_desktop::{EiSocket, LeaseId};
 use maskcap::{
     CaptureError, CaptureSession, DamageAt, Frame, FrameWant, MaskRegion, QuireMaskedCapture,
-    StockToplevelCapture, WaylandSession, WindowCapture,
+    StampClock, StockToplevelCapture, WaylandSession, WindowCapture,
 };
+use std::sync::Arc;
 use seat_input::{
     AgentSeat, EiSeat, Emulation, InputOp, InputReceipt, Keymap, SeatCaps, SeatError,
 };
@@ -37,6 +38,8 @@ pub enum CaptureBackend {
     StockToplevel(StockToplevelCapture),
     /// The fork's masked source.
     QuireMasked(QuireMaskedCapture),
+    /// No compositor to capture from: every `open` is refused.
+    Unavailable,
 }
 
 impl CaptureBackend {
@@ -53,6 +56,20 @@ impl CaptureBackend {
     }
 }
 
+impl CaptureBackend {
+    /// The same backend, stamping its frames with `clock`: the stock source takes it, the
+    /// others have no frames of their own to stamp.
+    #[must_use]
+    pub fn with_clock(self, clock: Arc<dyn StampClock>) -> Self {
+        match self {
+            CaptureBackend::StockToplevel(capture) => {
+                CaptureBackend::StockToplevel(capture.with_clock(clock))
+            }
+            other => other,
+        }
+    }
+}
+
 impl WindowCapture for CaptureBackend {
     type Session = CaptureSessionKind;
 
@@ -64,6 +81,7 @@ impl WindowCapture for CaptureBackend {
             CaptureBackend::QuireMasked(capture) => {
                 capture.open(lease).await.map(CaptureSessionKind::Masked)
             }
+            CaptureBackend::Unavailable => Err(CaptureError::Refused),
         }
     }
 }

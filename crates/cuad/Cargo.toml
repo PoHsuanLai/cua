@@ -1,6 +1,6 @@
 [package]
 name = "cuad"
-description = "The computer-use daemon and its library: the backends, the supervisor of runs, the seams over D-Bus (the router's gate, inferd, memoryd), the org.quire.Cua provider and org.quire.Cua1. The binary is a skeleton."
+description = "The computer-use daemon and its library: the backends, the supervisor of runs, the seams over D-Bus (the router's gate, inferd, memoryd), the org.quire.Cua provider and org.quire.Cua1. The binary serves both names on the session bus."
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -17,7 +17,7 @@ name = "cuad"
 path = "src/main.rs"
 
 [dependencies]
-cua-desktop = { workspace = true, features = ["cosmic"] }
+cua-desktop = { workspace = true, features = ["wayland"] }
 maskcap = { workspace = true, features = ["wayland"] }
 seat-input = { workspace = true, features = ["ei"] }
 a11y-tree = { workspace = true, features = ["atspi"] }
@@ -38,7 +38,7 @@ serde_json = { workspace = true }
 toml = { workspace = true }
 rustix = { workspace = true }
 thiserror = { workspace = true }
-tokio = { workspace = true }
+tokio = { workspace = true, features = ["signal"] }
 zbus = { workspace = true }
 futures-util = { workspace = true }
 

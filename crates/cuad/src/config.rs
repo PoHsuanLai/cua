@@ -18,6 +18,18 @@ pub enum BackendChoice {
     Only(BackendKind),
 }
 
+/// Whether cuad reads the accessibility tree.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum A11yChoice {
+    /// No tree: every snapshot says there is no accessibility bus. The default until the AT-SPI
+    /// source is built (FINDINGS), because asking it today would panic a run.
+    #[default]
+    Off,
+    /// AT-SPI, over the session's accessibility bus.
+    Atspi,
+}
+
 /// Everything cuad reads at start.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CuadConfig {
@@ -29,6 +41,9 @@ pub struct CuadConfig {
     pub tier: Tier,
     /// Which bus names are the router, the planner and the shell.
     pub callers: CallerNames,
+    /// Whether the accessibility tree is read.
+    #[serde(default)]
+    pub a11y: A11yChoice,
 }
 
 impl Default for CuadConfig {
@@ -38,6 +53,7 @@ impl Default for CuadConfig {
             backend: BackendChoice::Detect,
             tier: Tier::Balanced,
             callers: CallerNames::default(),
+            a11y: A11yChoice::default(),
         }
     }
 }

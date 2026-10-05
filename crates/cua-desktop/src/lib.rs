@@ -7,9 +7,9 @@
 //! crates share ([`Stamp`], [`Ms`], [`Digest32`]). `RunMode` and `WindowTrust` belong to
 //! docket's gate contract and are re-exported here.
 //!
-//! Pure by default. The `cosmic` feature is the COSMIC backend (stock cosmic-comp and the quire
-//! fork) over wayland-client and `quire-agent-protocol`; its bodies are `todo!()` until the
-//! backend is built.
+//! Pure by default. The `wayland` feature is the compositor backend (stock cosmic-comp today,
+//! casement's agent socket later) over wayland-client: [`CosmicDesktop`] reports the toplevels
+//! and leases the stock in-place mode through a [`SenderSocket`] the caller supplies.
 
 mod caps;
 mod error;
@@ -20,12 +20,14 @@ mod traits;
 mod units;
 mod window;
 
-#[cfg(feature = "cosmic")]
-mod cosmic;
+#[cfg(feature = "wayland")]
+mod wayland;
 
 pub use caps::{BackendCaps, BackendKind, ConsentGuard, GlowDraw, HiddenCapture, MaskWhere};
-#[cfg(feature = "cosmic")]
-pub use cosmic::CosmicDesktop;
+#[cfg(feature = "wayland")]
+pub use wayland::{
+    CosmicDesktop, DeviceTypes, Pump, PumpError, SenderSocket, SocketFuture,
+};
 pub use docket_core::{RunMode, WindowTrust};
 pub use error::DesktopError;
 pub use event::DesktopEvent;

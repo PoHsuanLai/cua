@@ -5,7 +5,6 @@ members = [
   "crates/maskcap",
   "crates/seat-input",
   "crates/a11y-tree",
-  "crates/quire-agent-protocol",
   "crates/cua-bus",
   "crates/cua-run",
   "crates/cua-dbus",
@@ -27,11 +26,13 @@ a11y-tree             = { path = "crates/a11y-tree" }
 seat-input            = { path = "crates/seat-input" }
 maskcap               = { path = "crates/maskcap" }
 cua-desktop           = { path = "crates/cua-desktop" }
-quire-agent-protocol  = { path = "crates/quire-agent-protocol" }
 cua-bus               = { path = "crates/cua-bus" }
 cua-run               = { path = "crates/cua-run" }
 cua-dbus              = { path = "crates/cua-dbus" }
 cua-fake              = { path = "crates/cua-fake" }
+
+# The one home of every quire_*_v1 protocol: the XML, the vocabulary, the bindings (sibling path).
+casement-protocols    = { path = "../casement-protocols" }
 
 # stoker's frozen interfaces, by sibling path until a pinned git rev replaces them (quire
 # CONSUMING.md section 1). stoker has no cua dependency, so there is no cycle.
@@ -91,7 +92,6 @@ tempfile = "3"
 
 # NOT in quire's pinned block (FINDINGS: dependencies added here): the generator and the server
 # side of the wayland crates, both already in every tree through wayland-protocols and
-# wayland-client, named here because `quire-agent-protocol` generates its own bindings.
 wayland-scanner = "0.31"
 wayland-server  = "0.31"
 wayland-backend = "0.3"

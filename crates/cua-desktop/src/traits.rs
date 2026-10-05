@@ -1,6 +1,6 @@
 //! The two seams cuad reaches the desktop through.
 
-use crate::caps::BackendCaps;
+use crate::caps::{BackendCaps, BackendKind};
 use crate::error::DesktopError;
 use crate::event::DesktopEvent;
 use crate::glow::GlowState;
@@ -12,6 +12,12 @@ use std::future::Future;
 pub trait Desktop: Send + Sync {
     /// What this backend can do.
     fn caps(&self) -> BackendCaps;
+
+    /// The backend that is actually there: `caps().kind`, or `None` for a desktop that could not
+    /// be reached at all (cuad then reports `Backend = none` and offers no mode).
+    fn backend(&self) -> Option<BackendKind> {
+        Some(self.caps().kind)
+    }
 
     /// The toplevels now.
     fn windows(&self) -> impl Future<Output = Result<Vec<ToplevelInfo>, DesktopError>> + Send;

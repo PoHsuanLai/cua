@@ -5,8 +5,9 @@ use cua_run::Clock;
 use porter_core::UnixSeconds;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
-/// The system's clock, with its origin at construction.
-#[derive(Debug)]
+/// The system's clock, with its origin at construction. Copies share the origin: capture
+/// stamps its frames on the same clock the run machine reads.
+#[derive(Debug, Clone, Copy)]
 pub struct SystemClock {
     origin: Instant,
 }

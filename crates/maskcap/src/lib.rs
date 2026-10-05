@@ -7,7 +7,8 @@
 //! [`CaptureSession`]).
 //!
 //! Pure by default. The `wayland` feature is the backend: ext-image-copy-capture over
-//! wayland-client, in `wayland`. Its bodies are `todo!()` until Spike A's findings are built.
+//! wayland-client, in `wayland`: the stock toplevel source is built; the quire masked source
+//! waits for casement's agent socket.
 
 mod capture;
 mod digest;
@@ -25,4 +26,4 @@ pub use mask::{MaskReason, MaskRegion, MaskReport, WholeMask, apply_masks};
 pub use pixels::{FrameSeq, PixelBuf};
 pub use settle::{DamageAt, DamageSource, Settle, pixel_diff, settle};
 #[cfg(feature = "wayland")]
-pub use wayland::{QuireMaskedCapture, StockToplevelCapture, WaylandSession};
+pub use wayland::{QuireMaskedCapture, StampClock, StockToplevelCapture, WaylandSession};

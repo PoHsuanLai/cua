@@ -129,11 +129,15 @@ impl<S: Drivable> ManagerObject<S> {
 
     #[zbus(property)]
     async fn backend(&self) -> String {
-        backend_wire(Some(self.supervisor.desktop().caps().kind))
+        backend_wire(self.supervisor.desktop().backend())
     }
 
     #[zbus(property)]
     async fn modes(&self) -> HashMap<String, String> {
+        // No backend, no mode: the property is empty rather than promising what is not there.
+        if self.supervisor.desktop().backend().is_none() {
+            return HashMap::new();
+        }
         let caps = self.supervisor.desktop().caps();
         let support: Vec<_> = [
             RunMode::InPlace,

@@ -17,19 +17,26 @@ base64 = { workspace = true }
 blake3 = { workspace = true }
 wayland-client = { workspace = true, optional = true }
 wayland-protocols = { workspace = true, optional = true }
-quire-agent-protocol = { workspace = true, optional = true }
+casement-protocols = { workspace = true, optional = true }
+rustix = { workspace = true, optional = true }
 
 [dev-dependencies]
 serde_json = { workspace = true }
+porter-core = { workspace = true }
+tokio = { workspace = true }
+wayland-server = { workspace = true }
+wayland-protocols = { workspace = true, features = ["server"] }
+rustix = { workspace = true, features = ["event"] }
 
 [features]
 # ext-image-copy-capture over a wayland connection; the masked source of `quire-agent-v1`.
 wayland = [
   "dep:wayland-client",
   "dep:wayland-protocols",
-  "dep:quire-agent-protocol",
-  "quire-agent-protocol/client",
-  "cua-desktop/cosmic",
+  "dep:casement-protocols",
+  "dep:rustix",
+  "casement-protocols/client",
+  "cua-desktop/wayland",
 ]
 
 [lints]
