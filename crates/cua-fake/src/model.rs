@@ -1,9 +1,15 @@
 //! A model that says what it was scripted to say.
 
+use cua_action::{CuaAction, ImageSpace, ModelSpace, ToolDialect, WindowSpace};
+use cua_parse::{InSpace, ParseLimits, Parsed, parse_text, parse_tool_calls};
 use cua_run::{CuaModel, CuaModelError, FrameAttachment, StepSink};
-use model_replay::Cassette;
+use model_provider::{ProviderError, SafetySignal, ToolCall, TurnEvent};
+use model_replay::{Cassette, Interaction};
 use porter_core::Tokens;
-use porter_infer::{CuaBegin, CuaStepReply, CuaStepRequest, ServedBy, TokenUsage};
+use porter_infer::{
+    CuaBegin, CuaStepReply, CuaStepRequest, DropReason, DroppedAction, SafetyHint, ServedBy,
+    TokenUsage,
+};
 use std::collections::VecDeque;
 
 /// Why a cassette could not become a script.
@@ -43,11 +49,22 @@ impl ScriptedModel {
 
     /// A script from a recorded cassette: each interaction's reply, parsed by stoker's
     /// `cua-parse` into window space.
+    ///
+    /// A cassette does not say how its model writes actions, so each reply is read as Qwen's
+    /// tool call, then Holo 3.1's, then UI-TARS text, and the first reading that yields an
+    /// action wins. Points are taken as window pixels (the replayed frames are the window at
+    /// scale 1), so a recorded click lands where it was recorded. An interaction that ended in
+    /// a provider error replays as that error; one that no dialect reads is `NotAStep`.
     pub fn from_cassette(cassette: &Cassette) -> Result<Self, ScriptError> {
-        let _ = cassette;
-        todo!(
-            "one CuaStepReply per interaction through cua-parse (the replay path of ScriptedModel)"
-        )
+        let script = cassette
+            .interactions
+            .iter()
+            .map(|it| match &it.end {
+                Err(error) => Ok(Err(model_error(error))),
+                Ok(_) => reply_of(it).map(Ok),
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(Self::new(script))
     }
 
     /// The goals it was begun with.
@@ -88,5 +105,123 @@ impl CuaModel for ScriptedModel {
 
     fn served(&self) -> Option<ServedBy> {
         self.served.clone()
+    }
+}
+
+/// How a provider's failure reaches the machine.
+fn model_error(error: &ProviderError) -> CuaModelError {
+    match error {
+        ProviderError::Unreachable
+        | ProviderError::NotReady
+        | ProviderError::Timeout
+        | ProviderError::RateLimited(_)
+        | ProviderError::Server(_) => CuaModelError::Transient,
+        ProviderError::Unreadable(_) => CuaModelError::Parse,
+        ProviderError::Unauthorized
+        | ProviderError::ContextOverflow { .. }
+        | ProviderError::BadRequest(_)
+        | ProviderError::Refused(_) => CuaModelError::Fatal,
+    }
+}
+
+/// What an interaction's events add up to.
+struct Turn {
+    text: String,
+    thought: String,
+    calls: Vec<ToolCall>,
+    safety: Vec<SafetyHint>,
+}
+
+fn turn_of(events: &[TurnEvent]) -> Turn {
+    let mut turn = Turn {
+        text: String::new(),
+        thought: String::new(),
+        calls: Vec::new(),
+        safety: Vec::new(),
+    };
+    for event in events {
+        match event {
+            TurnEvent::TextDelta(t) => turn.text.push_str(t),
+            TurnEvent::ThoughtDelta(t) => turn.thought.push_str(t),
+            TurnEvent::ToolCallDone(call) => turn.calls.push(call.clone()),
+            TurnEvent::Safety(SafetySignal::RequireConfirmation(why)) => {
+                turn.safety
+                    .push(SafetyHint::RequireConfirmation(why.clone()));
+            }
+            TurnEvent::Safety(SafetySignal::Blocked(why)) => {
+                turn.safety.push(SafetyHint::Blocked(why.clone()));
+            }
+            _ => {}
+        }
+    }
+    turn
+}
+
+fn parsed_of(turn: &Turn) -> Option<Parsed> {
+    let limits = ParseLimits::default();
+    let by_tool = [ToolDialect::QwenComputerUse, ToolDialect::Holo31]
+        .into_iter()
+        .filter(|_| !turn.calls.is_empty())
+        .filter_map(|d| parse_tool_calls(d, ModelSpace::Image, &turn.calls, limits).ok());
+    let by_text = parse_text(
+        cua_action::TextDialect::UiTars15,
+        ModelSpace::Image,
+        &turn.text,
+        limits,
+    )
+    .ok();
+    by_tool
+        .chain(by_text)
+        .find(|p| !actions_of(&p.actions).is_empty())
+}
+
+fn actions_of(space: &InSpace) -> Vec<CuaAction<WindowSpace>> {
+    let same = |p: cua_action::Point<ImageSpace>| {
+        Ok::<_, std::convert::Infallible>(cua_action::Point::new(p.x, p.y))
+    };
+    let length = |l: cua_action::Length<ImageSpace>| {
+        Ok::<_, std::convert::Infallible>(cua_action::Length::new(l.coord()))
+    };
+    match space {
+        InSpace::Image(list) => list
+            .iter()
+            .cloned()
+            .filter_map(|a| a.map_points(same, length).ok())
+            .collect(),
+        InSpace::Grid(..) => Vec::new(),
+    }
+}
+
+fn reply_of(it: &Interaction) -> Result<CuaStepReply, ScriptError> {
+    let turn = turn_of(&it.events);
+    let parsed = parsed_of(&turn).ok_or(ScriptError::NotAStep(it.id.0))?;
+    let thought = Some(turn.thought)
+        .filter(|t| !t.is_empty())
+        .or(parsed.thought.clone());
+    Ok(CuaStepReply {
+        thought,
+        actions: actions_of(&parsed.actions),
+        dropped: parsed
+            .dropped
+            .iter()
+            .map(|d| DroppedAction {
+                verb: d.verb.as_str().to_owned(),
+                reason: drop_reason(d.reason),
+            })
+            .collect(),
+        safety: turn.safety,
+    })
+}
+
+fn drop_reason(reason: cua_parse::DropReason) -> DropReason {
+    use cua_parse::DropReason as P;
+    match reason {
+        P::UnsupportedVerb => DropReason::UnsupportedVerb,
+        P::MissingArgument => DropReason::MissingArgument,
+        P::BadArgument => DropReason::BadArgument,
+        P::BadNumber => DropReason::BadNumber,
+        P::TooLong => DropReason::TooLong,
+        P::OverBatchLimit => DropReason::OverBatchLimit,
+        P::OutOfFrame => DropReason::OutOfFrame,
     }
 }
