@@ -97,7 +97,7 @@ EDGES=(
   "cua-bus: a11y-tree almanac-core cua-action cua-desktop docket-core maskcap porter-core porter-infer prov seat-input"
   "cua-run: a11y-tree cua-action cua-bus cua-desktop docket-core maskcap porter-core porter-infer prov seat-input"
   "cua-dbus: cua-bus prov"
-  "cua-fake: a11y-tree cua-action cua-bus cua-desktop cua-run docket-core maskcap model-replay porter-core porter-infer prov seat-input"
+  "cua-fake: a11y-tree cua-action cua-bus cua-desktop cua-parse cua-run docket-core maskcap model-provider model-replay porter-core porter-infer prov seat-input"
   "cuad: a11y-tree almanac-client almanac-core cua-bus cua-dbus cua-desktop cua-run docket-client docket-core maskcap porter-client porter-core porter-infer prov seat-input"
 )
 for edge in "${EDGES[@]}"; do
