@@ -159,7 +159,11 @@ async fn a_list_without_cosmic_info_still_names_the_windows() {
     let desktop = desktop(&mut server);
     let windows = desktop.windows().await.unwrap();
     assert_eq!(windows.len(), 1);
-    assert_eq!(windows[0].geometry.w, Px(0), "no geometry without cosmic info");
+    assert_eq!(
+        windows[0].geometry.w,
+        Px(0),
+        "no geometry without cosmic info"
+    );
     assert!(windows[0].state.is_empty());
 }
 
@@ -176,7 +180,10 @@ async fn next_event_hears_geometry_changes_and_closes_but_not_the_first_geometry
         panic!("{event:?}");
     };
     assert_eq!(who, ident("id-1"));
-    assert_eq!((rect.x.0, rect.y.0, rect.w, rect.h), (10, 20, Px(300), Px(200)));
+    assert_eq!(
+        (rect.x.0, rect.y.0, rect.w, rect.h),
+        (10, 20, Px(300), Px(200))
+    );
 
     server.close(top);
     assert_eq!(
@@ -226,22 +233,37 @@ async fn a_stock_in_place_lease_hands_over_the_shared_seat_socket() {
 
     // One run per window; another window is free.
     assert_eq!(
-        desktop.lease(request("id-1", RunMode::InPlace)).await.unwrap_err(),
+        desktop
+            .lease(request("id-1", RunMode::InPlace))
+            .await
+            .unwrap_err(),
         DesktopError::Busy
     );
     // Suspend, resume and glow have nothing to say to stock; they know the lease.
     let id = leased.grant.id;
-    desktop.suspend(id, cua_desktop::Suspend::Consent).await.unwrap();
+    desktop
+        .suspend(id, cua_desktop::Suspend::Consent)
+        .await
+        .unwrap();
     desktop.resume(id).await.unwrap();
-    desktop.glow(id, cua_desktop::GlowState::Working).await.unwrap();
+    desktop
+        .glow(id, cua_desktop::GlowState::Working)
+        .await
+        .unwrap();
 
     desktop.release(id).await.unwrap();
-    desktop.release(id).await.expect("releasing twice is not a failure");
+    desktop
+        .release(id)
+        .await
+        .expect("releasing twice is not a failure");
     assert_eq!(
         desktop.resume(id).await.unwrap_err(),
         DesktopError::NoSuchWindow
     );
-    let again = desktop.lease(request("id-1", RunMode::InPlace)).await.unwrap();
+    let again = desktop
+        .lease(request("id-1", RunMode::InPlace))
+        .await
+        .unwrap();
     assert_ne!(again.grant.id, id, "a lease id is not reused");
 }
 
@@ -254,10 +276,26 @@ async fn a_stock_lease_refuses_what_stock_cannot_do() {
     let desktop = desktop(&mut server).with_sender_socket(sockets.clone());
 
     let table = [
-        ("agent workspace", request("id-1", RunMode::AgentWorkspace), DesktopError::ModeUnsupported(RunMode::AgentWorkspace)),
-        ("nested session", request("id-1", RunMode::NestedSession), DesktopError::ModeUnsupported(RunMode::NestedSession)),
-        ("the shell", request("id-bar", RunMode::InPlace), DesktopError::NotLeasable(WindowTrust::Shell)),
-        ("no such window", request("id-9", RunMode::InPlace), DesktopError::NoSuchWindow),
+        (
+            "agent workspace",
+            request("id-1", RunMode::AgentWorkspace),
+            DesktopError::ModeUnsupported(RunMode::AgentWorkspace),
+        ),
+        (
+            "nested session",
+            request("id-1", RunMode::NestedSession),
+            DesktopError::ModeUnsupported(RunMode::NestedSession),
+        ),
+        (
+            "the shell",
+            request("id-bar", RunMode::InPlace),
+            DesktopError::NotLeasable(WindowTrust::Shell),
+        ),
+        (
+            "no such window",
+            request("id-9", RunMode::InPlace),
+            DesktopError::NoSuchWindow,
+        ),
     ];
     for (name, req, want) in table {
         assert_eq!(desktop.lease(req).await.unwrap_err(), want, "{name}");
@@ -269,7 +307,12 @@ async fn a_stock_lease_refuses_what_stock_cannot_do() {
 
     // A compositor that refuses the socket grants nothing and leaves the window free.
     *sockets.refuse.lock().unwrap() = true;
-    assert!(desktop.lease(request("id-1", RunMode::InPlace)).await.is_err());
+    assert!(
+        desktop
+            .lease(request("id-1", RunMode::InPlace))
+            .await
+            .is_err()
+    );
     *sockets.refuse.lock().unwrap() = false;
     desktop
         .lease(request("id-1", RunMode::InPlace))
@@ -295,8 +338,14 @@ async fn losing_the_compositor_revokes_every_lease_once() {
     server.add(spec("id-1", "org.gnome.Calculator", "Calculator"));
     server.add(spec("id-2", "org.gnome.Nautilus", "Files"));
     let desktop = desktop(&mut server).with_sender_socket(Arc::new(Sockets::default()));
-    let a = desktop.lease(request("id-1", RunMode::InPlace)).await.unwrap();
-    let b = desktop.lease(request("id-2", RunMode::InPlace)).await.unwrap();
+    let a = desktop
+        .lease(request("id-1", RunMode::InPlace))
+        .await
+        .unwrap();
+    let b = desktop
+        .lease(request("id-2", RunMode::InPlace))
+        .await
+        .unwrap();
 
     server.shutdown();
     let mut revoked = Vec::new();

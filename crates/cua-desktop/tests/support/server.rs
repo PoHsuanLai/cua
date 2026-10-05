@@ -140,7 +140,10 @@ impl FakeCompositor {
     }
 
     /// Runs `f` on the compositor's thread and returns what it returns.
-    pub fn call<R: Send + 'static>(&self, f: impl FnOnce(&mut Compositor) -> R + Send + 'static) -> R {
+    pub fn call<R: Send + 'static>(
+        &self,
+        f: impl FnOnce(&mut Compositor) -> R + Send + 'static,
+    ) -> R {
         let (reply, answer) = channel();
         self.send(Job::Run(Box::new(move |c| {
             let _ = reply.send(f(c));
@@ -165,7 +168,11 @@ impl FakeCompositor {
     /// A workspace.
     pub fn workspace(&self, id: &'static str, active: bool) -> WsId {
         self.call(move |c| {
-            c.wss.push(Ws { id, active, handles: Vec::new() });
+            c.wss.push(Ws {
+                id,
+                active,
+                handles: Vec::new(),
+            });
             WsId(c.wss.len() - 1)
         })
     }

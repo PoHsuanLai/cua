@@ -31,7 +31,9 @@ impl FakeEi {
         #[zbus(connection)] connection: &zbus::Connection,
     ) -> fdo::Result<OwnedFd> {
         let dbus = fdo::DBusProxy::new(connection).await?;
-        let owner = dbus.get_name_owner(OSK_NAME.try_into().expect("a name")).await;
+        let owner = dbus
+            .get_name_owner(OSK_NAME.try_into().expect("a name"))
+            .await;
         let caller = header.sender().map(ToString::to_string);
         if owner.ok().map(|o| o.to_string()) != caller {
             return Err(fdo::Error::AccessDenied("Access denied".into()));
@@ -77,7 +79,10 @@ async fn the_osk_name_lets_the_call_through_and_the_socket_is_a_live_descriptor(
     assert_eq!(&got, b"ei");
 
     // The name is taken once and kept: a second call needs no second request.
-    sockets.sender_socket(DeviceTypes::KEYBOARD).await.expect("again");
+    sockets
+        .sender_socket(DeviceTypes::KEYBOARD)
+        .await
+        .expect("again");
     assert_eq!(seen.lock().unwrap().devices, vec![7, 1]);
 }
 

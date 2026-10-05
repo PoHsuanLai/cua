@@ -51,7 +51,11 @@ impl Window {
             .cycle()
             .take((size.0 * size.1 * 4) as usize)
             .collect();
-        Self { identifier, size, pixels }
+        Self {
+            identifier,
+            size,
+            pixels,
+        }
     }
 }
 
@@ -124,18 +128,31 @@ impl FakeCompositor {
             sessions: Vec::new(),
             session_toplevel: Vec::new(),
             // What stock cosmic-comp offers: the 10-bit pair first, then the 8-bit pair.
-            offered: vec![Format::Abgr2101010, Format::Xbgr2101010, Format::Xbgr8888, Format::Abgr8888],
+            offered: vec![
+                Format::Abgr2101010,
+                Format::Xbgr2101010,
+                Format::Xbgr8888,
+                Format::Abgr8888,
+            ],
             frames_served: 0,
         };
         let thread = std::thread::spawn(move || serve(display, state, queue, ring));
-        Self { jobs, bell, thread: Some(thread), client: Some(client) }
+        Self {
+            jobs,
+            bell,
+            thread: Some(thread),
+            client: Some(client),
+        }
     }
 
     pub fn client(&mut self) -> UnixStream {
         self.client.take().expect("the client socket is taken once")
     }
 
-    pub fn call<R: Send + 'static>(&self, f: impl FnOnce(&mut Compositor) -> R + Send + 'static) -> R {
+    pub fn call<R: Send + 'static>(
+        &self,
+        f: impl FnOnce(&mut Compositor) -> R + Send + 'static,
+    ) -> R {
         let (reply, answer) = channel();
         self.send(Job::Run(Box::new(move |c| {
             let _ = reply.send(f(c));
@@ -188,11 +205,19 @@ impl Drop for FakeCompositor {
     }
 }
 
-fn serve(mut display: Display<Compositor>, mut state: Compositor, queue: Receiver<Job>, ring: UnixStream) {
+fn serve(
+    mut display: Display<Compositor>,
+    mut state: Compositor,
+    queue: Receiver<Job>,
+    ring: UnixStream,
+) {
     use std::io::Read;
     loop {
         let ready = {
-            let mut fds = [PollFd::new(&display, PollFlags::IN), PollFd::new(&ring, PollFlags::IN)];
+            let mut fds = [
+                PollFd::new(&display, PollFlags::IN),
+                PollFd::new(&ring, PollFlags::IN),
+            ];
             loop {
                 match poll(&mut fds, None) {
                     Ok(_) => break,
@@ -263,7 +288,11 @@ impl Compositor {
         };
         let (w, h) = window.size;
         if buf.size != (w as i32, h as i32) || self.closed[top] {
-            frame.failed(if self.closed[top] { FailureReason::Stopped } else { FailureReason::BufferConstraints });
+            frame.failed(if self.closed[top] {
+                FailureReason::Stopped
+            } else {
+                FailureReason::BufferConstraints
+            });
             return;
         }
         let mut done = 0;
@@ -279,14 +308,25 @@ impl Compositor {
 }
 
 impl GlobalDispatch<ExtForeignToplevelListV1, ()> for Compositor {
-    fn bind(state: &mut Self, dh: &DisplayHandle, client: &Client, resource: New<ExtForeignToplevelListV1>, _: &(), init: &mut DataInit<'_, Self>) {
+    fn bind(
+        state: &mut Self,
+        dh: &DisplayHandle,
+        client: &Client,
+        resource: New<ExtForeignToplevelListV1>,
+        _: &(),
+        init: &mut DataInit<'_, Self>,
+    ) {
         let list = init.init(resource, ());
         for index in 0..state.windows.len() {
             if state.closed[index] {
                 continue;
             }
             let handle = client
-                .create_resource::<ExtForeignToplevelHandleV1, usize, Compositor>(dh, list.version(), index)
+                .create_resource::<ExtForeignToplevelHandleV1, usize, Compositor>(
+                    dh,
+                    list.version(),
+                    index,
+                )
                 .expect("handle");
             list.toplevel(&handle);
             handle.identifier(state.windows[index].identifier.into());
@@ -297,41 +337,108 @@ impl GlobalDispatch<ExtForeignToplevelListV1, ()> for Compositor {
 }
 
 impl Dispatch<ExtForeignToplevelListV1, ()> for Compositor {
-    fn request(_: &mut Self, _: &Client, _: &ExtForeignToplevelListV1, _: ext_foreign_toplevel_list_v1::Request, _: &(), _: &DisplayHandle, _: &mut DataInit<'_, Self>) {}
+    fn request(
+        _: &mut Self,
+        _: &Client,
+        _: &ExtForeignToplevelListV1,
+        _: ext_foreign_toplevel_list_v1::Request,
+        _: &(),
+        _: &DisplayHandle,
+        _: &mut DataInit<'_, Self>,
+    ) {
+    }
 }
 
 impl Dispatch<ExtForeignToplevelHandleV1, usize> for Compositor {
-    fn request(_: &mut Self, _: &Client, _: &ExtForeignToplevelHandleV1, _: ext_foreign_toplevel_handle_v1::Request, _: &usize, _: &DisplayHandle, _: &mut DataInit<'_, Self>) {}
+    fn request(
+        _: &mut Self,
+        _: &Client,
+        _: &ExtForeignToplevelHandleV1,
+        _: ext_foreign_toplevel_handle_v1::Request,
+        _: &usize,
+        _: &DisplayHandle,
+        _: &mut DataInit<'_, Self>,
+    ) {
+    }
 }
 
 impl GlobalDispatch<ExtForeignToplevelImageCaptureSourceManagerV1, ()> for Compositor {
-    fn bind(_: &mut Self, _: &DisplayHandle, _: &Client, resource: New<ExtForeignToplevelImageCaptureSourceManagerV1>, _: &(), init: &mut DataInit<'_, Self>) {
+    fn bind(
+        _: &mut Self,
+        _: &DisplayHandle,
+        _: &Client,
+        resource: New<ExtForeignToplevelImageCaptureSourceManagerV1>,
+        _: &(),
+        init: &mut DataInit<'_, Self>,
+    ) {
         init.init(resource, ());
     }
 }
 
 impl Dispatch<ExtForeignToplevelImageCaptureSourceManagerV1, ()> for Compositor {
-    fn request(_: &mut Self, _: &Client, _: &ExtForeignToplevelImageCaptureSourceManagerV1, request: ext_foreign_toplevel_image_capture_source_manager_v1::Request, _: &(), _: &DisplayHandle, init: &mut DataInit<'_, Self>) {
-        if let ext_foreign_toplevel_image_capture_source_manager_v1::Request::CreateSource { source, toplevel_handle } = request {
-            let top = toplevel_handle.data::<usize>().copied().unwrap_or(usize::MAX);
+    fn request(
+        _: &mut Self,
+        _: &Client,
+        _: &ExtForeignToplevelImageCaptureSourceManagerV1,
+        request: ext_foreign_toplevel_image_capture_source_manager_v1::Request,
+        _: &(),
+        _: &DisplayHandle,
+        init: &mut DataInit<'_, Self>,
+    ) {
+        if let ext_foreign_toplevel_image_capture_source_manager_v1::Request::CreateSource {
+            source,
+            toplevel_handle,
+        } = request
+        {
+            let top = toplevel_handle
+                .data::<usize>()
+                .copied()
+                .unwrap_or(usize::MAX);
             init.init(source, top);
         }
     }
 }
 
 impl Dispatch<ExtImageCaptureSourceV1, usize> for Compositor {
-    fn request(_: &mut Self, _: &Client, _: &ExtImageCaptureSourceV1, _: ext_image_capture_source_v1::Request, _: &usize, _: &DisplayHandle, _: &mut DataInit<'_, Self>) {}
+    fn request(
+        _: &mut Self,
+        _: &Client,
+        _: &ExtImageCaptureSourceV1,
+        _: ext_image_capture_source_v1::Request,
+        _: &usize,
+        _: &DisplayHandle,
+        _: &mut DataInit<'_, Self>,
+    ) {
+    }
 }
 
 impl GlobalDispatch<ExtImageCopyCaptureManagerV1, ()> for Compositor {
-    fn bind(_: &mut Self, _: &DisplayHandle, _: &Client, resource: New<ExtImageCopyCaptureManagerV1>, _: &(), init: &mut DataInit<'_, Self>) {
+    fn bind(
+        _: &mut Self,
+        _: &DisplayHandle,
+        _: &Client,
+        resource: New<ExtImageCopyCaptureManagerV1>,
+        _: &(),
+        init: &mut DataInit<'_, Self>,
+    ) {
         init.init(resource, ());
     }
 }
 
 impl Dispatch<ExtImageCopyCaptureManagerV1, ()> for Compositor {
-    fn request(state: &mut Self, _: &Client, _: &ExtImageCopyCaptureManagerV1, request: ext_image_copy_capture_manager_v1::Request, _: &(), _: &DisplayHandle, init: &mut DataInit<'_, Self>) {
-        if let ext_image_copy_capture_manager_v1::Request::CreateSession { session, source, .. } = request {
+    fn request(
+        state: &mut Self,
+        _: &Client,
+        _: &ExtImageCopyCaptureManagerV1,
+        request: ext_image_copy_capture_manager_v1::Request,
+        _: &(),
+        _: &DisplayHandle,
+        init: &mut DataInit<'_, Self>,
+    ) {
+        if let ext_image_copy_capture_manager_v1::Request::CreateSession {
+            session, source, ..
+        } = request
+        {
             let top = source.data::<usize>().copied().unwrap_or(usize::MAX);
             let resource = init.init(session, SessionData { toplevel: top });
             state.constraints(&resource, top);
@@ -342,20 +449,48 @@ impl Dispatch<ExtImageCopyCaptureManagerV1, ()> for Compositor {
 }
 
 impl Dispatch<ExtImageCopyCaptureSessionV1, SessionData> for Compositor {
-    fn request(state: &mut Self, _: &Client, session: &ExtImageCopyCaptureSessionV1, request: ext_image_copy_capture_session_v1::Request, data: &SessionData, _: &DisplayHandle, init: &mut DataInit<'_, Self>) {
+    fn request(
+        state: &mut Self,
+        _: &Client,
+        session: &ExtImageCopyCaptureSessionV1,
+        request: ext_image_copy_capture_session_v1::Request,
+        data: &SessionData,
+        _: &DisplayHandle,
+        init: &mut DataInit<'_, Self>,
+    ) {
         if let ext_image_copy_capture_session_v1::Request::CreateFrame { frame } = request {
-            let index = state.sessions.iter().position(|s| s.id() == session.id()).unwrap_or(0);
+            let index = state
+                .sessions
+                .iter()
+                .position(|s| s.id() == session.id())
+                .unwrap_or(0);
             let _ = data.toplevel;
-            init.init(frame, FrameData { session: index, buffer: std::sync::Mutex::new(None) });
+            init.init(
+                frame,
+                FrameData {
+                    session: index,
+                    buffer: std::sync::Mutex::new(None),
+                },
+            );
         }
     }
 }
 
 impl Dispatch<ExtImageCopyCaptureFrameV1, FrameData> for Compositor {
-    fn request(state: &mut Self, _: &Client, frame: &ExtImageCopyCaptureFrameV1, request: ext_image_copy_capture_frame_v1::Request, data: &FrameData, _: &DisplayHandle, _: &mut DataInit<'_, Self>) {
+    fn request(
+        state: &mut Self,
+        _: &Client,
+        frame: &ExtImageCopyCaptureFrameV1,
+        request: ext_image_copy_capture_frame_v1::Request,
+        data: &FrameData,
+        _: &DisplayHandle,
+        _: &mut DataInit<'_, Self>,
+    ) {
         use ext_image_copy_capture_frame_v1::Request;
         match request {
-            Request::AttachBuffer { buffer } => *data.buffer.lock().expect("frame lock") = Some(buffer),
+            Request::AttachBuffer { buffer } => {
+                *data.buffer.lock().expect("frame lock") = Some(buffer)
+            }
             Request::Capture => state.serve_frame(frame, data),
             _ => {}
         }
@@ -363,13 +498,28 @@ impl Dispatch<ExtImageCopyCaptureFrameV1, FrameData> for Compositor {
 }
 
 impl GlobalDispatch<WlShm, ()> for Compositor {
-    fn bind(_: &mut Self, _: &DisplayHandle, _: &Client, resource: New<WlShm>, _: &(), init: &mut DataInit<'_, Self>) {
+    fn bind(
+        _: &mut Self,
+        _: &DisplayHandle,
+        _: &Client,
+        resource: New<WlShm>,
+        _: &(),
+        init: &mut DataInit<'_, Self>,
+    ) {
         init.init(resource, ());
     }
 }
 
 impl Dispatch<WlShm, ()> for Compositor {
-    fn request(_: &mut Self, _: &Client, _: &WlShm, request: wl_shm::Request, _: &(), _: &DisplayHandle, init: &mut DataInit<'_, Self>) {
+    fn request(
+        _: &mut Self,
+        _: &Client,
+        _: &WlShm,
+        request: wl_shm::Request,
+        _: &(),
+        _: &DisplayHandle,
+        init: &mut DataInit<'_, Self>,
+    ) {
         if let wl_shm::Request::CreatePool { id, fd, .. } = request {
             init.init(id, Pool { file: Arc::new(fd) });
         }
@@ -377,13 +527,46 @@ impl Dispatch<WlShm, ()> for Compositor {
 }
 
 impl Dispatch<WlShmPool, Pool> for Compositor {
-    fn request(_: &mut Self, _: &Client, _: &WlShmPool, request: wl_shm_pool::Request, pool: &Pool, _: &DisplayHandle, init: &mut DataInit<'_, Self>) {
-        if let wl_shm_pool::Request::CreateBuffer { id, offset, width, height, stride, .. } = request {
-            init.init(id, Buf { file: pool.file.clone(), offset, size: (width, height), stride });
+    fn request(
+        _: &mut Self,
+        _: &Client,
+        _: &WlShmPool,
+        request: wl_shm_pool::Request,
+        pool: &Pool,
+        _: &DisplayHandle,
+        init: &mut DataInit<'_, Self>,
+    ) {
+        if let wl_shm_pool::Request::CreateBuffer {
+            id,
+            offset,
+            width,
+            height,
+            stride,
+            ..
+        } = request
+        {
+            init.init(
+                id,
+                Buf {
+                    file: pool.file.clone(),
+                    offset,
+                    size: (width, height),
+                    stride,
+                },
+            );
         }
     }
 }
 
 impl Dispatch<WlBuffer, Buf> for Compositor {
-    fn request(_: &mut Self, _: &Client, _: &WlBuffer, _: wl_buffer::Request, _: &Buf, _: &DisplayHandle, _: &mut DataInit<'_, Self>) {}
+    fn request(
+        _: &mut Self,
+        _: &Client,
+        _: &WlBuffer,
+        _: wl_buffer::Request,
+        _: &Buf,
+        _: &DisplayHandle,
+        _: &mut DataInit<'_, Self>,
+    ) {
+    }
 }

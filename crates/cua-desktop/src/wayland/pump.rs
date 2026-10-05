@@ -113,7 +113,10 @@ impl<S: Send + 'static> Pump<S> {
     /// Runs `step` on the state after every dispatch, and again whenever something new arrives,
     /// until it returns a value. `step` may send requests (they are flushed before the pump
     /// waits). An error means the connection is broken or closed.
-    pub async fn drive<R>(&self, mut step: impl FnMut(&mut S) -> Option<R>) -> Result<R, PumpError> {
+    pub async fn drive<R>(
+        &self,
+        mut step: impl FnMut(&mut S) -> Option<R>,
+    ) -> Result<R, PumpError> {
         let socket = self.socket().await?;
         loop {
             // Registered before the state is looked at, so a dispatch by another caller between

@@ -24,10 +24,6 @@ mod window;
 mod wayland;
 
 pub use caps::{BackendCaps, BackendKind, ConsentGuard, GlowDraw, HiddenCapture, MaskWhere};
-#[cfg(feature = "wayland")]
-pub use wayland::{
-    CosmicDesktop, DeviceTypes, Pump, PumpError, SenderSocket, SocketFuture,
-};
 pub use docket_core::{RunMode, WindowTrust};
 pub use error::DesktopError;
 pub use event::DesktopEvent;
@@ -38,6 +34,8 @@ pub use lease::{
 };
 pub use traits::{Desktop, LeaseControl};
 pub use units::{Digest32, DigestError, GlobalCoord, GlobalRect, Ms, Pid, Stamp};
+#[cfg(feature = "wayland")]
+pub use wayland::{CosmicDesktop, DeviceTypes, Pump, PumpError, SenderSocket, SocketFuture};
 pub use window::{
     IdentError, ToplevelIdent, ToplevelInfo, ToplevelState, WindowTitle, WorkspaceRef,
     WorkspaceShown,

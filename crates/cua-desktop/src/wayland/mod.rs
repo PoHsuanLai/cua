@@ -133,7 +133,14 @@ impl Desktop for CosmicDesktop {
 impl LeaseControl for CosmicDesktop {
     async fn lease(&self, req: LeaseRequest) -> Result<Leased, DesktopError> {
         let window = self.window(&req).await?;
-        lease::grant(self.kind, self.sockets.as_deref(), &self.leases, req, window).await
+        lease::grant(
+            self.kind,
+            self.sockets.as_deref(),
+            &self.leases,
+            req,
+            window,
+        )
+        .await
     }
 
     async fn release(&self, lease: LeaseId) -> Result<(), DesktopError> {

@@ -2,8 +2,8 @@
 
 use super::socket::{DeviceTypes, SenderSocket};
 use crate::{
-    BackendKind, DesktopError, EiOrigin, EiSocket, LeaseGrant, LeaseId, LeaseRequest, Leased,
-    RevokeReason, RunMode, SeatIsolation, ToplevelIdent, ToplevelInfo, DesktopEvent,
+    BackendKind, DesktopError, DesktopEvent, EiOrigin, EiSocket, LeaseGrant, LeaseId, LeaseRequest,
+    Leased, RevokeReason, RunMode, SeatIsolation, ToplevelIdent, ToplevelInfo,
 };
 use std::collections::BTreeMap;
 use std::sync::{Mutex, PoisonError};

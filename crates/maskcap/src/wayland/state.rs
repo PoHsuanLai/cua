@@ -199,7 +199,10 @@ impl CapState {
         rec.damage.clear();
         let frame = rec.proxy.create_frame(&self.qh, key);
         frame.attach_buffer(buffer);
-        let (w, h) = (i32::try_from(size.0).unwrap_or(i32::MAX), i32::try_from(size.1).unwrap_or(i32::MAX));
+        let (w, h) = (
+            i32::try_from(size.0).unwrap_or(i32::MAX),
+            i32::try_from(size.1).unwrap_or(i32::MAX),
+        );
         frame.damage_buffer(0, 0, w, h);
         frame.capture();
     }
@@ -233,7 +236,10 @@ impl Dispatch<WlRegistry, ()> for CapState {
         _: &Connection,
         qh: &QueueHandle<Self>,
     ) {
-        let wl_registry::Event::Global { name, interface, .. } = event else {
+        let wl_registry::Event::Global {
+            name, interface, ..
+        } = event
+        else {
             return;
         };
         match interface.as_str() {
@@ -241,7 +247,9 @@ impl Dispatch<WlRegistry, ()> for CapState {
             "ext_foreign_toplevel_image_capture_source_manager_v1" => {
                 state.sources = Some(registry.bind(name, 1, qh, ()));
             }
-            "ext_image_copy_capture_manager_v1" => state.copy = Some(registry.bind(name, 1, qh, ())),
+            "ext_image_copy_capture_manager_v1" => {
+                state.copy = Some(registry.bind(name, 1, qh, ()))
+            }
             "wl_shm" => state.shm = Some(registry.bind(name, 1, qh, ())),
             _ => {}
         }
@@ -249,7 +257,14 @@ impl Dispatch<WlRegistry, ()> for CapState {
 }
 
 impl Dispatch<WlCallback, SyncTag> for CapState {
-    fn event(state: &mut Self, _: &WlCallback, event: wl_callback::Event, _: &SyncTag, _: &Connection, _: &QueueHandle<Self>) {
+    fn event(
+        state: &mut Self,
+        _: &WlCallback,
+        event: wl_callback::Event,
+        _: &SyncTag,
+        _: &Connection,
+        _: &QueueHandle<Self>,
+    ) {
         let wl_callback::Event::Done { .. } = event else {
             return;
         };
@@ -270,7 +285,13 @@ impl Dispatch<ExtForeignToplevelListV1, ()> for CapState {
             return;
         };
         if let Some(key) = toplevel.data::<Key>().copied() {
-            state.toplevels.insert(key, Top { handle: toplevel, ident: None });
+            state.toplevels.insert(
+                key,
+                Top {
+                    handle: toplevel,
+                    ident: None,
+                },
+            );
         }
     }
 
@@ -365,7 +386,12 @@ impl Dispatch<ExtImageCopyCaptureFrameV1, Key> for CapState {
             return;
         };
         match event {
-            Event::Damage { x, y, width, height } => {
+            Event::Damage {
+                x,
+                y,
+                width,
+                height,
+            } => {
                 let to = |n: i32| Coord(u32::try_from(n).unwrap_or(0));
                 rec.damage.push(Rect {
                     origin: Point::new(to(x), to(y)),

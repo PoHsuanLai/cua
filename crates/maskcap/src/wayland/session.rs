@@ -133,7 +133,9 @@ impl WaylandSession {
                 }
                 FrameSlot::Failed(Failure::Stopped) => return Err(CaptureError::SourceGone),
                 FrameSlot::Failed(Failure::Unknown) => {
-                    return Err(CaptureError::Protocol("the compositor failed the frame".into()));
+                    return Err(CaptureError::Protocol(
+                        "the compositor failed the frame".into(),
+                    ));
                 }
                 FrameSlot::Idle | FrameSlot::Waiting => {
                     return Err(CaptureError::Protocol("no frame state".into()));

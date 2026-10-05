@@ -186,14 +186,24 @@ impl Dispatch<WlRegistry, ()> for WlState {
             "ext_workspace_manager_v1" => {
                 state.manager = Some(registry.bind(name, 1, qh, ()));
             }
-            "wl_output" => state.outputs.push(registry.bind(name, version.min(4), qh, ())),
+            "wl_output" => state
+                .outputs
+                .push(registry.bind(name, version.min(4), qh, ())),
             _ => {}
         }
     }
 }
 
 impl Dispatch<WlOutput, ()> for WlState {
-    fn event(_: &mut Self, _: &WlOutput, _: <WlOutput as wayland_client::Proxy>::Event, _: &(), _: &Connection, _: &QueueHandle<Self>) {}
+    fn event(
+        _: &mut Self,
+        _: &WlOutput,
+        _: <WlOutput as wayland_client::Proxy>::Event,
+        _: &(),
+        _: &Connection,
+        _: &QueueHandle<Self>,
+    ) {
+    }
 }
 
 impl Dispatch<WlCallback, SyncTag> for WlState {
@@ -318,7 +328,11 @@ impl Dispatch<ZcosmicToplevelHandleV1, Key> for WlState {
         match event {
             Event::State { state: bytes } => top.states = states_of(&bytes),
             Event::Geometry {
-                x, y, width, height, ..
+                x,
+                y,
+                width,
+                height,
+                ..
             } => {
                 let rect = GlobalRect {
                     x: GlobalCoord(x),

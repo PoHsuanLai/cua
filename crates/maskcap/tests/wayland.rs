@@ -10,8 +10,8 @@ use cua_desktop::{
     ToplevelIdent, ToplevelInfo, WindowTitle, WindowTrust, WorkspaceRef, WorkspaceShown,
 };
 use maskcap::{
-    CaptureError, CaptureSession, DamageSource, FrameWant, MaskReason, MaskRegion,
-    StampClock, StockToplevelCapture, WindowCapture, WholeMask,
+    CaptureError, CaptureSession, DamageSource, FrameWant, MaskReason, MaskRegion, StampClock,
+    StockToplevelCapture, WholeMask, WindowCapture,
 };
 use porter_core::{AppName, Px};
 use std::collections::BTreeSet;
@@ -29,8 +29,16 @@ fn grant(ident: &str) -> LeaseGrant {
             app: AppName::parse("org.gnome.Calculator").expect("an app"),
             title: WindowTitle("Calculator".into()),
             pid: Pid(0),
-            geometry: GlobalRect { x: GlobalCoord(0), y: GlobalCoord(0), w: Px(4), h: Px(3) },
-            workspace: WorkspaceRef { id: String::new(), shown: WorkspaceShown::Shown },
+            geometry: GlobalRect {
+                x: GlobalCoord(0),
+                y: GlobalCoord(0),
+                w: Px(4),
+                h: Px(3),
+            },
+            workspace: WorkspaceRef {
+                id: String::new(),
+                shown: WorkspaceShown::Shown,
+            },
             state: BTreeSet::new(),
             trust: WindowTrust::Native,
         },
@@ -81,7 +89,11 @@ async fn a_frame_carries_the_windows_pixels_at_logical_resolution() {
     let mut session = capture.open(&grant("w1")).await.expect("open");
 
     let frame = session.frame(FrameWant::Now, &[]).await.expect("frame");
-    assert_eq!(frame.pixels.format, PixelFormat::Abgr8888, "the 8-bit format, not the 10-bit pair");
+    assert_eq!(
+        frame.pixels.format,
+        PixelFormat::Abgr8888,
+        "the 8-bit format, not the 10-bit pair"
+    );
     assert_eq!(frame.pixels.size, DeviceSize { w: 4, h: 3 });
     assert_eq!(frame.pixels.stride, 16);
     assert_eq!(&*frame.pixels.data, &window.pixels[..]);
@@ -96,7 +108,10 @@ async fn a_frame_carries_the_windows_pixels_at_logical_resolution() {
 
     let again = session.frame(FrameWant::Now, &[]).await.expect("frame");
     assert_eq!(again.seq.0, 2);
-    assert!(again.damage.is_empty(), "nothing changed, whatever the compositor reports");
+    assert!(
+        again.damage.is_empty(),
+        "nothing changed, whatever the compositor reports"
+    );
 }
 
 #[tokio::test]
@@ -120,14 +135,20 @@ async fn after_damage_waits_for_a_pixel_diff_and_names_the_changed_box() {
     let mut server = FakeCompositor::start(vec![window.clone()]);
     let capture = capture(&mut server);
     let mut session = capture.open(&grant("w1")).await.expect("open");
-    session.frame(FrameWant::Now, &[]).await.expect("the first frame");
+    session
+        .frame(FrameWant::Now, &[])
+        .await
+        .expect("the first frame");
 
     let waiting = tokio::spawn(async move {
         let frame = session.frame(FrameWant::AfterDamage, &[]).await;
         (session, frame)
     });
     // The compositor reports full damage for every frame; only the pixels say what changed.
-    server.show(0, with_pixel(window.pixels.clone(), 4, 2, 1, [0, 255, 0, 255]));
+    server.show(
+        0,
+        with_pixel(window.pixels.clone(), 4, 2, 1, [0, 255, 0, 255]),
+    );
     let (_session, frame) = waiting.await.expect("task");
     let frame = frame.expect("frame");
     assert_eq!(frame.damage.len(), 1);
@@ -154,7 +175,10 @@ async fn damage_is_the_next_pixel_diff() {
         let damage = session.damage().await;
         (session, damage)
     });
-    server.show(0, with_pixel(window.pixels.clone(), 4, 0, 2, [0, 0, 255, 255]));
+    server.show(
+        0,
+        with_pixel(window.pixels.clone(), 4, 0, 2, [0, 0, 255, 255]),
+    );
     let (_session, damage) = waiting.await.expect("task");
     let damage = damage.expect("damage");
     assert_eq!(damage.region.origin, Point::new(Coord(0), Coord(2)));
@@ -174,7 +198,11 @@ async fn a_resized_window_gets_a_new_buffer() {
     assert_eq!(frame.pixels.size, DeviceSize { w: 6, h: 5 });
     assert_eq!(&*frame.pixels.data, &bigger.pixels[..]);
     assert_eq!(frame.logical, Size::new(Coord(6), Coord(5)));
-    assert_eq!(frame.damage[0].size, Size::new(Coord(6), Coord(5)), "a new size differs everywhere");
+    assert_eq!(
+        frame.damage[0].size,
+        Size::new(Coord(6), Coord(5)),
+        "a new size differs everywhere"
+    );
 }
 
 #[tokio::test]

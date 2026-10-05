@@ -27,7 +27,8 @@ impl DeviceTypes {
 }
 
 /// What a [`SenderSocket`] answers with.
-pub type SocketFuture<'a> = Pin<Box<dyn Future<Output = Result<OwnedFd, DesktopError>> + Send + 'a>>;
+pub type SocketFuture<'a> =
+    Pin<Box<dyn Future<Output = Result<OwnedFd, DesktopError>> + Send + 'a>>;
 
 /// Opens an EIS sender socket on the compositor.
 pub trait SenderSocket: Send + Sync + fmt::Debug {

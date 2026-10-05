@@ -89,10 +89,11 @@ impl SystemSeams {
         let kind = Self::kind_of(config);
         let (desktop, capture) = match wayland {
             Some(pair) => (
-                SystemDesktop::Cosmic(
+                SystemDesktop::Cosmic(Box::new(
                     CosmicDesktop::over(pair.desktop, kind).with_sender_socket(Arc::new(sockets)),
-                ),
-                CaptureBackend::open_kind(capture_kind(kind), pair.capture).with_clock(Arc::new(RunClock(clock))),
+                )),
+                CaptureBackend::open_kind(capture_kind(kind), pair.capture)
+                    .with_clock(Arc::new(RunClock(clock))),
             ),
             None => (SystemDesktop::Absent, CaptureBackend::Unavailable),
         };

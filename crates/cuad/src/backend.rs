@@ -6,10 +6,10 @@ use maskcap::{
     CaptureError, CaptureSession, DamageAt, Frame, FrameWant, MaskRegion, QuireMaskedCapture,
     StampClock, StockToplevelCapture, WaylandSession, WindowCapture,
 };
-use std::sync::Arc;
 use seat_input::{
     AgentSeat, EiSeat, Emulation, InputOp, InputReceipt, Keymap, SeatCaps, SeatError,
 };
+use std::sync::Arc;
 use wayland_client::Connection;
 
 /// Which capture backend a desktop backend uses: the stock toplevel source with masking in

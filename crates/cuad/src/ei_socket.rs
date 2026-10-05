@@ -71,7 +71,7 @@ impl CosmicEiSockets {
         let fd: BusFd = reply
             .body()
             .deserialize()
-            .map_err(|e| refused("answered something else", e.into()))?;
+            .map_err(|e| refused("answered something else", e))?;
         Ok(fd.into())
     }
 }

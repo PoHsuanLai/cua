@@ -103,7 +103,11 @@ async fn a_bad_configuration_is_a_start_failure_not_a_panic() {
     let bus = PrivateBus::start(dir.path());
     let config = dir.path().join("cuad.toml");
     std::fs::write(&config, "settings = 3").expect("config");
-    let mut daemon = Daemon::start(&bus, dir.path(), &[("CUAD_CONFIG", config.to_str().unwrap())]);
+    let mut daemon = Daemon::start(
+        &bus,
+        dir.path(),
+        &[("CUAD_CONFIG", config.to_str().unwrap())],
+    );
     let status = daemon.wait();
     assert_eq!(status.code(), Some(2));
 }
@@ -113,7 +117,11 @@ async fn a_missing_configuration_file_means_the_defaults() {
     let dir = tempfile::tempdir().expect("dir");
     let bus = PrivateBus::start(dir.path());
     let missing = dir.path().join("nothing.toml");
-    let mut daemon = Daemon::start(&bus, dir.path(), &[("CUAD_CONFIG", missing.to_str().unwrap())]);
+    let mut daemon = Daemon::start(
+        &bus,
+        dir.path(),
+        &[("CUAD_CONFIG", missing.to_str().unwrap())],
+    );
     let me = bus.connect().await;
     owned(&me, "org.quire.Cua1").await;
     sigterm(daemon.pid());

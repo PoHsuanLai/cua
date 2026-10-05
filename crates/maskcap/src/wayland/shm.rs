@@ -57,7 +57,9 @@ impl Shared {
         let file = memfd_create("maskcap-frame", MemfdFlags::CLOEXEC).map_err(io)?;
         ftruncate(&file, u64::from(bytes)).map_err(io)?;
         let qh = state.qh().clone();
-        let pool = state.shm()?.create_pool(rustix::fd::AsFd::as_fd(&file), bytes_i, &qh, ());
+        let pool = state
+            .shm()?
+            .create_pool(rustix::fd::AsFd::as_fd(&file), bytes_i, &qh, ());
         let buffer = pool.create_buffer(0, w, h, stride_i, wire, &qh, ());
         Ok(Self {
             pool,
@@ -84,7 +86,9 @@ impl Shared {
             filled += n;
         }
         if filled < len {
-            return Err(CaptureError::Protocol("short read of the frame buffer".into()));
+            return Err(CaptureError::Protocol(
+                "short read of the frame buffer".into(),
+            ));
         }
         Ok(crate::PixelBuf {
             format: self.format,

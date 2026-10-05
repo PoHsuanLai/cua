@@ -11,7 +11,7 @@ use cua_desktop::{
 #[derive(Debug)]
 pub enum SystemDesktop {
     /// Connected to a compositor.
-    Cosmic(CosmicDesktop),
+    Cosmic(Box<CosmicDesktop>),
     /// No compositor could be reached: `Backend` reads `none`, no window is listed and no lease
     /// is granted.
     Absent,

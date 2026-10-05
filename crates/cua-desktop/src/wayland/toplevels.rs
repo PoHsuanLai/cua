@@ -68,17 +68,26 @@ pub(crate) fn app_name(app_id: &str) -> AppName {
     }
     let folded: String = app_id
         .chars()
-        .map(|c| if c.is_ascii_alphanumeric() || c == '-' { c } else { '_' })
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || c == '-' {
+                c
+            } else {
+                '_'
+            }
+        })
         .collect();
-    let folded = if folded.is_empty() { "unknown".to_owned() } else { folded };
+    let folded = if folded.is_empty() {
+        "unknown".to_owned()
+    } else {
+        folded
+    };
     let lead = if folded.starts_with(|c: char| c.is_ascii_alphabetic() || c == '_') {
         folded
     } else {
         format!("_{folded}")
     };
-    AppName::parse(&format!("app.{lead}")).unwrap_or_else(|_| {
-        AppName::parse("app.unknown").expect("a valid app name")
-    })
+    AppName::parse(&format!("app.{lead}"))
+        .unwrap_or_else(|_| AppName::parse("app.unknown").expect("a valid app name"))
 }
 
 /// How far cua may trust a window, from its app id alone (there is no sandbox information in
