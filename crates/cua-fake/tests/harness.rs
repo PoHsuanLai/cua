@@ -1,6 +1,4 @@
-//! The end-to-end scripted run over the fakes: click, then done. The harness and the machine
-//! are frozen with `todo!()` bodies, so this test is ignored with the work that closes it and
-//! carries the real assertions.
+//! The end-to-end scripted run over the fakes: click, then done.
 
 use cua_action::{
     Button, ClickCount, Coord, CuaAction, DeviceSize, FinishOutcome, PixelFormat, Point, Scale120,

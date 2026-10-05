@@ -8,7 +8,9 @@ use cua_bus::{
     BudgetBody, ControlRefusal, CuaCaller, CuaMember, CuaTask, ModeSupport, QuestionId, TaskTarget,
 };
 use cua_desktop::Desktop;
-use cua_run::{Clock, LeaseBook, Parts, Run, RunEnv, RunInput, RunPhase, Seams, mode_support};
+use cua_run::{
+    Clock, GateLink, LeaseBook, Parts, Run, RunEnv, RunInput, RunPhase, Seams, mode_support,
+};
 use prov::{Labelled, RunId};
 use std::sync::Arc;
 use tokio::sync::{broadcast, mpsc};
@@ -184,7 +186,11 @@ impl<S: Seams> Supervisor<S> {
 
 impl<S: Drivable> Supervisor<S> {
     /// Starts a run for `task` (`guard` first; one run per window; the mode must be supported).
-    pub async fn start(&self, caller: CuaCaller, task: CuaTask) -> Result<RunId, ControlRefusal> {
+    pub async fn start(
+        &self,
+        caller: CuaCaller,
+        mut task: CuaTask,
+    ) -> Result<RunId, ControlRefusal> {
         guard(
             caller,
             CuaMember::Start,
@@ -207,7 +213,7 @@ impl<S: Drivable> Supervisor<S> {
         }
         let env = RunEnv::new(&self.shared.config.settings, caps);
         let (control, inbox) = mpsc::unbounded_channel();
-        let (run, effects) = {
+        let id = {
             let mut state = self.shared.state.lock().expect("supervisor lock");
             let id = mint_run_id(state.next + 1);
             if let TaskTarget::Window(ident) = &task.target {
@@ -217,6 +223,20 @@ impl<S: Drivable> Supervisor<S> {
                     .map_err(|_| ControlRefusal::LeaseHeld)?;
             }
             state.next += 1;
+            id
+        };
+        // The run acts in a session of its own, opened before its first check: the router
+        // finds the run's rules by it, and the run's reports go out as the run.
+        match self.shared.gate.open_session(&id, &task.space).await {
+            Ok(session) => task.session = session,
+            Err(_) => {
+                let mut state = self.shared.state.lock().expect("supervisor lock");
+                state.leases = state.leases.release(&id);
+                return Err(ControlRefusal::NotPermitted);
+            }
+        }
+        let (run, effects) = {
+            let mut state = self.shared.state.lock().expect("supervisor lock");
             let (run, effects) = Run::start(id.clone(), task.clone(), env, self.shared.clock.now());
             state.live.insert(
                 id.clone(),

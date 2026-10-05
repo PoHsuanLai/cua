@@ -11,7 +11,7 @@ use docket_core::{
 };
 use maskcap::WindowCapture;
 use porter_core::UnixSeconds;
-use prov::{ConfirmId, RunId, SessionId};
+use prov::{ConfirmId, RunId, SessionId, SpaceId};
 use seat_input::AgentSeat;
 use serde::{Deserialize, Serialize};
 use std::future::Future;
@@ -57,6 +57,10 @@ pub trait GateCheck: Send {
 
     /// `Request.Proceed`: the lease is suspended, show the confirmation now.
     fn proceed(&mut self) -> impl Future<Output = Result<(), LinkError>> + Send;
+
+    /// `Request.Close`: takes the check back (the run is paused): a confirmation that is up
+    /// comes down and no answer follows.
+    fn close(&mut self) -> impl Future<Output = Result<(), LinkError>> + Send;
 }
 
 /// `Intents1.Gate`: the one decision point for every pixel step.
@@ -66,6 +70,14 @@ pub trait GateLink: Send + Sync {
 
     /// The per-app consent (`Gate.Grant`): the router asks the person on first use.
     fn grant(&self, ask: GrantAsk) -> impl Future<Output = Result<GrantAnswer, LinkError>> + Send;
+
+    /// Opens the session a run acts in (`Session.Open` with `AgentRef::Cua { run }`). The
+    /// router finds a run's rules by that session, so it comes before the run's first check.
+    fn open_session(
+        &self,
+        run: &RunId,
+        space: &SpaceId,
+    ) -> impl Future<Output = Result<SessionId, LinkError>> + Send;
 
     /// One step's check (`Gate.Check`).
     fn check(&self, ask: CuaAsk) -> impl Future<Output = Result<Self::Check, LinkError>> + Send;

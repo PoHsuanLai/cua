@@ -1,6 +1,5 @@
 //! The run machine's transitions, as the phase table of cua.md section 4 (changed for the
-//! router's gate) states them. The machine is frozen with `todo!()` bodies, so every test here
-//! is ignored with the work that closes it; each carries the real assertions.
+//! router's gate) states them.
 
 use cua_action::{Button, ClickCount, Coord, CuaAction, Point, Target, WindowSpace};
 use cua_bus::{

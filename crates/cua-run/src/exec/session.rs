@@ -3,7 +3,7 @@
 use super::{Exec, ModelSession, Outlet};
 use crate::machine::input::{ModelReply, RunInput};
 use crate::model::{CuaModel, CuaModelError, StepEvent, StepSink};
-use crate::seams::Seams;
+use crate::seams::{GateCheck, Seams};
 use crate::turn::FrameAttachment;
 use cua_desktop::{
     DesktopError, GlowState, LeaseControl, LeaseGrant, LeaseId, LeaseRequest, Suspend,
@@ -69,6 +69,12 @@ impl<S: Seams> Exec<'_, S> {
     /// Input stops: the desktop's lease is suspended and, on a shared seat, so is our own
     /// emulation (the seat is the person's too).
     pub(super) async fn suspend(&mut self, lease: LeaseId, why: Suspend) {
+        if why == Suspend::Paused
+            && let Some(mut check) = self.check.take()
+        {
+            // A paused run withdraws its question: the sheet comes down.
+            let _ = check.close().await;
+        }
         let _ = self.seam.seat.emulation(lease, Emulation::Stopped).await;
         let _ = self.seam.desktop.suspend(lease, why).await;
     }

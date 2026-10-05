@@ -365,3 +365,41 @@ async fn stock_consent_guard_injects_nothing_while_prompt_shown() {
         ["attach", "stopped", "running", "performed", "detach"]
     );
 }
+
+#[tokio::test(start_paused = true)]
+async fn the_run_acts_in_the_session_it_opened_before_its_first_check() {
+    let session = prov::SessionId::parse("s-9").unwrap();
+    let pdp = FakePdp::allow_all().opening(session.clone());
+    let sup = supervisor(STOCK, vec![reply(click()), reply(finish())], pdp);
+    let mut events = sup.subscribe();
+    let mut planned = task();
+    planned.session = prov::SessionId::parse("s-1").unwrap();
+    let id = sup.start(CuaCaller::Router, planned).await.unwrap();
+    assert_eq!(
+        sup.view(&id).expect("live").task.session,
+        session,
+        "the planner's session is not the run's"
+    );
+    assert_eq!(ended(&mut events, &id).await.outcome, CuaOutcome::Done);
+    assert_eq!(sup.gate().opened(), vec![(id.clone(), task().space)]);
+    assert_eq!(sup.gate().checks()[0].run, id);
+    let sent = sup.events().sent();
+    assert_eq!(
+        sent[0].0, session,
+        "the report goes out in the run's session"
+    );
+}
+
+#[tokio::test(start_paused = true)]
+async fn pausing_during_a_confirmation_takes_the_check_back() {
+    let pdp = FakePdp::scripted(vec![], vec![Verdict::AskAndHang]);
+    let sup = supervisor(STOCK, vec![reply(click()), reply(finish())], pdp);
+    let id = sup.start(CuaCaller::Router, task()).await.unwrap();
+    until(&sup, &id, |p| matches!(p, RunPhase::Confirming(..))).await;
+    assert_eq!(sup.gate().closes(), 0);
+    sup.control(CuaCaller::Shell, &id, CuaMember::Pause)
+        .await
+        .unwrap();
+    until(&sup, &id, |p| matches!(p, RunPhase::Paused(_))).await;
+    assert_eq!(sup.gate().closes(), 1, "the sheet comes down");
+}

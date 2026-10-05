@@ -2,9 +2,9 @@
 
 use cua_run::{GateCheck, GateEvent, GateLink, LinkError};
 use docket_core::{CallRefusal, CuaAsk, GateAnswer, GrantAnswer, GrantAsk};
-use prov::ConfirmId;
+use prov::{ConfirmId, RunId, SessionId, SpaceId};
 use std::collections::VecDeque;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 /// What the fake router says to the next `Gate.Check`.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -15,6 +15,18 @@ pub enum Verdict {
     Refuse(CallRefusal),
     /// Ask the person (cuad hears `Confirming`, calls `Proceed`), then answer this.
     AskThen(GateAnswer),
+    /// Ask the person and never answer: the check hangs after `Confirming` until it is closed
+    /// (a run paused during a confirmation).
+    AskAndHang,
+}
+
+/// What a check does when it has said everything it was told to say.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum AfterEvents {
+    /// The router is gone: the next read fails.
+    Unavailable,
+    /// The router has not answered yet: the next read never returns.
+    Hang,
 }
 
 /// A [`GateLink`] over a queue of grant answers and a queue of verdicts; when a queue is empty
@@ -26,6 +38,9 @@ pub struct FakePdp {
     checks: Mutex<Vec<CuaAsk>>,
     grant_asks: Mutex<Vec<GrantAsk>>,
     confirms: Mutex<u32>,
+    session: Option<SessionId>,
+    closes: Arc<Mutex<u32>>,
+    opened: Mutex<Vec<(RunId, SpaceId)>>,
 }
 
 impl FakePdp {
@@ -43,6 +58,29 @@ impl FakePdp {
         }
     }
 
+    fn confirming(&self) -> GateEvent {
+        let mut confirms = self.confirms.lock().expect("fake gate lock");
+        *confirms += 1;
+        let id = ConfirmId::parse(&format!("c-{confirms}")).expect("a well-formed id");
+        GateEvent::Confirming(id)
+    }
+
+    /// Opens this session for every run (`s-1` when not set), as the router would.
+    pub fn opening(mut self, session: SessionId) -> Self {
+        self.session = Some(session);
+        self
+    }
+
+    /// How many checks were taken back with `close`.
+    pub fn closes(&self) -> u32 {
+        *self.closes.lock().expect("fake gate lock")
+    }
+
+    /// The runs it opened a session for, in order, with their Space.
+    pub fn opened(&self) -> Vec<(RunId, SpaceId)> {
+        self.opened.lock().expect("fake gate lock").clone()
+    }
+
     /// Every action it was asked about, in order.
     pub fn checks(&self) -> Vec<CuaAsk> {
         self.checks.lock().expect("fake gate lock").clone()
@@ -58,10 +96,17 @@ impl FakePdp {
 #[derive(Debug)]
 pub struct FakeCheck {
     events: VecDeque<GateEvent>,
+    after: AfterEvents,
     proceeded: Mutex<u32>,
+    closed: Arc<Mutex<u32>>,
 }
 
 impl FakeCheck {
+    /// How many times `close` was called.
+    pub fn closed(&self) -> u32 {
+        *self.closed.lock().expect("fake gate lock")
+    }
+
     /// How many times `proceed` was called.
     pub fn proceeded(&self) -> u32 {
         *self.proceeded.lock().expect("fake gate lock")
@@ -81,6 +126,17 @@ impl GateLink for FakePdp {
             .unwrap_or(GrantAnswer::Granted))
     }
 
+    async fn open_session(&self, run: &RunId, space: &SpaceId) -> Result<SessionId, LinkError> {
+        self.opened
+            .lock()
+            .expect("fake gate lock")
+            .push((run.clone(), space.clone()));
+        Ok(self
+            .session
+            .clone()
+            .unwrap_or_else(|| SessionId::parse("s-1").expect("a session id")))
+    }
+
     async fn check(&self, ask: CuaAsk) -> Result<FakeCheck, LinkError> {
         self.checks.lock().expect("fake gate lock").push(ask);
         let verdict = self
@@ -89,30 +145,49 @@ impl GateLink for FakePdp {
             .expect("fake gate lock")
             .pop_front()
             .unwrap_or(Verdict::Run);
-        let events = match verdict {
-            Verdict::Run => vec![GateEvent::Answered(GateAnswer::Run)],
-            Verdict::Refuse(why) => vec![GateEvent::Answered(GateAnswer::Refused(why))],
-            Verdict::AskThen(answer) => {
-                let mut confirms = self.confirms.lock().expect("fake gate lock");
-                *confirms += 1;
-                let id = ConfirmId::parse(&format!("c-{confirms}")).expect("a well-formed id");
-                vec![GateEvent::Confirming(id), GateEvent::Answered(answer)]
-            }
+        let (events, after) = match verdict {
+            Verdict::Run => (
+                vec![GateEvent::Answered(GateAnswer::Run)],
+                AfterEvents::Unavailable,
+            ),
+            Verdict::Refuse(why) => (
+                vec![GateEvent::Answered(GateAnswer::Refused(why))],
+                AfterEvents::Unavailable,
+            ),
+            Verdict::AskThen(answer) => (
+                vec![self.confirming(), GateEvent::Answered(answer)],
+                AfterEvents::Unavailable,
+            ),
+            Verdict::AskAndHang => (vec![self.confirming()], AfterEvents::Hang),
         };
         Ok(FakeCheck {
             events: events.into(),
+            after,
             proceeded: Mutex::new(0),
+            closed: self.closes.clone(),
         })
     }
 }
 
 impl GateCheck for FakeCheck {
     async fn next(&mut self) -> Result<GateEvent, LinkError> {
-        self.events.pop_front().ok_or(LinkError::Unavailable)
+        match self.events.pop_front() {
+            Some(event) => Ok(event),
+            None => match self.after {
+                AfterEvents::Unavailable => Err(LinkError::Unavailable),
+                AfterEvents::Hang => std::future::pending().await,
+            },
+        }
     }
 
     async fn proceed(&mut self) -> Result<(), LinkError> {
         *self.proceeded.lock().expect("fake gate lock") += 1;
+        Ok(())
+    }
+
+    async fn close(&mut self) -> Result<(), LinkError> {
+        *self.closed.lock().expect("fake gate lock") += 1;
+        self.events.clear();
         Ok(())
     }
 }

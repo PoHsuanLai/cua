@@ -731,15 +731,31 @@ dependencies = [
  "cua-action",
  "cua-bus",
  "cua-desktop",
+ "cua-parse",
  "cua-run",
  "docket-core",
  "maskcap",
+ "model-provider",
  "model-replay",
  "porter-core",
  "porter-infer",
  "prov",
  "reis",
+ "rustix",
  "seat-input",
+ "serde_json",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
+name = "cua-parse"
+version = "0.1.0"
+dependencies = [
+ "cua-action",
+ "keyboard-types",
+ "model-provider",
+ "serde",
  "serde_json",
  "thiserror",
 ]
@@ -2316,12 +2332,14 @@ version = "0.1.0"
 dependencies = [
  "cua-action",
  "cua-desktop",
+ "futures-util",
  "keyboard-types",
  "porter-core",
  "reis",
  "serde",
  "serde_json",
  "thiserror",
+ "tokio",
  "xkbcommon",
 ]
 

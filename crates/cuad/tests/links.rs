@@ -159,9 +159,12 @@ fn step(effect: Effect) -> CuaAsk {
 
 async fn answered(gate: &IntentsGate<DbusTransport>, ask: CuaAsk) -> GateAnswer {
     let mut check = gate.check(ask).await.expect("a check");
-    match check.next().await.expect("an event") {
-        GateEvent::Answered(answer) => answer,
-        other => panic!("not an answer: {other:?}"),
+    loop {
+        match check.next().await.expect("an event") {
+            GateEvent::Answered(answer) => return answer,
+            // The router is about to ask the person: cuad's input is idle, so say go on.
+            GateEvent::Confirming(_) => check.proceed().await.expect("proceed"),
+        }
     }
 }
 
@@ -469,4 +472,38 @@ async fn the_daemon_links_are_built_over_one_connection_and_each_reaches_its_nei
     links.events.open(&run(), &task).await;
     let kept = links.events.record(record_of_run(&run()).remove(0)).await;
     assert_eq!(kept, Ok(()));
+}
+
+#[tokio::test]
+async fn the_run_opens_its_own_session_once_and_a_withdrawn_check_leaves_the_gate_usable() {
+    let desk = desk(vec![yes()]).await;
+    let gate = IntentsGate::over(DbusTransport::new(desk.cuad_connection().await));
+    let session = gate
+        .open_session(&run(), &work())
+        .await
+        .expect("the cua role opens the session of its own run");
+    assert_eq!(
+        gate.open_session(&run(), &work()).await,
+        Err(cua_run::LinkError::Refused(
+            docket_core::WireRefusal::Malformed
+        )),
+        "a run has one session"
+    );
+    let _ = session;
+    gate.grant(GrantAsk {
+        app: mail(),
+        space: work(),
+    })
+    .await
+    .expect("granted");
+    // A step that sends: the router says it will ask; the run withdraws the check instead
+    // (a pause), and the sheet comes down.
+    let mut asked = gate.check(step(Effect::Outbound)).await.expect("a check");
+    assert!(matches!(
+        asked.next().await,
+        Ok(GateEvent::Confirming(_)) | Ok(GateEvent::Answered(_))
+    ));
+    assert_eq!(asked.close().await, Ok(()));
+    drop(asked);
+    assert_eq!(answered(&gate, step(Effect::Read)).await, GateAnswer::Run);
 }
