@@ -14,6 +14,7 @@ mod capture;
 mod clock;
 mod desktop;
 mod eis;
+mod eis_keymap;
 mod events;
 mod gate;
 mod harness;

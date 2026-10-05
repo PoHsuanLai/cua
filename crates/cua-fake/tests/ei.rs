@@ -1,0 +1,238 @@
+//! `EiSeat` against `FakeEis`: the real reis client over a socketpair, no compositor.
+
+use cua_action::{Button, Coord, Notches, Point, ScrollDir, TypedText};
+use cua_desktop::{
+    EiOrigin, GlobalCoord, GlobalRect, LeaseGrant, LeaseId, Ms, SeatIsolation, ToplevelInfo,
+};
+use cua_fake::{EisEvent, FakeEis, scene};
+use porter_core::Px;
+use seat_input::{
+    AgentSeat, EiSeat, Emulation, InputOp, InputOrigin, Keycode, Press, Produces, SeatError,
+};
+
+const LEASE: LeaseId = LeaseId(7);
+
+fn grant(ei: EiOrigin, seat: SeatIsolation, x: i32, y: i32) -> LeaseGrant {
+    let mut window: ToplevelInfo = scene::window();
+    window.geometry = GlobalRect {
+        x: GlobalCoord(x),
+        y: GlobalCoord(y),
+        w: Px(300),
+        h: Px(200),
+    };
+    LeaseGrant {
+        id: LEASE,
+        window,
+        seat,
+        ei,
+    }
+}
+
+fn at(x: u32, y: u32) -> InputOp {
+    InputOp::MoveTo(Point::new(Coord(x), Coord(y)))
+}
+
+fn stock() -> LeaseGrant {
+    grant(EiOrigin::SenderSocket, SeatIsolation::SharedSeat, 714, 148)
+}
+
+/// Runs `script` against a fresh seat while the fake serves, and returns what the fake saw.
+async fn run<F, Fut>(grant: LeaseGrant, script: F) -> Vec<EisEvent>
+where
+    F: FnOnce(EiSeat, LeaseGrant) -> Fut,
+    Fut: std::future::Future<Output = ()>,
+{
+    let (mut server, socket) = FakeEis::pair().expect("socketpair");
+    let seat = EiSeat::new(grant.seat);
+    let client = async {
+        seat.attach(&grant, socket).await.expect("attach");
+        script(seat, grant.clone()).await;
+    };
+    let (events, ()) = tokio::join!(server.serve(), client);
+    events
+}
+
+#[tokio::test]
+async fn ei_seat_against_fake_eis() {
+    let events = run(stock(), |seat, _| async move {
+        assert!(seat.is_connected());
+        let keymap = seat.keymap();
+        let a = keymap
+            .entries
+            .iter()
+            .find(|e| e.produces == Produces::Char('a'))
+            .expect("a is in the keymap the server sent");
+        assert_eq!(a.code, Keycode(30));
+        let receipt = seat
+            .perform(
+                LEASE,
+                &[
+                    at(100, 50),
+                    InputOp::Button {
+                        button: Button::Left,
+                        dir: Press::Down,
+                    },
+                    InputOp::Button {
+                        button: Button::Left,
+                        dir: Press::Up,
+                    },
+                    InputOp::Gap(Ms(1)),
+                    InputOp::Key {
+                        key: Keycode(30),
+                        dir: Press::Down,
+                    },
+                    InputOp::Key {
+                        key: Keycode(30),
+                        dir: Press::Up,
+                    },
+                    InputOp::Scroll {
+                        dir: ScrollDir::Down,
+                        notches: Notches(2),
+                    },
+                    InputOp::Scroll {
+                        dir: ScrollDir::Left,
+                        notches: Notches(1),
+                    },
+                ],
+            )
+            .await
+            .expect("perform");
+        assert_eq!(receipt.ops.0, 8);
+        assert_eq!(receipt.origin, InputOrigin::SharedSeatViaEi);
+        seat.detach(LEASE).await.expect("detach");
+        assert!(!seat.is_connected());
+    })
+    .await;
+    let starts = events
+        .iter()
+        .filter(|e| **e == EisEvent::StartEmulating)
+        .count();
+    let stops = events
+        .iter()
+        .filter(|e| **e == EisEvent::StopEmulating)
+        .count();
+    assert!(starts >= 2 && starts == stops, "{events:?}");
+    let input: Vec<&EisEvent> = events
+        .iter()
+        .filter(|e| {
+            !matches!(
+                e,
+                EisEvent::Handshake
+                    | EisEvent::Bind
+                    | EisEvent::StartEmulating
+                    | EisEvent::StopEmulating
+            )
+        })
+        .collect();
+    assert_eq!(
+        input,
+        vec![
+            &EisEvent::PointerAbsolute { x: 814, y: 198 },
+            &EisEvent::Button {
+                code: 0x110,
+                dir: Press::Down
+            },
+            &EisEvent::Button {
+                code: 0x110,
+                dir: Press::Up
+            },
+            &EisEvent::Key {
+                code: 30,
+                dir: Press::Down
+            },
+            &EisEvent::Key {
+                code: 30,
+                dir: Press::Up
+            },
+            &EisEvent::ScrollDiscrete { x: 0, y: 240 },
+            &EisEvent::ScrollDiscrete { x: -120, y: 0 },
+        ]
+    );
+    assert_eq!(events.first(), Some(&EisEvent::Handshake));
+    assert_eq!(events.get(1), Some(&EisEvent::Bind));
+}
+
+#[tokio::test]
+async fn the_fork_seat_maps_points_by_identity() {
+    let g = grant(EiOrigin::LeaseSocket, SeatIsolation::AgentSeat, 714, 148);
+    let events = run(g, |seat, _| async move {
+        let receipt = seat.perform(LEASE, &[at(100, 50)]).await.expect("perform");
+        assert_eq!(receipt.origin, InputOrigin::AgentSeat(LEASE));
+        seat.detach(LEASE).await.expect("detach");
+    })
+    .await;
+    assert!(events.contains(&EisEvent::PointerAbsolute { x: 100, y: 50 }));
+}
+
+#[tokio::test]
+async fn stopped_emulation_suspends_and_running_resumes() {
+    let events = run(stock(), |seat, _| async move {
+        seat.emulation(LEASE, Emulation::Stopped)
+            .await
+            .expect("stop");
+        assert_eq!(
+            seat.perform(LEASE, &[at(1, 1)]).await.map(|_| ()),
+            Err(SeatError::Suspended)
+        );
+        seat.emulation(LEASE, Emulation::Running)
+            .await
+            .expect("run");
+        seat.perform(LEASE, &[at(2, 3)]).await.expect("perform");
+        seat.detach(LEASE).await.expect("detach");
+    })
+    .await;
+    let pointer: Vec<_> = events
+        .iter()
+        .filter(|e| matches!(e, EisEvent::PointerAbsolute { .. }))
+        .collect();
+    assert_eq!(pointer, vec![&EisEvent::PointerAbsolute { x: 716, y: 151 }]);
+    let stops = events
+        .iter()
+        .filter(|e| **e == EisEvent::StopEmulating)
+        .count();
+    let starts = events
+        .iter()
+        .filter(|e| **e == EisEvent::StartEmulating)
+        .count();
+    // Two devices, started twice and stopped twice (the second stop is the detach).
+    assert_eq!((starts, stops), (4, 4), "{events:?}");
+}
+
+#[tokio::test]
+async fn refusals_are_local_and_the_connection_survives() {
+    let events = run(stock(), |seat, _| async move {
+        // Beyond the 1280x800 output.
+        assert_eq!(
+            seat.perform(LEASE, &[at(900, 10)]).await.map(|_| ()),
+            Err(SeatError::OutsideLease)
+        );
+        let text = InputOp::Text(TypedText::new("héllo").unwrap());
+        assert_eq!(
+            seat.perform(LEASE, &[text]).await.map(|_| ()),
+            Err(SeatError::Refused)
+        );
+        assert_eq!(
+            seat.perform(LeaseId(99), &[at(1, 1)]).await.map(|_| ()),
+            Err(SeatError::NotConnected)
+        );
+        seat.perform(LEASE, &[at(1, 1)])
+            .await
+            .expect("still usable");
+        seat.detach(LEASE).await.expect("detach");
+        assert_eq!(
+            seat.perform(LEASE, &[at(1, 1)]).await.map(|_| ()),
+            Err(SeatError::NotConnected)
+        );
+    })
+    .await;
+    assert!(events.contains(&EisEvent::PointerAbsolute { x: 715, y: 149 }));
+}
+
+#[tokio::test]
+async fn dropping_the_seat_ends_the_server_run() {
+    let events = run(stock(), |seat, _| async move {
+        drop(seat);
+    })
+    .await;
+    assert_eq!(events.first(), Some(&EisEvent::Handshake));
+}
