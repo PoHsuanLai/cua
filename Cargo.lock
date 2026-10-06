@@ -980,11 +980,24 @@ dependencies = [
  "action-review",
  "almanac-core",
  "docket-core",
+ "docket-skills",
  "policy-point",
  "porter-core",
  "prov",
  "serde",
  "serde_json",
+ "thiserror",
+ "toml",
+]
+
+[[package]]
+name = "docket-skills"
+version = "0.1.0"
+dependencies = [
+ "docket-core",
+ "porter-core",
+ "prov",
+ "serde",
  "thiserror",
  "toml",
 ]
@@ -1397,6 +1410,7 @@ dependencies = [
  "docket-core",
  "docket-dbus",
  "docket-router",
+ "docket-skills",
  "futures-util",
  "policy-point",
  "porter-client",
