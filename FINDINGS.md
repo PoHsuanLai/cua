@@ -368,3 +368,51 @@ the machine under it. What was decided:
   (the fake compositor; MIT, already in the lock through casement-protocols); `tokio` and
   `rustix` become optional deps under the `wayland` features; `tokio`'s `signal` feature in cuad.
   `wayland-protocols` gains `server` as a dev-dependency.
+
+## f4-settings: the settings schema and its reader
+
+The Settings app (detent) builds its Intelligence page from the schema each daemon ships (design/22
+section 9.2). cua's covers the `cua.*` keys of section 3.29 that cuad reads, and cuad reads them.
+
+1. **`dist/settings/cua.settings.toml` has 14 rows**, none `agent = "settable"` (`cua.*` is never
+   agent-settable). **On the Intelligence page** (section 5, Computer use): `cua.enabled` (toggle),
+   `cua.apps` (a rows key: `app` text with the desktop-entry id pattern, `allow` ask, session or always),
+   `cua.default_mode` (segmented), `cua.autopause` (toggle). **Advanced:** `cua.budget.{steps,active_s,
+   stall_frames,actions_per_min,model_failures,spend_microusd}`, `cua.settle.{quiet_ms,timeout_ms}`,
+   `cua.wait.max_ms`, `cua.tree.max_nodes`. Ranges are design/22's.
+2. **Left out: `cua.screens.keep` and `cua.screens.keep_days`** (schema row not shipped, nothing reads
+   them). `CuaConfig` carries both, but no code stores a step's thumbnail in the Space's encrypted store,
+   so a row would do nothing. Closes when cuad keeps thumbnails (almanac store) and reads them: add the two
+   rows and the two table entries in `settings/keys.rs`; the schema test fails until both are there.
+3. **The reader is `cuad::settings`** (`read(text, base)`, `Locator`). The file is
+   `$XDG_CONFIG_HOME/cua/settings.toml` (then `$XDG_CONFIG_DIRS`; the first file that reads wins whole). A value
+   of the wrong type, out of range or not a word of its key falls back **to the base value of that key**
+   (cuad.toml's `settings` table, itself the shipped defaults) and is logged (`cuad: settings: cua.wait.
+   max_ms: outside 500..=60000; using the previous value`). A file that is not TOML keeps every base value; a
+   key the file stops setting is its base again. Unknown keys are listed and ignored.
+4. **cuad follows the file live** (`settings/watch.rs`: a `notify` watch on `$XDG_CONFIG_HOME/cua`, 30 ms
+   debounce, the whole file read again, `Supervisor::follow` applies it). `Supervisor::settings()` is read
+   afresh by every guard, by `RunEnv::new` at each `Start`, and by the task builder (mode, budget). **A run
+   already going keeps the `RunEnv` and budget it started with**; `cua.enabled = "off"` refuses the next
+   `Start` (`Disabled`) and does not stop a run in flight (the kill chord and `StopAll` do).
+5. **`cua.apps`.** The daemon starts with `Apps::Listed(empty)`: until the file lists an app, none is on and
+   `Supervisor::start` answers `Disabled` for it ("off by default and on per app"). A supervisor built in
+   code (every existing test) is `Apps::Unrestricted`, so no test needed a list. A row with a bad `app` or
+   `allow` is dropped and logged (`cua.apps[1]`); a browser (by its id: `is_browser`) asked for `always` is
+   made `ask` and logged (QUESTIONS S9). **`allow` is read and checked but not yet acted on beyond that:**
+   `session` and `always` do not skip the router's consent question, because consent lives in docket's
+   `Gate.Grant` and its `GrantScope`. Interface ask for docket: `GrantAsk` gains the person's
+   pre-approval (`allow`) so the router can answer a listed app without asking.
+6. **The provider's manifest follows `cua.enabled` at start only.** `CuaProvider::manifest` returns a
+   reference, so `reach` (`Hidden` or `Offered`) is fixed when `serve_on` runs; the guard that refuses a
+   `Start` is live. Closes when docket-client's provider seam can change its manifest after start.
+7. **`cuad --write-schema DIR`** writes `cua.settings.toml` for a local install, like `actions-mcp
+   --write-schema`.
+8. **Lockfile.** `notify` joins cua's `Cargo.lock` (cuad's watch). The watch code is the same shape as
+   docket's intentd and almanac's memoryd (`SettingsWatch`); one shared crate replaces the three copies when
+   porter has a place for it.
+9. **Tests.** The schema is held structurally to the key table (ranges, words, on-page rows, no `agent`
+   mark) and parses with the Settings app's loader (`ds_settings::Schema::from_toml`, run by hand from a
+   scratch project: a dev-dependency on ds-settings would unify zbus's executor features); every schema key
+   is read (table test), every key has a bad-value fallback case, `cua.apps` rows read one by one;
+   `cuad/tests/settings.rs` changes the file under a running supervisor and waits on the watch's own event.

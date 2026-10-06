@@ -1,5 +1,6 @@
 //! cuad: the computer-use daemon.
 //!
+//! `--write-schema <dir>` writes the settings schema (`cua.settings.toml`) there and stops.
 //! It reads `--config <path>` (or `$CUAD_CONFIG`; no file means the defaults, with `cua.enabled`
 //! off), connects to the session bus, tries the compositor (no compositor is not a failure: the
 //! backend reads `none`), serves `org.quire.Cua1` and `org.quire.Cua`, and runs until the bus
@@ -7,8 +8,8 @@
 //! start.
 
 use cuad::{
-    CosmicEiSockets, CuadConfig, Links, ServeError, Supervisor, SystemClock, SystemSeams,
-    WaylandPair, serve_on,
+    Apps, CosmicEiSockets, CuaSettings, CuadConfig, Links, Locator, ServeError, SettingsWatch,
+    Supervisor, SystemClock, SystemSeams, WatchState, WaylandPair, serve_on,
 };
 use futures_util::StreamExt;
 use std::path::PathBuf;
@@ -40,6 +41,24 @@ fn config_path() -> Option<PathBuf> {
     std::env::var_os("CUAD_CONFIG").map(PathBuf::from)
 }
 
+/// `--write-schema DIR`: where to write `cua.settings.toml` for a local install (design/22
+/// section 9.2), when asked.
+fn schema_dir() -> Option<PathBuf> {
+    let mut args = std::env::args().skip(1);
+    while let Some(arg) = args.next() {
+        if arg == "--write-schema" {
+            return args.next().map(PathBuf::from);
+        }
+    }
+    None
+}
+
+fn write_schema(dir: &std::path::Path) -> Result<(), Fatal> {
+    let io = |e: std::io::Error| Fatal::Config(format!("{}: {e}", dir.display()));
+    std::fs::create_dir_all(dir).map_err(io)?;
+    std::fs::write(dir.join("cua.settings.toml"), cuad::SCHEMA).map_err(io)
+}
+
 fn load_config() -> Result<CuadConfig, Fatal> {
     let Some(path) = config_path() else {
         return Ok(CuadConfig::default());
@@ -52,6 +71,9 @@ fn load_config() -> Result<CuadConfig, Fatal> {
 }
 
 async fn run() -> Result<(), Fatal> {
+    if let Some(dir) = schema_dir() {
+        return write_schema(&dir);
+    }
     let config = load_config()?;
     let connection = zbus::Connection::session()
         .await
@@ -67,6 +89,24 @@ async fn run() -> Result<(), Fatal> {
     let sockets = CosmicEiSockets::over(connection.clone());
     let parts = SystemSeams::parts(&config, links, wayland, sockets, SystemClock::start());
     let supervisor = Arc::new(Supervisor::new(parts, config));
+    // The person's settings (`cua/settings.toml`) over the configuration's values, now and
+    // whenever the file changes. Until the file lists an app, none is on.
+    let env = |key: &str| std::env::var(key).ok();
+    let base = CuaSettings {
+        config: supervisor.settings(),
+        apps: Apps::Listed(Vec::new()),
+    };
+    let mut watched = SettingsWatch::start(Locator::from_env(&env), base);
+    if let WatchState::Blind { reason } = watched.state() {
+        eprintln!("cuad: settings are read once, not watched: {reason}");
+    }
+    let first = watched.current();
+    for line in first.lines("cuad") {
+        eprintln!("{line}");
+    }
+    supervisor.apply_settings(&first.value);
+    let following = supervisor.clone();
+    tokio::spawn(async move { while following.follow(&mut watched).await.is_some() {} });
     let _serving = serve_on(&connection, supervisor).await?;
 
     let mut terminate =

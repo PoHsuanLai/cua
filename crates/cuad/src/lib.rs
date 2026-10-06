@@ -39,6 +39,7 @@ mod links;
 mod model;
 mod provider;
 mod serve;
+mod settings;
 mod supervisor;
 mod system;
 
@@ -58,5 +59,9 @@ pub use links::{DaemonLinks, RecordContext, RecordError, record_of};
 pub use model::InferdCuaModel;
 pub use provider::{CuaProvider, ModeChoice, ProviderError, StartRequest, manifest_for};
 pub use serve::{ServeError, Serving, serve, serve_on};
+pub use settings::{
+    AppAllow, AppRule, Apps, CuaSettings, DEBOUNCE, Fallback, Loaded, Locator, SCHEMA,
+    SETTINGS_FILE, SettingsWatch, WatchState, Why, is_browser, read,
+};
 pub use supervisor::{Supervisor, mint_run_id};
 pub use system::{SystemSeams, WaylandPair};

@@ -30,7 +30,7 @@ picture), section 6 (copy the recipe).
 | `cua-run` | the pure run machine (`Run`, `RunTrack`, `RunPhase`, `RunInput`, `RunEffect`), `Observation`, `classify_effect`, `window_class_of`, `mode_support`, `choose_mode`, `LeaseBook`, `stalled`, `turn` and `note_of`, `CuaConfig` and `SETTING_ROWS`, `CuaModel`, the seams a run is carried out against (`Seams`, `Clock`, `GateLink`, `RecordSink`, `MessageLink`), and `Exec`, which carries a run's effects out against them (it awaits nothing but seam futures, so it needs no runtime) | none |
 | `cua-dbus` | `org.quire.Cua1` (`Manager`, `Run`) as zbus proxies and skeletons, `introspection`, `CuaError`, bus names and paths | zbus |
 | `cua-fake` | test only: `FakeSeat`, `FakeEis`, `FakeCapture`, `FakeDesktop`, `FakeA11y`, `ScriptedModel`, `FakePdp`, `MemoryEvents`, `FixedClock`, `FakeSeams`, `run_harness`, and `scene` (a window, frames, a world, a task) | none (`FakeEis`: reis, tokio) |
-| `cuad` | the daemon and its library: `SeatBackend`, `CaptureBackend`, `Supervisor` (a task per run), `IntentsGate`, `InferdCuaModel`, `DaemonLinks`, `Links` (the three daemon links over one connection), `CuaProvider` (`org.quire.Cua`), `guard`, `CallerNames`, `CuadConfig`, `SystemSeams`, `SystemDesktop`, `SystemA11y`, `WaylandPair`, `CosmicEiSockets`, `serve` and `serve_on`. The binary serves both bus names | everything |
+| `cuad` | the daemon and its library: `SeatBackend`, `CaptureBackend`, `Supervisor` (a task per run), `IntentsGate`, `InferdCuaModel`, `DaemonLinks`, `Links` (the three daemon links over one connection), `CuaProvider` (`org.quire.Cua`), `guard`, `CallerNames`, `CuadConfig`, `SystemSeams`, `SystemDesktop`, `SystemA11y`, `WaylandPair`, `CosmicEiSockets`, `serve` and `serve_on`. The binary serves both bus names; the person's settings: `read` (lenient, per key), `Locator`, `SettingsWatch` (the directory watch on `cua/settings.toml`), `Supervisor::{settings, apps, apply_settings, follow}`, `SCHEMA` (`dist/settings/cua.settings.toml`), and `--write-schema` | everything |
 
 Allowed direct edges between our own crates (checked by `scripts/check-boundary.sh`;
 dev-dependencies are outside it):
@@ -76,7 +76,7 @@ only; the pure set never reaches an effect crate; `wayland-client` is behind the
 | `cua-run` | `config`, `observation`, `effect_class`, `window_class`, `mode`, `turn`, `lease_book`, `stall`, `model`, `seams`, `machine/{phase, input, effect, run, track, step, control, finish, ops}`, `exec/{observe, session}` |
 | `cua-dbus` | `names`, `error`, `manager`, `run`, `introspect` |
 | `cua-fake` | `clock`, `seat`, `eis`, `capture`, `desktop`, `a11y`, `model`, `gate`, `events`, `harness`, `scene` |
-| `cuad` | `clock`, `config`, `callers`, `guard`, `backend`, `gate`, `model`, `links`, `connect`, `provider`, `supervisor`, `drive`, `events`, `bus`, `desktop`, `ei_socket`, `system`, `serve` |
+| `cuad` | `clock`, `config`, `callers`, `guard`, `backend`, `gate`, `model`, `links`, `connect`, `provider`, `settings` (`keys`, `apps`, `read`, `locate`, `watch`) < `supervisor`, `drive`, `events`, `bus`, `desktop`, `ei_socket`, `system`, `serve` |
 
 ## 3. One home per concept
 

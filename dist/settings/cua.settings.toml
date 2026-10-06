@@ -1,0 +1,299 @@
+# cua's settings schema in the design/22 format (section 9.2). Installed to
+# $XDG_DATA_DIRS/quire/settings/cua.settings.toml; `cuad --write-schema <dir>` writes it for a local
+# install. The values live in $XDG_CONFIG_HOME/cua/settings.toml, for example `[cua]` then
+# `enabled = "on"`; cuad reads them live (crates/cuad/src/settings). Every row is hands-off
+# for an agent (no `agent = "settable"`): cua.* is never agent-settable, so the companion can never
+# switch computer use on for itself. The rows design/22 section 5 puts on the Intelligence page are
+# Computer use's four; the others are Advanced. Not here, because nothing reads them yet:
+# `cua.screens.keep` and `cua.screens.keep_days` (FINDINGS).
+app = "cua"
+file = "cua/settings.toml"
+version = 1
+
+[[key]]
+path = "cua.enabled"
+default = "off"
+label = "Let the assistant use my apps for me"
+help = "Computer use lets the assistant look at an app's window and click and type in it, only in the apps you list below. Off by default; every step is still checked and asks before anything is sent or deleted."
+section = "Computer use"
+exposure = "basic"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["off", "on"]
+
+[key.page]
+kind = "intelligence"
+
+[key.labels]
+off = "Off"
+on = "On"
+
+[[key]]
+path = "cua.apps"
+default = []
+label = "Apps it may use"
+help = "The apps computer use may work in. An app that is not listed is never touched. Ask means every run asks you first; Session asks once a session; Always never asks, and is not offered for web browsers."
+section = "Computer use"
+exposure = "basic"
+
+[key.kind]
+kind = "rows"
+
+[[key.kind.v.columns]]
+name = "app"
+label = "App"
+
+[key.kind.v.columns.kind]
+kind = "text"
+
+[key.kind.v.columns.kind.v]
+pattern = "[A-Za-z_][A-Za-z0-9_-]*(\\.[A-Za-z_][A-Za-z0-9_-]*)+"
+
+[[key.kind.v.columns]]
+name = "allow"
+label = "Asks"
+
+[key.kind.v.columns.kind]
+kind = "choice"
+
+[key.kind.v.columns.kind.v]
+variants = ["ask", "session", "always"]
+
+[key.page]
+kind = "intelligence"
+
+[[key]]
+path = "cua.default_mode"
+default = "auto"
+label = "Where it works"
+help = "In the agent workspace the assistant works on its own screen, out of your way. In place it works in the window you see. Automatic picks the agent workspace when this computer supports it."
+section = "Computer use"
+exposure = "basic"
+
+[key.kind]
+kind = "segmented"
+
+[key.kind.v]
+variants = ["auto", "in_place", "agent_workspace"]
+
+[key.page]
+kind = "intelligence"
+
+[key.labels]
+auto = "Automatic"
+in_place = "In place"
+agent_workspace = "Agent workspace"
+
+[[key]]
+path = "cua.autopause"
+default = "on"
+label = "Pause when I touch the window"
+help = "When it shares your screen, a run pauses as soon as you use the mouse or keyboard, and waits for you to hand it back."
+section = "Computer use"
+exposure = "basic"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["on", "off"]
+
+[key.page]
+kind = "intelligence"
+
+[key.labels]
+on = "On"
+off = "Off"
+
+[[key]]
+path = "cua.budget.steps"
+default = 40
+label = "Steps per run"
+help = "The most steps (look, think, act) one run may take."
+section = "Run limits"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 1
+max = 500
+unit = "steps"
+
+[key.page]
+kind = "intelligence"
+
+[[key]]
+path = "cua.budget.active_s"
+default = 600
+label = "Working time per run"
+help = "The most time one run may spend working. Time spent waiting for you does not count."
+section = "Run limits"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 10
+max = 7200
+unit = "s"
+
+[key.page]
+kind = "intelligence"
+
+[[key]]
+path = "cua.budget.stall_frames"
+default = 3
+label = "Stuck screens"
+help = "A run stops when the screen has looked the same this many times in a row."
+section = "Run limits"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 1
+max = 20
+unit = "frames"
+
+[key.page]
+kind = "intelligence"
+
+[[key]]
+path = "cua.budget.actions_per_min"
+default = 60
+label = "Actions per minute"
+help = "The most clicks and key presses a run may make in a minute."
+section = "Run limits"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 1
+max = 600
+unit = "actions"
+
+[key.page]
+kind = "intelligence"
+
+[[key]]
+path = "cua.budget.model_failures"
+default = 2
+label = "Model failures"
+help = "How many failed answers from the model a run puts up with before it stops."
+section = "Run limits"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 10
+unit = "failures"
+
+[key.page]
+kind = "intelligence"
+
+[[key]]
+path = "cua.budget.spend_microusd"
+default = 0
+label = "Spend per run"
+help = "The most a run may spend on paid models, in millionths of a dollar. 0 keeps it on this computer."
+section = "Run limits"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 1000000000
+unit = "micro-USD"
+
+[key.page]
+kind = "intelligence"
+
+[[key]]
+path = "cua.settle.quiet_ms"
+default = 250
+label = "Quiet before it looks"
+help = "The screen counts as settled after it has not changed for this long."
+section = "Timing"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 50
+max = 2000
+unit = "ms"
+
+[key.page]
+kind = "intelligence"
+
+[[key]]
+path = "cua.settle.timeout_ms"
+default = 3000
+label = "Longest wait for the screen"
+help = "It looks anyway after waiting this long for the screen to settle."
+section = "Timing"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 500
+max = 30000
+unit = "ms"
+
+[key.page]
+kind = "intelligence"
+
+[[key]]
+path = "cua.wait.max_ms"
+default = 5000
+label = "Longest wait it may ask for"
+help = "The longest the assistant may ask to wait between steps."
+section = "Timing"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 500
+max = 60000
+unit = "ms"
+
+[key.page]
+kind = "intelligence"
+
+[[key]]
+path = "cua.tree.max_nodes"
+default = 400
+label = "Window detail"
+help = "How many parts of a window's structure (buttons, fields, labels) are sent to the model."
+section = "Window detail"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 50
+max = 5000
+unit = "nodes"
+
+[key.page]
+kind = "intelligence"

@@ -4,6 +4,7 @@
 
 use crate::config::CuadConfig;
 use crate::events::{RunView, SupervisorEvent};
+use crate::settings::CuaSettings;
 use cua_bus::{BudgetBody, RunEnd};
 use cua_desktop::Stamp;
 use cua_run::{
@@ -12,7 +13,7 @@ use cua_run::{
 };
 use prov::RunId;
 use std::collections::{BTreeMap, VecDeque};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, RwLock};
 use std::time::Duration;
 use tokio::sync::{OwnedMutexGuard, broadcast, mpsc};
 use tokio::task::JoinHandle;
@@ -62,6 +63,8 @@ pub(crate) struct Shared<S: Seams> {
     pub events: S::Events,
     pub clock: S::Time,
     pub config: CuadConfig,
+    /// The person's settings in force: the config's own until the settings file says otherwise.
+    pub settings: RwLock<CuaSettings>,
     pub bus: broadcast::Sender<SupervisorEvent>,
     pub state: Mutex<State>,
 }
@@ -87,6 +90,7 @@ impl<S: Seams> Shared<S> {
             gate,
             events,
             clock,
+            settings: RwLock::new(CuaSettings::over(config.settings)),
             config,
             bus: broadcast::channel(1024).0,
             state: Mutex::new(State {

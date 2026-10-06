@@ -4,12 +4,14 @@ use crate::config::CuadConfig;
 use crate::drive::{Drivable, LiveRun, Shared, drive};
 use crate::events::{RunView, SupervisorEvent};
 use crate::guard::guard;
+use crate::settings::{Apps, CuaSettings, Loaded, SettingsWatch};
 use cua_bus::{
     BudgetBody, ControlRefusal, CuaCaller, CuaMember, CuaTask, ModeSupport, QuestionId, TaskTarget,
 };
 use cua_desktop::Desktop;
 use cua_run::{
-    Clock, GateLink, LeaseBook, Parts, Run, RunEnv, RunInput, RunPhase, Seams, mode_support,
+    Clock, CuaConfig, GateLink, LeaseBook, Parts, Run, RunEnv, RunInput, RunPhase, Seams,
+    mode_support,
 };
 use prov::{Labelled, RunId};
 use std::sync::Arc;
@@ -99,9 +101,46 @@ impl<S: Seams> Supervisor<S> {
         }
     }
 
-    /// The configuration.
+    /// The configuration cuad started with.
     pub fn config(&self) -> &CuadConfig {
         &self.shared.config
+    }
+
+    fn live(&self) -> CuaSettings {
+        match self.shared.settings.read() {
+            Ok(live) => live.clone(),
+            Err(poisoned) => poisoned.into_inner().clone(),
+        }
+    }
+
+    /// The `cua.*` values in force now: the person's latest settings, else the configuration's.
+    /// Every new run and every guard reads them afresh, so a change applies to the next one (a
+    /// run already going keeps the values it started with).
+    pub fn settings(&self) -> CuaConfig {
+        self.live().config
+    }
+
+    /// The apps computer use may drive now.
+    pub fn apps(&self) -> Apps {
+        self.live().apps
+    }
+
+    /// Puts the person's settings in force for every call after this one.
+    pub fn apply_settings(&self, settings: &CuaSettings) {
+        match self.shared.settings.write() {
+            Ok(mut live) => *live = settings.clone(),
+            Err(poisoned) => *poisoned.into_inner() = settings.clone(),
+        }
+    }
+
+    /// Waits for the next change of the settings file and applies it; `None` when the watch ended.
+    pub async fn follow(&self, watch: &mut SettingsWatch) -> Option<Loaded> {
+        let loaded = watch.changed().await?;
+        for line in loaded.lines("cuad") {
+            eprintln!("{line}");
+        }
+        self.apply_settings(&loaded.value);
+        Some(loaded)
     }
 
     /// The desktop.
@@ -191,11 +230,11 @@ impl<S: Drivable> Supervisor<S> {
         caller: CuaCaller,
         mut task: CuaTask,
     ) -> Result<RunId, ControlRefusal> {
-        guard(
-            caller,
-            CuaMember::Start,
-            self.shared.config.settings.enabled,
-        )?;
+        guard(caller, CuaMember::Start, self.settings().enabled)?;
+        // Computer use is on per app (`cua.apps`): an app the person has not listed is not on.
+        if self.apps().rule_for(&task.app).is_none() {
+            return Err(ControlRefusal::Disabled);
+        }
         let caps = self.shared.desktop.caps();
         if let ModeSupport::Unsupported(_) = mode_support(&caps, task.mode) {
             return Err(ControlRefusal::ModeUnsupported);
@@ -211,7 +250,7 @@ impl<S: Drivable> Supervisor<S> {
                 return Err(ControlRefusal::WindowUnknown);
             }
         }
-        let env = RunEnv::new(&self.shared.config.settings, caps);
+        let env = RunEnv::new(&self.settings(), caps);
         let (control, inbox) = mpsc::unbounded_channel();
         let id = {
             let mut state = self.shared.state.lock().expect("supervisor lock");
@@ -290,7 +329,7 @@ impl<S: Drivable> Supervisor<S> {
         run: &RunId,
         member: CuaMember,
     ) -> Result<(), ControlRefusal> {
-        guard(caller, member, self.shared.config.settings.enabled)?;
+        guard(caller, member, self.settings().enabled)?;
         let view = self.view(run).ok_or(ControlRefusal::WrongState)?;
         let input = input_of(member).ok_or(ControlRefusal::WrongState)?;
         if !applies(member, &view.phase) {
@@ -307,11 +346,7 @@ impl<S: Drivable> Supervisor<S> {
         question: QuestionId,
         answer: Labelled<String>,
     ) -> Result<(), ControlRefusal> {
-        guard(
-            caller,
-            CuaMember::Answer,
-            self.shared.config.settings.enabled,
-        )?;
+        guard(caller, CuaMember::Answer, self.settings().enabled)?;
         let view = self.view(run).ok_or(ControlRefusal::WrongState)?;
         match view.phase {
             RunPhase::WaitingForUser(_, asked) if asked == question => {
@@ -323,11 +358,7 @@ impl<S: Drivable> Supervisor<S> {
 
     /// Every run is cancelled (the kill chord and the control centre).
     pub async fn stop_all(&self, caller: CuaCaller) -> Result<(), ControlRefusal> {
-        guard(
-            caller,
-            CuaMember::StopAll,
-            self.shared.config.settings.enabled,
-        )?;
+        guard(caller, CuaMember::StopAll, self.settings().enabled)?;
         let state = self.shared.state.lock().expect("supervisor lock");
         for live in state.live.values() {
             let _ = live

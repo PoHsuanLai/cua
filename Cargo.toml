@@ -72,6 +72,7 @@ thiserror = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 toml = "1"
+notify = "8.2"
 keyboard-types = { version = "0.7", features = ["serde"] }
 zbus = { version = "5.19", default-features = false, features = ["tokio"] }  # shell repos only; they also enable ds-settings/tokio. quire itself builds zbus with its async-io default so app consumers keep their own executor.
 rustix = { version = "1.1", default-features = false, features = ["std", "fs"] }  # porter's line, narrowed to what cuad names: memfd_create and its seals

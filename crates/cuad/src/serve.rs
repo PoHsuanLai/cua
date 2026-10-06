@@ -81,7 +81,7 @@ pub(crate) async fn task_for<S: Drivable>(
     let mode = match request.mode {
         ModeChoice::InPlace => RunMode::InPlace,
         ModeChoice::AgentWorkspace => RunMode::AgentWorkspace,
-        ModeChoice::Auto => choose_mode(supervisor.config().settings.default_mode, &caps)
+        ModeChoice::Auto => choose_mode(supervisor.settings().default_mode, &caps)
             .ok_or(ControlRefusal::ModeUnsupported)?,
     };
     let (target, app) = match (&request.window, &request.app) {
@@ -107,7 +107,7 @@ pub(crate) async fn task_for<S: Drivable>(
         mode,
         space: request.space.clone(),
         session: request.session.clone(),
-        budget: supervisor.config().settings.budget,
+        budget: supervisor.settings().budget,
         data_in: Vec::new(),
         success: SuccessCheck::ModelSays,
         origin: RunOrigin::Planner,
@@ -282,8 +282,7 @@ pub async fn serve_on<S: Drivable>(
         )
         .await
         .map_err(bus)?;
-    let (provider, queue) =
-        CuaProvider::starting(supervisor.config().settings.enabled).map_err(bus)?;
+    let (provider, queue) = CuaProvider::starting(supervisor.settings().enabled).map_err(bus)?;
     docket_client::serve_on(connection, provider, NoContext, NoSummon)
         .await
         .map_err(bus)?;
