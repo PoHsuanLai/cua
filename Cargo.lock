@@ -1401,6 +1401,7 @@ dependencies = [
  "policy-point",
  "porter-client",
  "porter-core",
+ "porter-dbus",
  "porter-infer",
  "prov",
  "serde",
