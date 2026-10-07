@@ -416,3 +416,11 @@ section 9.2). cua's covers the `cua.*` keys of section 3.29 that cuad reads, and
    scratch project: a dev-dependency on ds-settings would unify zbus's executor features); every schema key
    is read (table test), every key has a bad-value fallback case, `cua.apps` rows read one by one;
    `cuad/tests/settings.rs` changes the file under a running supervisor and waits on the watch's own event.
+
+## Cross-repo dependencies are git deps (gitdeps lane)
+
+stoker, porter, almanac, docket and casement-protocols are git dependencies at pinned revs in the root
+`Cargo.toml`, spelled `https://github.com/PoHsuanLai/<repo>` (no `.git`) as the other repos spell them, so one copy
+of each crate is in the graph. For cross-repo work, override a pin with a
+`[patch."https://github.com/PoHsuanLai/<repo>"]` table of `path` lines in a `.cargo/config.toml` in a directory
+ABOVE the checkout (cargo merges parent config; never commit it), and commit `Cargo.lock` only from a build without it.

@@ -187,9 +187,9 @@ action it leads to is gated like any other.
 
 - Licence `MIT OR Apache-2.0`; edition 2024; `unsafe_code = "deny"`; `rust-toolchain.toml` pins
   1.98.1 and `deny.toml` is the licence gate.
-- Cross-repo dependencies are `path` entries to sibling checkouts (`../stoker`, `../porter`,
-  `../almanac`, `../docket`) until each upstream freeze is merged and a pinned git rev replaces
-  them. External versions are copied from quire's `docs/workspace-deps.toml`, never chosen here;
+- Cross-repo dependencies are git dependencies at pinned revs (stoker, porter, almanac, docket,
+  casement-protocols), so a plain clone builds with no sibling checkout; the URLs and revs match the
+  other repos' pins of the same crates, or cargo links two copies. External versions are copied from quire's `docs/workspace-deps.toml`, never chosen here;
   FINDINGS lists the ones added to this workspace.
 - Behaviour is `todo!()` behind frozen signatures, each listed in `FINDINGS.md`; shape tests
   (round trips, pinned JSON, introspection, tables) pass.
