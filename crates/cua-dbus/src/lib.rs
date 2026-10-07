@@ -1,7 +1,7 @@
 //! cuad's D-Bus API: `org.quire.Cua1.Manager` at `/org/quire/Cua1` and `org.quire.Cua1.Run` at
 //! `/org/quire/Cua1/run/<id>`. Each interface is declared twice: a proxy trait for callers (sill,
 //! companiond, intentd) and a skeleton for cuad, whose introspection is the checked-in
-//! `dbus/org.quire.Cua1.xml` (see `tests/introspection.rs`). Bodies are the JSON of the named
+//! `dbus/org.quire.Cua1.xml` (see `tests/it/introspection.rs`). Bodies are the JSON of the named
 //! `cua-bus` type in an `s` argument, in the `CuaEnvelope` where a body is sent; the caller's
 //! identity is derived from the connection and never sent. Signatures only: every skeleton
 //! method answers `NotSupported`.

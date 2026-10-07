@@ -2,8 +2,6 @@
 //! Regenerate with `cargo test -p a11y-tree -- --ignored regenerate_fixture_files`, and only
 //! with a reason.
 
-mod support;
-
 use a11y_tree::A11ySnapshot;
 use std::path::PathBuf;
 
@@ -15,9 +13,9 @@ fn path(name: &str) -> PathBuf {
 
 fn all() -> Vec<(&'static str, A11ySnapshot)> {
     vec![
-        ("gtk4_dialog", support::gtk4_dialog()),
-        ("firefox_form", support::firefox_form()),
-        ("quire_mail", support::quire_mail()),
+        ("gtk4_dialog", crate::support::gtk4_dialog()),
+        ("firefox_form", crate::support::firefox_form()),
+        ("quire_mail", crate::support::quire_mail()),
     ]
 }
 
@@ -54,7 +52,7 @@ fn every_fixture_node_is_labelled_untrusted_screen_text_and_the_root_is_first() 
 
 #[test]
 fn the_password_fixture_is_marked_secret_and_nothing_else_is() {
-    let form = support::firefox_form();
+    let form = crate::support::firefox_form();
     let secret: Vec<_> = form
         .nodes
         .iter()

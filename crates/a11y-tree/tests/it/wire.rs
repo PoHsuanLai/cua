@@ -1,8 +1,6 @@
 //! The selector and diff types survive serde, and the pinned JSON of a node is what other
 //! crates read.
 
-mod support;
-
 use a11y_tree::{
     A11yError, A11yTarget, NameMatch, NodeSelector, Resolution, Role, SelectorStep, SlotName,
     TreeDiff,
@@ -79,7 +77,7 @@ fn a_target_and_every_error_round_trip() {
 
 #[test]
 fn a_node_pins_its_json_with_the_screen_label_on_its_name() {
-    let node = &support::gtk4_dialog().nodes[4];
+    let node = &crate::support::gtk4_dialog().nodes[4];
     let json = serde_json::to_string(node).unwrap();
     assert!(
         json.starts_with(r#"{"id":4,"parent":{"kind":"node","v":0}"#),

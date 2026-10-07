@@ -1,8 +1,7 @@
 //! The rows of the phase table that the person, the shell and the desktop drive: pause, resume,
 //! take over, hand back, cancel, the kill chord, the active budget; and the table's invariants.
 
-mod support;
-
+use crate::support::*;
 use cua_action::{Coord, Rect, Size};
 use cua_bus::{
     ActionResult, BlockedOn, CancelledBy, CuaOutcome, FailReason, QuestionId, RunBudgetKind,
@@ -17,7 +16,6 @@ use maskcap::{CaptureError, DamageAt, DamageSource, Settle};
 use porter_infer::StepIndex;
 use prov::{ConfirmId, MessageKind, ReportStatus};
 use seat_input::{InputOrigin, InputReceipt, SeatError};
-use support::*;
 
 const STOCK: BackendKind = BackendKind::CosmicStock;
 

@@ -1,8 +1,7 @@
 //! The phase table, one row at a time: the next phase and the effects that matter. The
 //! rows follow `cua.md` section 4 as the router's gate changed it.
 
-mod support;
-
+use crate::support::*;
 use cua_action::{
     Choice, Coord, CuaAction, Extracted, ExtractedText, FieldName, FinishOutcome, Rect, Size,
     Summary,
@@ -20,7 +19,6 @@ use maskcap::{CaptureError, DamageAt, DamageSource, FrameWant, Settle};
 use porter_infer::StepIndex;
 use prov::{ConfirmId, Labelled, MessageKind, ReportStatus, SpaceScope};
 use seat_input::{InputOrigin, InputReceipt, SeatError};
-use support::*;
 
 const STOCK: BackendKind = BackendKind::CosmicStock;
 

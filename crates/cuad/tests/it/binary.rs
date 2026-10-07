@@ -2,12 +2,10 @@
 //! owns both of its names, reports the backend as unavailable, leaves `cua.enabled` off, and
 //! stops cleanly on SIGTERM and when the bus goes away.
 
-mod support;
-
+use crate::support::bus::PrivateBus;
 use cua_dbus::ManagerProxy;
 use std::path::Path;
 use std::process::{Child, Command, ExitStatus, Stdio};
-use support::bus::PrivateBus;
 use zbus::fdo;
 use zbus::names::BusName;
 

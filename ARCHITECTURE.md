@@ -151,7 +151,7 @@ router's gate never learns of it, and nothing in it widens what the run may do.
 
 **Add a run input, effect or phase.** (1) The variant in `cua-run/src/machine/{input,effect,phase}.rs`
 (every type `Serialize + Eq`); (2) its row in the phase table (`cua.md` section 4, as changed here)
-and in `machine/step.rs`; (3) a row test in `cua-run/tests/transitions*.rs`; (4) the effect carried
+and in `machine/step.rs`; (3) a row test in `cua-run/tests/it/transitions*.rs`; (4) the effect carried
 out in `cua_run::Exec` (the supervisor and the harness both use it), and a fake behaviour in
 `cua-fake` if a seam changed. A look at the window ends with `Capture`: the capture builds the
 observation, so no effect of a look follows it.
@@ -168,7 +168,7 @@ round-trip test; (4) its handler in `cuad::bus` (a unit test holds the served in
 XML) and, for a signal, its line in `cuad::serve`'s relay.
 
 **Add a record.** A `CuaRecord` variant with `#[serde(rename = "cua.<name>")]`, its row in
-`tests/wire.rs` (the slugs are pinned), and its production in the machine. `cuad::record_of`
+`tests/it/wire.rs` (the slugs are pinned), and its production in the machine. `cuad::record_of`
 needs no change: the slug is the kind tag.
 
 **Add a setting.** A field of `CuaConfig` with its default, a row in `SETTING_ROWS` and an arm of

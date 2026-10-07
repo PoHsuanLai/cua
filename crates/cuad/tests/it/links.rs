@@ -3,8 +3,7 @@
 //! log through almanac-client against a real memory service (over almanac's fakes). Each caller is
 //! a connection that owns the well-known name its role is configured to have.
 
-mod support;
-
+use crate::support::bus::PrivateBus;
 use almanac_client::{InProcess, Memory};
 use almanac_core::{
     ActorFilter, Caller, Count, SpaceId as MemSpace, TimelineFilter, TimelineQuery, TrustFilter,
@@ -34,7 +33,6 @@ use prov::{
 };
 use std::collections::BTreeMap;
 use std::sync::Arc;
-use support::bus::PrivateBus;
 use zbus::Connection;
 
 const COMPANION: &str = "org.quire.Companion1";

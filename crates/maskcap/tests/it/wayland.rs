@@ -2,8 +2,7 @@
 //! The stock capture backend against an in-process compositor (wayland-server, a socketpair):
 //! formats, frames, masks, pixel-diff damage, resizes and a window that goes away.
 
-mod support;
-
+use crate::support::{FakeCompositor, Window};
 use cua_action::{Coord, DeviceSize, PixelFormat, Point, Rect, Scale120, Size, WindowSpace};
 use cua_desktop::{
     EiOrigin, GlobalCoord, GlobalRect, LeaseGrant, LeaseId, Pid, SeatIsolation, Stamp,
@@ -17,7 +16,6 @@ use porter_core::{AppName, Px};
 use std::collections::BTreeSet;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
-use support::{FakeCompositor, Window};
 use wayland_client::Connection;
 use wayland_server::protocol::wl_shm::Format;
 

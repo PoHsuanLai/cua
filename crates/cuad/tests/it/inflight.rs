@@ -1,8 +1,7 @@
 //! What the person's controls do to a run while the model is still thinking: the call is
 //! dropped, the model is handed on, and nothing the run was about to do happens.
 
-mod support;
-
+use crate::support::*;
 use cua_bus::{CancelledBy, CuaCaller, CuaMember, CuaOutcome};
 use cua_desktop::BackendKind;
 use cua_fake::scene::{click, reply, task, world};
@@ -10,7 +9,6 @@ use cua_fake::{FakePdp, FakeSeams};
 use cua_run::{CuaModel, CuaModelError, FrameAttachment, Parts, RunPhase, Seams, StepSink};
 use cuad::Supervisor;
 use porter_infer::{CuaBegin, CuaStepReply, CuaStepRequest, ServedBy, TokenUsage};
-use support::*;
 
 /// A model that never answers, and counts the sessions it was begun for.
 struct Mute {

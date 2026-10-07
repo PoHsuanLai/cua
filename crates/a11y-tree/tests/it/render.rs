@@ -1,17 +1,15 @@
 //! The rendered tree: golden text for each fixture, escaping, indentation and the truncation
 //! line. Regenerate the golden files with
-//! `cargo test -p a11y-tree --test render -- --ignored regenerate_golden_files`, and only with a
+//! `cargo test -p a11y-tree --test it -- --ignored render::regenerate_golden_files`, and only with a
 //! reason.
 
-mod support;
-
+use crate::support::{Spec, gtk4_dialog, snapshot};
 use a11y_tree::{
     A11yNode, A11ySnapshot, NameMatch, NodeBudget, NodeSelector, NodeValue, Parent, Resolution,
     Role, SelectorStep, SlotName, Truncation, TypedHint, prune, render, resolve,
 };
 use cua_action::NodeId;
 use std::path::PathBuf;
-use support::{Spec, gtk4_dialog, snapshot};
 
 fn golden(name: &str) -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -21,9 +19,9 @@ fn golden(name: &str) -> PathBuf {
 
 fn all() -> Vec<(&'static str, A11ySnapshot)> {
     vec![
-        ("gtk4_dialog", support::gtk4_dialog()),
-        ("firefox_form", support::firefox_form()),
-        ("quire_mail", support::quire_mail()),
+        ("gtk4_dialog", crate::support::gtk4_dialog()),
+        ("firefox_form", crate::support::firefox_form()),
+        ("quire_mail", crate::support::quire_mail()),
     ]
 }
 
@@ -78,7 +76,7 @@ fn children_are_indented_under_their_parents() {
 
 #[test]
 fn a_password_entry_is_hidden_even_when_the_source_did_not_mark_it_secret() {
-    let mut form = support::firefox_form();
+    let mut form = crate::support::firefox_form();
     for node in &mut form.nodes {
         node.sensitivity = a11y_tree::Sensitivity::Normal;
     }
@@ -136,7 +134,7 @@ fn values_and_typed_hints_follow_the_bounds_and_a_range_shows_its_limits() {
 
 #[test]
 fn a_pruned_tree_says_how_many_nodes_are_not_shown() {
-    let pruned = prune(&support::firefox_form(), NodeBudget(3));
+    let pruned = prune(&crate::support::firefox_form(), NodeBudget(3));
     let text = render(&pruned);
     let Truncation::Pruned { dropped } = pruned.truncated else {
         panic!("pruned")
@@ -149,7 +147,7 @@ fn a_pruned_tree_says_how_many_nodes_are_not_shown() {
 
 #[test]
 fn pruning_keeps_every_kept_node_under_a_kept_parent_and_adds_up_the_dropped() {
-    let mail = support::quire_mail();
+    let mail = crate::support::quire_mail();
     for budget in 1..=mail.nodes.len() as u32 {
         let pruned = prune(&mail, NodeBudget(budget));
         assert!(pruned.nodes.len() <= budget as usize, "budget {budget}");

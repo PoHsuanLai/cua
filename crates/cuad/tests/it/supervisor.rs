@@ -1,8 +1,7 @@
 //! The supervisor over the fakes: a run end to end, who may start and control, the lease book,
 //! and what the person's controls do to a run in flight.
 
-mod support;
-
+use crate::support::*;
 use cua_action::{CuaAction, Summary};
 use cua_bus::{
     CancelledBy, ControlRefusal, CuaCaller, CuaMember, CuaOutcome, QuestionId, ReportDelivery,
@@ -15,7 +14,6 @@ use cuad::Supervisor;
 use docket_core::GateAnswer;
 use prov::{Labelled, MessageKind, ReportStatus};
 use seat_input::Emulation;
-use support::*;
 
 const STOCK: BackendKind = BackendKind::CosmicStock;
 

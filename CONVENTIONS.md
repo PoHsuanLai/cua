@@ -57,3 +57,14 @@ What cua adds or decides differently, each with its reason:
     says what it means (`Emulation::{Running, Stopped}`, `Press::{Down, Up}`).
 12. **Typed points.** A point carries its coordinate space (`Point<WindowSpace>`); a bare pixel
     pair is wrong. The one place that names a global position is `seat-input::region`.
+13. **One integration-test executable per crate.** Cargo links every file directly under `tests/`
+    into its own executable, and each one statically links the crate's whole dependency graph
+    (reis, wayland, zbus, tokio and the rest), so a build directory grows with the number of
+    files. Integration tests are therefore modules of `tests/it/main.rs` (`mod <topic>;`),
+    shared helpers are `tests/it/support/` modules (`use crate::support::...`), and goldens stay
+    in `tests/golden/`. A separate target (`tests/<name>.rs` plus `[[test]]` in the crate's
+    `Cargo.toml`, with a comment in `tests/it/main.rs`) needs a stated reason: it changes the
+    environment (`set_var`, a panic hook, the current dir), holds a process-wide singleton the
+    others must not share, needs its own `required-features`, or has `harness = false`. A new
+    `tests/*.rs` without that reason is a mistake. Dependencies build without debug info
+    (`[profile.dev.package."*"]` in `.cargo/config.toml`).

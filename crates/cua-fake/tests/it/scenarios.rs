@@ -1,8 +1,7 @@
 //! Runs over the fakes beyond the happy path: the consent guard, a denial, a refused consent,
 //! a message that reaches the model, a masked secret, a run that ends the way a fake says.
 
-mod support;
-
+use crate::support::*;
 use cua_action::CuaAction;
 use cua_bus::{BlockedOn, CuaOutcome, CuaRecord, FailReason};
 use cua_desktop::{BackendKind, Suspend};
@@ -12,7 +11,6 @@ use docket_core::{CallRefusal, ConfirmEnd, DenyCode, GateAnswer, GrantAnswer, In
 use porter_infer::{NoteFrom, PrevResult, StepNote};
 use prov::{Address, AgentRef, Crossing, MessageId, MessageKind, ReportStatus, ThreadId};
 use seat_input::Emulation;
-use support::*;
 
 fn outcome_of(report: &cua_fake::HarnessReport) -> CuaOutcome {
     match report.run.phase {

@@ -2,8 +2,8 @@
 //! `org.quire.Cua` provider for the router. Each caller is a connection that owns the well-known
 //! name its role is configured to have, so the identity cuad derives is the real one.
 
-mod support;
-
+use crate::support::bus::PrivateBus;
+use crate::support::enabled;
 use cua_action::{CuaAction, Summary};
 use cua_bus::{BudgetBody, CuaEnvelope, CuaOutcome, CuaTask, RunEnd, WindowBody};
 use cua_dbus::{CUA_BUS, ManagerProxy, RunProxy};
@@ -14,8 +14,6 @@ use cuad::{Supervisor, serve_on};
 use futures_util::StreamExt;
 use std::sync::Arc;
 use std::time::Duration;
-use support::bus::PrivateBus;
-use support::enabled;
 use zbus::Connection;
 
 struct Fixture {

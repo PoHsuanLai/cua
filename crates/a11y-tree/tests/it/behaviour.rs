@@ -1,7 +1,5 @@
 //! What the tree functions must do, over the fixtures.
 
-mod support;
-
 use a11y_tree::{
     NameMatch, NodeBudget, NodeSelector, Resolution, Role, SelectorStep, Truncation, diff, prune,
     render, resolve, secret_rects,
@@ -10,7 +8,7 @@ use cua_action::NodeId;
 
 #[test]
 fn prune_keeps_actionable_visible_first_within_budget() {
-    let form = support::firefox_form();
+    let form = crate::support::firefox_form();
     let total = form.nodes.len();
     let pruned = prune(&form, NodeBudget(5));
     assert_eq!(pruned.nodes.len(), 5);
@@ -32,7 +30,7 @@ fn prune_keeps_actionable_visible_first_within_budget() {
 
 #[test]
 fn render_is_stable_golden_and_never_prints_a_secret_value() {
-    let form = support::firefox_form();
+    let form = crate::support::firefox_form();
     let text = render(&form);
     assert_eq!(text, render(&form), "stable");
     assert!(text.contains("button \"Sign in\""), "{text}");
@@ -42,7 +40,7 @@ fn render_is_stable_golden_and_never_prints_a_secret_value() {
         "a secret value is never rendered: {text}"
     );
     assert!(text.contains("ada@example.org"), "an ordinary value is");
-    let mail = render(&support::quire_mail());
+    let mail = render(&crate::support::quire_mail());
     assert!(
         mail.contains("mail.thread.archive"),
         "typed hints reach the model: {mail}"
@@ -51,19 +49,19 @@ fn render_is_stable_golden_and_never_prints_a_secret_value() {
 
 #[test]
 fn secret_rects_cover_password_text() {
-    let form = support::firefox_form();
+    let form = crate::support::firefox_form();
     let password = form
         .nodes
         .iter()
         .find(|n| n.role == Role::PasswordText)
         .expect("password");
     assert_eq!(secret_rects(&form), vec![password.bounds]);
-    assert!(secret_rects(&support::gtk4_dialog()).is_empty());
+    assert!(secret_rects(&crate::support::gtk4_dialog()).is_empty());
 }
 
 #[test]
 fn diff_reports_added_removed_changed() {
-    let before = support::gtk4_dialog();
+    let before = crate::support::gtk4_dialog();
     let mut after = before.clone();
     let removed = after.nodes.pop().expect("a node");
     after.nodes[2].states.insert(a11y_tree::NodeState::Focused);
@@ -76,7 +74,7 @@ fn diff_reports_added_removed_changed() {
 
 #[test]
 fn selector_resolution_table() {
-    let dialog = support::gtk4_dialog();
+    let dialog = crate::support::gtk4_dialog();
     let step = |role, name: &str| SelectorStep {
         role,
         name: NameMatch::Exact(name.into()),

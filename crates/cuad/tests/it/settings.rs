@@ -1,8 +1,7 @@
 //! The person's settings file reaches a running supervisor: a change in the file applies to the
 //! next start without a restart. The wait is the watch's own event, never a sleep.
 
-mod support;
-
+use crate::support::supervisor;
 use cua_bus::{ControlRefusal, CuaCaller};
 use cua_desktop::BackendKind;
 use cua_fake::FakePdp;
@@ -10,7 +9,6 @@ use cua_fake::scene::{click, finish, reply, task};
 use cua_run::Enabled;
 use cuad::{Apps, CuaSettings, Locator, SettingsWatch, WatchState};
 use std::path::Path;
-use support::supervisor;
 
 /// What the Settings app does: a temp file, then a rename over the settings file.
 fn write_atomically(home: &Path, text: &str) {

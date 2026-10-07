@@ -182,7 +182,7 @@ docket `InProcess` feature ask (it is behind `in_process`), and the porter `Step
   every later step is `Fatal` (the history it was pinned to is gone). Sorting: unreachable
   inferd, an engine not ready or rate limited, `Refused(Unavailable)` and `Cancelled` are
   `Transient`; unreadable and unparseable replies are `Parse`; every other refusal and failure is
-  `Fatal`. Tested over a scripted session that reads the descriptor back (`cuad/tests/model.rs`).
+  `Fatal`. Tested over a scripted session that reads the descriptor back (`cuad/tests/it/model.rs`).
 - `seat_input::plan` is filled (it was `todo!()`, and `Keymap::{stroke_for, code_of}` with it). A
   `Target::Centre` is `centre_of(action.window)` (half of each side, rounded down; the caller's
   `ResolvedPoints` never overrides it); a node is the point the caller resolved (`PlanError::
@@ -201,7 +201,7 @@ the machine under it. What was decided:
   step's outcomes so far (they become the next observation's `prev`), the settle watch (what a
   `Settling` phase waits for: damage since an action, or a timer for `wait`), who authorised the
   action being carried out, the thought digest and frame note of the step, and the rate window.
-  `tests/machine.rs` builds `Run` literals and carries `track: RunTrack::default()`.
+  `tests/it/machine.rs` builds `Run` literals and carries `track: RunTrack::default()`.
 - **Machine rows.** Granting asks the router; `Leased` records `RunStarted` and starts the first
   look. A look is `Snapshot`, `FetchContext` (first look and after a hand-back), then `Capture`,
   which is always last: the capture is what builds the observation. The model's batch is a queue:
@@ -255,10 +255,10 @@ the machine under it. What was decided:
   nothing.
 - **`FakeDesktop::next_event`** wakes when an event is raised (it used to wait forever if none was
   queued when it was first polled). `cua_fake::scene` holds the scenes the tests share.
-- **Tests.** `cuad/tests/links.rs` runs `IntentsGate` and `DaemonLinks` against a real intentd on a
+- **Tests.** `cuad/tests/it/links.rs` runs `IntentsGate` and `DaemonLinks` against a real intentd on a
   private bus (docket's fakes behind it) and a real memory service (almanac's fakes);
-  `cuad/tests/serve.rs` runs `serve_on` on a private bus with callers that own the role names;
-  `cuad/tests/{supervisor,inflight}.rs` run the supervisor over the fakes with paused time.
+  `cuad/tests/it/serve.rs` runs `serve_on` on a private bus with callers that own the role names;
+  `cuad/tests/it/{supervisor,inflight}.rs` run the supervisor over the fakes with paused time.
 - **Not done:** `CuaProvider` offers no `dry_run`, search or suggest; procedures
   (`ProcedureUse::{Hint, Replay}`) are carried and not used; `data_in` is not sent to the model;
   there is no price for a cloud model (`ModelReply.cost` is zero), so the spend budget only guards
@@ -267,7 +267,7 @@ the machine under it. What was decided:
 
 ## The f4-cua-seat fill (2026-10-06)
 
-- **`EiSeat` is built over reis 0.7** (`seat_input::ei`, tested in `cua-fake/tests/ei.rs` against
+- **`EiSeat` is built over reis 0.7** (`seat_input::ei`, tested in `cua-fake/tests/it/ei.rs` against
   `FakeEis` over socketpairs; no compositor). reis proxies are not `Send` (their callback handlers are
   `Box<dyn FnOnce>`) and `AgentSeat`'s futures must be, so every attached lease gets a thread of its own
   with a current-thread runtime (`ei/actor.rs`); the seat talks to it over a channel and waits on one-shot
@@ -293,7 +293,7 @@ the machine under it. What was decided:
   1); grid-space replies are not read (`NotAStep`). A provider failure replays as the matching
   `CuaModelError`. `cua-parse` and `model-provider` are new edges of `cua-fake`.
 - **Ask 92 was already built** at the w4-cua fill (`Observation.notes`, `turn` fills
-  `CuaStepRequest.notes`, `tests/turn.rs`); `a_message_changes_no_authority` has run since then.
+  `CuaStepRequest.notes`, `tests/it/turn.rs`); `a_message_changes_no_authority` has run since then.
 - **Ask 149: the gate is watched and a run opens its own session.** `IntentsGate` uses
   `Intents::gate_check_watched`: `Confirming(id)` reaches the machine, which suspends the lease and calls
   `proceed`; the verdict ends the check. `GateCheck` gains `close` (the run is paused: `Exec::suspend(.., Paused)`
@@ -361,8 +361,8 @@ the machine under it. What was decided:
   tries the compositor (none is not fatal), serves `org.quire.Cua1` and `org.quire.Cua`, and
   stops with 0 on SIGTERM or when the bus closes.
 - **Tests, all over an in-process wayland-server on socketpairs or a private bus.**
-  `cua-desktop/tests/wayland.rs` (11), `maskcap/tests/wayland.rs` (8), `cuad/tests/ei_socket.rs`
-  (4), `cuad/tests/binary.rs` (4: env cleared, no compositor).
+  `cua-desktop/tests/it/wayland.rs` (11), `maskcap/tests/it/wayland.rs` (8), `cuad/tests/it/ei_socket.rs`
+  (4), `cuad/tests/it/binary.rs` (4: env cleared, no compositor).
 - **Dependencies added** (not in quire's block): `wayland-scanner`, `wayland-backend` for
   cua-desktop (generation) and `wayland-server` as a dev-dependency of cua-desktop and maskcap
   (the fake compositor; MIT, already in the lock through casement-protocols); `tokio` and
@@ -415,7 +415,7 @@ section 9.2). cua's covers the `cua.*` keys of section 3.29 that cuad reads, and
    mark) and parses with the Settings app's loader (`ds_settings::Schema::from_toml`, run by hand from a
    scratch project: a dev-dependency on ds-settings would unify zbus's executor features); every schema key
    is read (table test), every key has a bad-value fallback case, `cua.apps` rows read one by one;
-   `cuad/tests/settings.rs` changes the file under a running supervisor and waits on the watch's own event.
+   `cuad/tests/it/settings.rs` changes the file under a running supervisor and waits on the watch's own event.
 
 ## Cross-repo dependencies are git deps (gitdeps lane)
 

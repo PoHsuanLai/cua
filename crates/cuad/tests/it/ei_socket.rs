@@ -2,14 +2,12 @@
 //! bus: it enforces what stock enforces (the caller owns `com.system76.CosmicOSK`), so the test
 //! shows the name workaround is what lets the call through.
 
-mod support;
-
+use crate::support::bus::PrivateBus;
 use cua_desktop::{DesktopError, DeviceTypes, SenderSocket};
 use cuad::{CosmicEiSockets, EI_BUS_NAME, EI_PATH, OSK_NAME};
 use std::io::{Read, Write};
 use std::os::unix::net::UnixStream;
 use std::sync::{Arc, Mutex};
-use support::bus::PrivateBus;
 use zbus::fdo;
 use zbus::message::Header;
 use zbus::zvariant::OwnedFd;

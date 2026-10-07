@@ -2,8 +2,7 @@
 //! The stock COSMIC backend against an in-process compositor (wayland-server, a socketpair):
 //! what `windows` reports, what `next_event` hears, and the stock in-place lease.
 
-mod support;
-
+use crate::support::{FakeCompositor, Offer, Spec};
 use cua_desktop::{
     BackendKind, CosmicDesktop, Desktop, DesktopError, DesktopEvent, DeviceTypes, EiOrigin,
     LeaseControl, LeaseRequest, ReleasePlacement, RevokeReason, RunMode, SeatIsolation,
@@ -14,7 +13,6 @@ use prov::SpaceId;
 use std::os::fd::OwnedFd;
 use std::os::unix::net::UnixStream;
 use std::sync::{Arc, Mutex};
-use support::{FakeCompositor, Offer, Spec};
 use wayland_client::Connection;
 
 fn spec(identifier: &'static str, app_id: &'static str, title: &'static str) -> Spec {
