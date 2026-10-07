@@ -61,7 +61,10 @@ impl From<CuaStepFailure> for CuaModelError {
                 ModelError::Unreachable | ModelError::RateLimited(_) | ModelError::NotReady => {
                     CuaModelError::Transient
                 }
-                ModelError::Unparseable | ModelError::Unreadable => CuaModelError::Parse,
+                // A step that was all thinking chose no action: the same as one we could not read.
+                ModelError::Unparseable
+                | ModelError::Unreadable
+                | ModelError::OnlyThought { .. } => CuaModelError::Parse,
                 ModelError::Unauthorized | ModelError::Refused | ModelError::ContextOverflow => {
                     CuaModelError::Fatal
                 }
@@ -93,6 +96,7 @@ pub trait CuaModel: Send {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use porter_infer::StopReason;
 
     #[test]
     fn inferd_failures_sort_into_transient_parse_and_fatal() {
@@ -125,6 +129,14 @@ mod tests {
             (
                 "unreadable",
                 CuaStepFailure::ModelFailed(ModelError::Unreadable),
+                CuaModelError::Parse,
+            ),
+            (
+                "only thought",
+                CuaStepFailure::ModelFailed(ModelError::OnlyThought {
+                    stop: StopReason::EndTurn,
+                    thought_len: 12,
+                }),
                 CuaModelError::Parse,
             ),
             (
