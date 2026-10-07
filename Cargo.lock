@@ -953,8 +953,12 @@ version = "0.1.0"
 dependencies = [
  "docket-core",
  "porter-client",
+ "porter-core",
  "porter-dbus",
+ "porter-infer",
  "prov",
+ "serde",
+ "serde_json",
  "thiserror",
  "zbus",
 ]
