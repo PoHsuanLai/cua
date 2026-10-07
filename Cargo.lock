@@ -979,6 +979,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "docket-memory"
+version = "0.1.0"
+dependencies = [
+ "almanac-client",
+ "almanac-core",
+ "docket-core",
+ "docket-router",
+ "porter-core",
+ "prov",
+ "serde_json",
+]
+
+[[package]]
+name = "docket-models"
+version = "0.1.0"
+dependencies = [
+ "action-review",
+ "docket-core",
+ "porter-client",
+ "porter-core",
+ "porter-infer",
+ "prov",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "docket-router"
 version = "0.1.0"
 dependencies = [
@@ -1453,6 +1480,8 @@ dependencies = [
  "docket-client",
  "docket-core",
  "docket-dbus",
+ "docket-memory",
+ "docket-models",
  "docket-router",
  "docket-settings",
  "docket-skills",
