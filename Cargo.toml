@@ -42,28 +42,28 @@ model-replay    = { git = "https://github.com/PoHsuanLai/stoker", rev = "b24f6d4
 cua-parse       = { git = "https://github.com/PoHsuanLai/stoker", rev = "b24f6d456e7915f1052c722f5aebabf1ee0f0e74" }
 
 # porter's frozen interfaces.
-porter-core     = { git = "https://github.com/PoHsuanLai/porter", rev = "974530a0fb4861a96d23cbfe57cfc1de00b5c242" }
-prov            = { git = "https://github.com/PoHsuanLai/porter", rev = "974530a0fb4861a96d23cbfe57cfc1de00b5c242" }
-porter-infer    = { git = "https://github.com/PoHsuanLai/porter", rev = "974530a0fb4861a96d23cbfe57cfc1de00b5c242" }
-porter-client   = { git = "https://github.com/PoHsuanLai/porter", rev = "974530a0fb4861a96d23cbfe57cfc1de00b5c242" }
+porter-core     = { git = "https://github.com/PoHsuanLai/porter", rev = "5b364ea23fb2cfa3eba3266b0a2a91490519fe1e" }
+prov            = { git = "https://github.com/PoHsuanLai/porter", rev = "5b364ea23fb2cfa3eba3266b0a2a91490519fe1e" }
+porter-infer    = { git = "https://github.com/PoHsuanLai/porter", rev = "5b364ea23fb2cfa3eba3266b0a2a91490519fe1e" }
+porter-client   = { git = "https://github.com/PoHsuanLai/porter", rev = "5b364ea23fb2cfa3eba3266b0a2a91490519fe1e" }
 
 # almanac's frozen interfaces: cuad records `CuaRecord`s as `EventBody::Area` through memoryd.
-almanac-core    = { git = "https://github.com/PoHsuanLai/almanac", rev = "931568e8c28245798e607317811d862b57897ec2" }
-almanac-client  = { git = "https://github.com/PoHsuanLai/almanac", rev = "931568e8c28245798e607317811d862b57897ec2" }
+almanac-core    = { git = "https://github.com/PoHsuanLai/almanac", rev = "028a52aacd3d30e0f2d241c6b1f10fff34a497c4" }
+almanac-client  = { git = "https://github.com/PoHsuanLai/almanac", rev = "028a52aacd3d30e0f2d241c6b1f10fff34a497c4" }
 
 # docket's frozen interfaces: the gate contract (`CuaAsk`, `GateAnswer`, `RunMode`,
 # `WindowTrust`), the message draft and the provider trait. docket sits below cua and has no cua
 # dependency.
-docket-core     = { git = "https://github.com/PoHsuanLai/docket", rev = "2f7ced69b14b3c5e2627733cde957118c2bd1a44" }
-docket-client   = { git = "https://github.com/PoHsuanLai/docket", rev = "2f7ced69b14b3c5e2627733cde957118c2bd1a44" }
+docket-core     = { git = "https://github.com/PoHsuanLai/docket", rev = "5ff1c23cb5e07e2f05f55cff986cfc9bd6d429a6" }
+docket-client   = { git = "https://github.com/PoHsuanLai/docket", rev = "5ff1c23cb5e07e2f05f55cff986cfc9bd6d429a6" }
 
 # Dev-dependencies of cuad's tests only: a real intentd on a private bus over docket's fakes, and
 # a real memory service over almanac's fakes. Nothing outside `[dev-dependencies]` names them.
-intentd         = { git = "https://github.com/PoHsuanLai/docket", rev = "2f7ced69b14b3c5e2627733cde957118c2bd1a44" }
-docket-fake     = { git = "https://github.com/PoHsuanLai/docket", rev = "2f7ced69b14b3c5e2627733cde957118c2bd1a44" }
-docket-router   = { git = "https://github.com/PoHsuanLai/docket", rev = "2f7ced69b14b3c5e2627733cde957118c2bd1a44" }
-almanac-fake    = { git = "https://github.com/PoHsuanLai/almanac", rev = "931568e8c28245798e607317811d862b57897ec2" }
-almanac-service = { git = "https://github.com/PoHsuanLai/almanac", rev = "931568e8c28245798e607317811d862b57897ec2" }
+intentd         = { git = "https://github.com/PoHsuanLai/docket", rev = "5ff1c23cb5e07e2f05f55cff986cfc9bd6d429a6" }
+docket-fake     = { git = "https://github.com/PoHsuanLai/docket", rev = "5ff1c23cb5e07e2f05f55cff986cfc9bd6d429a6" }
+docket-router   = { git = "https://github.com/PoHsuanLai/docket", rev = "5ff1c23cb5e07e2f05f55cff986cfc9bd6d429a6" }
+almanac-fake    = { git = "https://github.com/PoHsuanLai/almanac", rev = "028a52aacd3d30e0f2d241c6b1f10fff34a497c4" }
+almanac-service = { git = "https://github.com/PoHsuanLai/almanac", rev = "028a52aacd3d30e0f2d241c6b1f10fff34a497c4" }
 
 # From quire's pinned block (`docs/workspace-deps.toml`), copied verbatim: only the lines cua
 # names itself.
