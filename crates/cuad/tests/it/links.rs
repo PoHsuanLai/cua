@@ -119,6 +119,9 @@ impl Desk {
                 space: work(),
                 agent: AgentRef::Companion,
                 parent: None,
+                cwd: None,
+                external: None,
+                started_from: None,
             })
             .await
             .expect("the planner's session");
@@ -128,6 +131,9 @@ impl Desk {
                 space: work(),
                 agent: AgentRef::Cua { run: run() },
                 parent: None,
+                cwd: None,
+                external: None,
+                started_from: None,
             })
             .await
             .expect("the run's session")

@@ -113,6 +113,11 @@ impl<T: Transport + 'static> GateLink for IntentsGate<T> {
             space: space.clone(),
             agent: AgentRef::Cua { run: run.clone() },
             parent: None,
+            // A computer-use run has no working directory, is no external agent, and was not
+            // started from a terminal.
+            cwd: None,
+            external: None,
+            started_from: None,
         };
         Intents::over(Shared(self.transport.clone()))
             .session_open(open)
@@ -449,6 +454,9 @@ mod tests {
                 space,
                 agent: AgentRef::Cua { run },
                 parent: None,
+                cwd: None,
+                external: None,
+                started_from: None,
             })]
         );
     }
