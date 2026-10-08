@@ -54,6 +54,6 @@ pub use observation::{
 pub use seams::{
     Clock, GateCheck, GateEvent, GateLink, LinkError, MessageLink, Parts, RecordSink, Seams,
 };
-pub use stall::{Stall, stalled};
+pub use stall::{Repeats, Stall};
 pub use turn::{FrameAttachment, note_of, turn};
 pub use window_class::window_class_of;

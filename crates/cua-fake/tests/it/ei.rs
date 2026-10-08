@@ -236,3 +236,33 @@ async fn dropping_the_seat_ends_the_server_run() {
     .await;
     assert_eq!(events.first(), Some(&EisEvent::Handshake));
 }
+
+fn code_of_a(seat: &EiSeat) -> Keycode {
+    seat.keymap()
+        .entries
+        .iter()
+        .find(|e| e.produces == Produces::Char('a'))
+        .expect("a is in the keymap")
+        .code
+}
+
+#[tokio::test]
+async fn a_later_attach_replaces_the_keymap_of_the_earlier_one() {
+    let g = stock();
+    let seat = EiSeat::new(g.seat);
+    let (mut first, socket_one) = FakeEis::pair().expect("socketpair");
+    let (second, socket_two) = FakeEis::pair().expect("socketpair");
+    let mut second = second.with_a_at(40);
+    let client = async {
+        assert!(
+            seat.keymap().entries.is_empty(),
+            "empty before the first attach"
+        );
+        seat.attach(&g, socket_one).await.expect("attach");
+        assert_eq!(code_of_a(&seat), Keycode(30));
+        seat.attach(&g, socket_two).await.expect("re-attach");
+        assert_eq!(code_of_a(&seat), Keycode(40), "the new connection's keymap");
+        seat.detach(LEASE).await.expect("detach");
+    };
+    tokio::join!(first.serve(), second.serve(), client);
+}

@@ -1,5 +1,6 @@
 //! The lease and what hangs on it: the seat, the capture session, the model's session, input.
 
+use super::cost::reply_cost;
 use super::{Exec, ModelSession, Outlet};
 use crate::machine::input::{ModelReply, RunInput};
 use crate::model::{CuaModel, CuaModelError, StepEvent, StepSink};
@@ -9,7 +10,6 @@ use cua_desktop::{
     DesktopError, GlowState, LeaseControl, LeaseGrant, LeaseId, LeaseRequest, Suspend,
 };
 use maskcap::WindowCapture;
-use porter_core::MicroUsd;
 use porter_infer::{CuaBegin, CuaStepRequest};
 use seat_input::{AgentSeat, Emulation, InputOp, PlannedAction, SeatError, plan};
 
@@ -95,16 +95,16 @@ impl<S: Seams> Exec<'_, S> {
         let Some(lease) = self.held.as_ref().map(|held| held.grant.id) else {
             return out.input(RunInput::InjectFailed(SeatError::NotConnected));
         };
-        let ops: Vec<InputOp> =
-            match plan(&planned, self.seam.seat.keymap(), &self.seam.seat.caps()) {
-                Ok(ops) => ops,
-                Err(seat_input::PlanError::OutsideWindow(_)) => {
-                    return out.input(RunInput::InjectFailed(SeatError::OutsideLease));
-                }
-                Err(other) => {
-                    return out.input(RunInput::InjectFailed(SeatError::Keymap(other.to_string())));
-                }
-            };
+        let keymap = self.seam.seat.keymap();
+        let ops: Vec<InputOp> = match plan(&planned, &keymap, &self.seam.seat.caps()) {
+            Ok(ops) => ops,
+            Err(seat_input::PlanError::OutsideWindow(_)) => {
+                return out.input(RunInput::InjectFailed(SeatError::OutsideLease));
+            }
+            Err(other) => {
+                return out.input(RunInput::InjectFailed(SeatError::Keymap(other.to_string())));
+            }
+        };
         out.input(match self.seam.seat.perform(lease, &ops).await {
             Ok(receipt) => RunInput::Injected(receipt),
             Err(error) => RunInput::InjectFailed(error),
@@ -141,9 +141,7 @@ impl<S: Seams> Exec<'_, S> {
             Ok(reply) => RunInput::ModelReplied(Box::new(ModelReply {
                 reply,
                 usage: model.usage(),
-                // A price is inferd's to know; a local model costs nothing and a cloud one is
-                // not priced here yet.
-                cost: MicroUsd(0),
+                cost: reply_cost(model.served().as_ref()),
             })),
             Err(
                 error @ (CuaModelError::Transient | CuaModelError::Parse | CuaModelError::Fatal),

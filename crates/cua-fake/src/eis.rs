@@ -63,6 +63,7 @@ pub enum EisEvent {
 #[derive(Debug)]
 pub struct FakeEis {
     server: eis::Context,
+    keymap: String,
 }
 
 impl FakeEis {
@@ -72,16 +73,24 @@ impl FakeEis {
         Ok((
             FakeEis {
                 server: eis::Context::new(server)?,
+                keymap: US_KEYMAP.to_owned(),
             },
             EiSocket(OwnedFd::from(client)),
         ))
+    }
+
+    /// The same server with the letter `a` at evdev code `code` in the keymap it sends (30 in the
+    /// stock one), as after a layout change.
+    pub fn with_a_at(self, code: u32) -> Self {
+        let keymap = US_KEYMAP.replace("<AC01> = 38;", &format!("<AC01> = {};", code + 8));
+        Self { keymap, ..self }
     }
 
     /// Serves the handshake, offers a keyboard with a US keymap, a pointer and a scroll device
     /// with the regions measured on stock, and returns what the sender sent until it
     /// disconnects (or drops the socket).
     pub async fn serve(&mut self) -> Vec<EisEvent> {
-        let mut session = Session::new(&self.server);
+        let mut session = Session::new(&self.server, self.keymap.clone());
         let Ok(ready) = AsyncFd::with_interest(self.server.as_fd(), Interest::READABLE) else {
             return Vec::new();
         };
@@ -119,6 +128,7 @@ enum Stage {
 struct Session {
     stage: Stage,
     log: Vec<EisEvent>,
+    keymap: String,
 }
 
 fn press(state: eis::button::ButtonState) -> Press {
@@ -136,10 +146,11 @@ fn key_press(state: eis::keyboard::KeyState) -> Press {
 }
 
 impl Session {
-    fn new(context: &eis::Context) -> Self {
+    fn new(context: &eis::Context, keymap: String) -> Self {
         Session {
             stage: Stage::Handshake(EisHandshaker::new(context, FIRST_SERIAL)),
             log: Vec::new(),
+            keymap,
         }
     }
 
@@ -151,7 +162,7 @@ impl Session {
         let PendingRequestResult::Request(request) = pending else {
             return Flow::Stop;
         };
-        let Session { stage, log } = self;
+        let Session { stage, log, keymap } = self;
         match stage {
             Stage::Handshake(handshaker) => match handshaker.handle_request(request) {
                 Ok(None) => Flow::Go,
@@ -169,7 +180,7 @@ impl Session {
                     return Flow::Stop;
                 }
                 while let Some(request) = converter.next_request() {
-                    if log_request(log, request) == Flow::Stop {
+                    if log_request(log, keymap, request) == Flow::Stop {
                         return Flow::Stop;
                     }
                 }
@@ -179,11 +190,11 @@ impl Session {
     }
 }
 
-fn log_request(log: &mut Vec<EisEvent>, request: EisRequest) -> Flow {
+fn log_request(log: &mut Vec<EisEvent>, keymap: &str, request: EisRequest) -> Flow {
     let event = match request {
         EisRequest::Disconnect => return Flow::Stop,
         EisRequest::Bind(bind) => {
-            add_devices(&bind.seat, bind.capabilities);
+            add_devices(&bind.seat, keymap, bind.capabilities);
             EisEvent::Bind
         }
         EisRequest::DeviceStartEmulating(_) => EisEvent::StartEmulating,
@@ -222,21 +233,25 @@ fn advertise_seat(connection: &reis::request::Connection) {
 }
 
 /// A keymap file the keyboard device can send.
-fn keymap_file() -> Option<(OwnedFd, u32)> {
+fn keymap_file(keymap: &str) -> Option<(OwnedFd, u32)> {
     let fd = rustix::fs::memfd_create("cua-fake-keymap", rustix::fs::MemfdFlags::CLOEXEC).ok()?;
     let mut file = std::fs::File::from(fd);
-    let mut text = US_KEYMAP.as_bytes().to_vec();
+    let mut text = keymap.as_bytes().to_vec();
     text.push(0);
     file.write_all(&text).ok()?;
     let size = u32::try_from(text.len()).ok()?;
     Some((OwnedFd::from(file), size))
 }
 
-fn add_devices(seat: &reis::request::Seat, wanted: impl IntoIterator<Item = DeviceCapability>) {
+fn add_devices(
+    seat: &reis::request::Seat,
+    keymap: &str,
+    wanted: impl IntoIterator<Item = DeviceCapability>,
+) {
     let wanted: Vec<DeviceCapability> = wanted.into_iter().collect();
     let has = |c| wanted.contains(&c);
     if has(DeviceCapability::Keyboard) {
-        let keymap = keymap_file();
+        let keymap = keymap_file(keymap);
         let device = seat.add_device(
             Some("virtual keyboard"),
             DeviceType::Virtual,

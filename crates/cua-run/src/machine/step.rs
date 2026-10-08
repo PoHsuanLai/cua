@@ -14,7 +14,7 @@ use crate::machine::run::{Run, RunEnv};
 use crate::machine::track::{RunTrack, SettleWatch};
 use crate::mode::mode_support;
 use crate::observation::{CursorObs, Observation};
-use crate::stall::{Stall, stalled};
+use crate::stall::{Repeats, Stall};
 use crate::turn::turn;
 use cua_action::{ActionClass, CuaAction, FinishOutcome, Point, WindowSpace};
 use cua_bus::{
@@ -50,7 +50,7 @@ pub(crate) fn start(id: RunId, task: CuaTask, env: RunEnv, at: Stamp) -> (Run, V
         phase: RunPhase::Granting,
         used: cua_bus::BudgetUse::NONE,
         taint,
-        digests: Vec::new(),
+        frames: Repeats::default(),
         pending: crate::machine::phase::ActionQueue::default(),
         lease: None,
         served: None,
@@ -82,17 +82,17 @@ pub(crate) fn start(id: RunId, task: CuaTask, env: RunEnv, at: Stamp) -> (Run, V
 }
 
 /// One transition.
-pub(crate) fn step(mut run: Run, input: RunInput, at: Stamp) -> (Run, Vec<RunEffect>) {
+pub(crate) fn advance(run: &mut Run, input: RunInput, at: Stamp) -> Vec<RunEffect> {
     let mut fx = Vec::new();
     if run.phase.is_finished() {
-        return (run, fx);
+        return fx;
     }
     // A message is input and nothing more: it moves no clock either.
     if !matches!(input, RunInput::Inbound(_)) {
-        count_active(&mut run, at);
+        count_active(run, at);
     }
-    dispatch(&mut run, &mut fx, input, at);
-    (run, fx)
+    dispatch(run, &mut fx, input, at);
+    fx
 }
 
 fn dispatch(run: &mut Run, fx: &mut Vec<RunEffect>, input: RunInput, at: Stamp) {
@@ -203,7 +203,8 @@ fn observed(run: &mut Run, fx: &mut Vec<RunEffect>, mut obs: Observation) {
         obs.cursor = before.cursor;
     }
     let frame_digest: FrameDigest = digest(&obs.frame.pixels);
-    run.digests.push(frame_digest);
+    run.frames = run.frames.seen(frame_digest);
+    run.used.stalled = run.frames.count();
     run.track.frame = Some(FrameNote::NotKept {
         digest: frame_digest,
         size: obs.frame.pixels.size,
@@ -212,7 +213,7 @@ fn observed(run: &mut Run, fx: &mut Vec<RunEffect>, mut obs: Observation) {
     run.track.thought = None;
     run.track.proposed = 0;
     run.used.steps = Count(n.0);
-    if stalled(&run.digests, run.task.budget.stall_frames) == Stall::Stalled {
+    if run.frames.stall(run.task.budget.stall_frames) == Stall::Stalled {
         finish_plain(run, fx, CuaOutcome::BudgetOut(RunBudgetKind::Stall));
         return;
     }
@@ -335,7 +336,7 @@ fn model_replied(
 /// The head of the batch decides what comes next.
 pub(crate) fn proceed(run: &mut Run, fx: &mut Vec<RunEffect>, at: Stamp, want: FrameWant) {
     let n = step_of(run);
-    let Some(head) = run.pending.actions.first().cloned() else {
+    let Some(head) = run.pending.actions.front().cloned() else {
         observe(run, fx, next(n), want, AlsoContext::No);
         return;
     };
@@ -344,7 +345,7 @@ pub(crate) fn proceed(run: &mut Run, fx: &mut Vec<RunEffect>, at: Stamp, want: F
         ActionClass::Observe => match head.action {
             CuaAction::Wait { for_ms } => wait(run, fx, at, n, for_ms.ms()),
             _ => {
-                run.pending.actions.remove(0);
+                run.pending.actions.pop_front();
                 let done = ActionOutcome {
                     action: head,
                     result: ActionResult::Done,
@@ -373,7 +374,7 @@ fn authorise(run: &mut Run, fx: &mut Vec<RunEffect>, n: StepIndex, head: Targete
             fx.push(RunEffect::Check(Box::new(ask_for(run, &obs, &head.action))));
         }
         Err(why) => {
-            run.pending.actions.remove(0);
+            run.pending.actions.pop_front();
             let result = match why {
                 crate::machine::ops::Unaimed::Outside => {
                     ActionResult::Refused(Refusal::Local(LocalRefusal::OutsideLease))
@@ -398,7 +399,10 @@ fn authorise(run: &mut Run, fx: &mut Vec<RunEffect>, n: StepIndex, head: Targete
 }
 
 fn wait(run: &mut Run, fx: &mut Vec<RunEffect>, at: Stamp, n: StepIndex, asked: u32) {
-    let head = run.pending.actions.remove(0);
+    let Some(head) = run.pending.actions.pop_front() else {
+        observe(run, fx, next(n), FrameWant::Now, AlsoContext::No);
+        return;
+    };
     let ms = asked.min(run.env.wait_max.0);
     let until = Stamp(at.0.saturating_add(u64::from(ms)));
     action_ended(
@@ -427,7 +431,7 @@ fn conclude(run: &mut Run, fx: &mut Vec<RunEffect>, n: StepIndex) {
                 extracted,
             },
         ..
-    }) = run.pending.actions.first().cloned()
+    }) = run.pending.actions.front().cloned()
     else {
         return;
     };
@@ -485,7 +489,7 @@ fn answered(
     let action = run
         .pending
         .actions
-        .pop()
+        .pop_back()
         .unwrap_or_else(|| targeted(run, CuaAction::Observe));
     run.pending.actions.clear();
     let outcome = ActionOutcome {
@@ -554,8 +558,7 @@ fn verdict(run: &mut Run, fx: &mut Vec<RunEffect>, at: Stamp, answer: GateAnswer
                 CallRefusal::Unconfirmed(_) => ActionResult::UserDeclined,
                 other => ActionResult::Refused(Refusal::Gate(other)),
             };
-            if let Some(head) = run.pending.actions.first().cloned() {
-                run.pending.actions.remove(0);
+            if let Some(head) = run.pending.actions.pop_front() {
                 action_ended(
                     run,
                     fx,
@@ -584,7 +587,7 @@ fn act(run: &mut Run, fx: &mut Vec<RunEffect>, at: Stamp, n: StepIndex) {
         finish_plain(run, fx, CuaOutcome::BudgetOut(RunBudgetKind::Rate));
         return;
     }
-    let (Some(head), Some(obs)) = (run.pending.actions.first().cloned(), run.working.clone())
+    let (Some(head), Some(obs)) = (run.pending.actions.front().cloned(), run.working.clone())
     else {
         finish_plain(run, fx, CuaOutcome::Failed(FailReason::Input));
         return;
@@ -597,7 +600,7 @@ fn act(run: &mut Run, fx: &mut Vec<RunEffect>, at: Stamp, n: StepIndex) {
         }
         Err(_) => {
             // The tree changed under a confirmation: the point is no longer there.
-            run.pending.actions.remove(0);
+            run.pending.actions.pop_front();
             let outcome = ActionOutcome {
                 action: head,
                 result: ActionResult::Refused(Refusal::Local(LocalRefusal::OutsideLease)),
@@ -614,7 +617,10 @@ fn injected(run: &mut Run, fx: &mut Vec<RunEffect>, at: Stamp, receipt: InputRec
         return;
     };
     run.track.acted.push(at);
-    let head = run.pending.actions.remove(0);
+    let Some(head) = run.pending.actions.pop_front() else {
+        finish_plain(run, fx, CuaOutcome::Failed(FailReason::Input));
+        return;
+    };
     if let (Some(obs), Some(point)) = (run.working.as_mut(), pointer_end(&head.action, &receipt)) {
         obs.cursor = CursorObs::At(point);
     }
@@ -673,7 +679,10 @@ fn inject_failed(run: &mut Run, fx: &mut Vec<RunEffect>, error: SeatError) {
         finish_plain(run, fx, CuaOutcome::Failed(FailReason::WindowGone));
         return;
     }
-    let head = run.pending.actions.remove(0);
+    let Some(head) = run.pending.actions.pop_front() else {
+        finish_plain(run, fx, CuaOutcome::Failed(FailReason::Input));
+        return;
+    };
     let result = match error {
         SeatError::OutsideLease => {
             ActionResult::Refused(Refusal::Local(LocalRefusal::OutsideLease))
@@ -759,7 +768,7 @@ fn checked(run: &mut Run, fx: &mut Vec<RunEffect>, result: crate::machine::input
     let RunPhase::Verifying(n) = run.phase else {
         return;
     };
-    let head = run.pending.actions.first().cloned();
+    let head = run.pending.actions.front().cloned();
     match result {
         crate::machine::input::CheckResult::Pass => {
             let said = match head.map(|h| h.action) {

@@ -7,6 +7,7 @@ use crate::receipt::InputReceipt;
 use cua_desktop::{EiSocket, LeaseGrant, LeaseId};
 use serde::{Deserialize, Serialize};
 use std::future::Future;
+use std::sync::Arc;
 
 /// Whether the seat is delivering input.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -50,8 +51,8 @@ pub trait AgentSeat: Send + Sync {
     /// What the seat offers.
     fn caps(&self) -> SeatCaps;
 
-    /// The keymap the server sent; empty before `attach`.
-    fn keymap(&self) -> &Keymap;
+    /// The keymap the server sent on the latest `attach`; empty before the first.
+    fn keymap(&self) -> Arc<Keymap>;
 
     /// Takes the EIS socket of a lease and starts emulating.
     fn attach(

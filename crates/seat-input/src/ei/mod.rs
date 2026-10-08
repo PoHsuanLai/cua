@@ -15,19 +15,15 @@ use crate::seat::{AgentSeat, Emulation, SeatError};
 use actor::{Cmd, Link};
 use cua_desktop::{EiSocket, LeaseGrant, LeaseId, SeatIsolation};
 use porter_core::Count;
-use std::sync::OnceLock;
+use std::sync::{Arc, PoisonError, RwLock};
 use tokio::sync::Mutex;
-
-static NO_KEYMAP: Keymap = Keymap {
-    entries: Vec::new(),
-};
 
 /// A seat over one EIS connection. The connection lives on a thread of its own (reis proxies
 /// are not `Send`).
 #[derive(Debug)]
 pub struct EiSeat {
     caps: SeatCaps,
-    keymap: OnceLock<Keymap>,
+    keymap: RwLock<Arc<Keymap>>,
     link: Mutex<Option<Link>>,
 }
 
@@ -36,7 +32,7 @@ impl EiSeat {
     pub fn new(isolation: SeatIsolation) -> Self {
         Self {
             caps: SeatCaps::for_isolation(isolation),
-            keymap: OnceLock::new(),
+            keymap: RwLock::new(Arc::new(Keymap::default())),
             link: Mutex::new(None),
         }
     }
@@ -66,13 +62,16 @@ impl AgentSeat for EiSeat {
         self.caps.clone()
     }
 
-    fn keymap(&self) -> &Keymap {
-        self.keymap.get().unwrap_or(&NO_KEYMAP)
+    fn keymap(&self) -> Arc<Keymap> {
+        self.keymap
+            .read()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone()
     }
 
     async fn attach(&self, lease: &LeaseGrant, socket: EiSocket) -> Result<(), SeatError> {
         let (link, keymap) = actor::spawn(lease, socket.0).await?;
-        let _ = self.keymap.set(keymap);
+        *self.keymap.write().unwrap_or_else(PoisonError::into_inner) = Arc::new(keymap);
         // The old link, if any, is dropped here: its thread says goodbye and ends.
         *self.link.lock().await = Some(link);
         Ok(())

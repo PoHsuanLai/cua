@@ -7,6 +7,7 @@
 //! is how they wait (the supervisor races an effect against the person's controls and the
 //! clock, the harness has none of either).
 
+mod cost;
 mod observe;
 mod session;
 

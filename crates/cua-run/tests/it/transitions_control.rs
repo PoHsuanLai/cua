@@ -314,7 +314,7 @@ fn every_input_in_every_phase_has_a_row_and_leaves_a_valid_run() {
             let mut d = Drive::leased(STOCK, task(model_says()));
             d.feed(RunInput::Observed(Box::new(observation(1, tree(vec![])))));
             d.run.phase = phase.clone();
-            d.run.pending.actions = vec![targeted_click()];
+            d.run.pending.actions = vec![targeted_click()].into();
             d.feed(input.clone());
             if let RunPhase::Finished(_) = d.phase() {
                 d.feed(input.clone());

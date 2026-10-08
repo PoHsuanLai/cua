@@ -5,7 +5,7 @@ use porter_core::Count;
 use seat_input::{
     AgentSeat, Emulation, InputOp, InputOrigin, InputReceipt, Keymap, SeatCaps, SeatError,
 };
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 /// What happened to a fake seat, in order.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -24,7 +24,7 @@ pub enum SeatEvent {
 #[derive(Debug)]
 pub struct FakeSeat {
     caps: SeatCaps,
-    keymap: Keymap,
+    keymap: Arc<Keymap>,
     at: Stamp,
     log: Mutex<Vec<SeatEvent>>,
     fail_next: Mutex<Option<SeatError>>,
@@ -36,7 +36,7 @@ impl FakeSeat {
     pub fn new(isolation: SeatIsolation, at: Stamp) -> Self {
         Self {
             caps: SeatCaps::for_isolation(isolation),
-            keymap: Keymap::default(),
+            keymap: Arc::default(),
             at,
             log: Mutex::new(Vec::new()),
             fail_next: Mutex::new(None),
@@ -64,8 +64,8 @@ impl AgentSeat for FakeSeat {
         self.caps.clone()
     }
 
-    fn keymap(&self) -> &Keymap {
-        &self.keymap
+    fn keymap(&self) -> Arc<Keymap> {
+        self.keymap.clone()
     }
 
     async fn attach(&self, lease: &LeaseGrant, socket: EiSocket) -> Result<(), SeatError> {

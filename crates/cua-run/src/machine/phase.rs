@@ -6,6 +6,7 @@ use maskcap::Settle;
 use porter_infer::StepIndex;
 use prov::ConfirmId;
 use serde::{Deserialize, Serialize};
+use std::collections::VecDeque;
 
 /// Where a run is.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -95,6 +96,14 @@ impl RunPhase {
     pub fn is_finished(&self) -> bool {
         matches!(self, RunPhase::Finished(_))
     }
+
+    /// How the run ended; none while it goes on.
+    pub fn outcome(&self) -> Option<CuaOutcome> {
+        match self {
+            RunPhase::Finished(outcome) => Some(outcome.clone()),
+            _ => None,
+        }
+    }
 }
 
 /// The actions of the model's current batch that have not run yet; the head is next. Dropped
@@ -102,7 +111,7 @@ impl RunPhase {
 #[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct ActionQueue {
     /// The actions, next first.
-    pub actions: Vec<TargetedAction>,
+    pub actions: VecDeque<TargetedAction>,
 }
 
 #[cfg(test)]

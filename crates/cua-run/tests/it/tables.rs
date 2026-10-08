@@ -11,8 +11,8 @@ use cua_action::{
 use cua_bus::WindowRef;
 use cua_desktop::{Digest32, Stamp, ToplevelIdent};
 use cua_run::{
-    ContextObs, CursorObs, Focus, LeaseBook, Observation, Stall, TreeObs, Visibility, WindowInfo,
-    classify_effect, stalled, turn,
+    ContextObs, CursorObs, Focus, LeaseBook, Observation, Repeats, Stall, TreeObs, Visibility,
+    WindowInfo, classify_effect, turn,
 };
 use docket_core::{EffectBasis, WindowClass, WindowTrust};
 use maskcap::{Frame, FrameDigest, FrameSeq, MaskReport, PixelBuf, WholeMask};
@@ -244,7 +244,10 @@ fn stall_after_n_equal_digests() {
     ];
     for row in rows {
         assert_eq!(
-            stalled(&row.history, Count(row.limit)),
+            row.history
+                .iter()
+                .fold(Repeats::default(), |seen, d| seen.seen(*d))
+                .stall(Count(row.limit)),
             row.want,
             "{}",
             row.name
@@ -372,4 +375,19 @@ fn turn_renders_tree_without_secret_values_and_notes_masked_regions() {
         ..none
     };
     assert_eq!(turn(&none).0.tree, TreeText::Absent);
+}
+
+#[test]
+fn repeats_count_the_newest_run_of_equal_digests_in_constant_space() {
+    let (a, b) = (digest(1), digest(2));
+    let counts: Vec<u32> = [a, a, b, b, b]
+        .iter()
+        .scan(Repeats::default(), |seen, d| {
+            *seen = seen.seen(*d);
+            Some(seen.count().0)
+        })
+        .collect();
+    assert_eq!(counts, [1, 2, 1, 2, 3]);
+    let long = (0..100_000).fold(Repeats::default(), |seen, _| seen.seen(a));
+    assert_eq!(long.count(), Count(100_000));
 }

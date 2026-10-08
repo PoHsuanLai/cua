@@ -330,7 +330,7 @@ pub(crate) fn action_ended(
 /// The rest of the batch becomes `NotExecuted`: an action that did not run, or ran and failed,
 /// takes the actions after it with it.
 pub(crate) fn drop_rest(run: &mut Run) {
-    let dropped: Vec<TargetedAction> = std::mem::take(&mut run.pending.actions);
+    let dropped = std::mem::take(&mut run.pending.actions);
     run.track
         .outcomes
         .extend(dropped.into_iter().map(|action| ActionOutcome {

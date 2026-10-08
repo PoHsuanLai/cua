@@ -131,7 +131,7 @@ impl AgentSeat for SeatBackend {
         }
     }
 
-    fn keymap(&self) -> &Keymap {
+    fn keymap(&self) -> Arc<Keymap> {
         match self {
             SeatBackend::Ei(seat) => seat.keymap(),
         }

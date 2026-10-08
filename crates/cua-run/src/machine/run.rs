@@ -7,10 +7,10 @@ use crate::machine::phase::{ActionQueue, RunPhase};
 use crate::machine::step;
 use crate::machine::track::RunTrack;
 use crate::observation::Observation;
+use crate::stall::Repeats;
 use a11y_tree::NodeBudget;
 use cua_bus::{BudgetUse, CuaTask, RunStateSlug};
 use cua_desktop::{BackendCaps, LeaseId, Ms, Stamp};
-use maskcap::FrameDigest;
 use porter_infer::ServedBy;
 use prov::{Label, RunId};
 use serde::{Deserialize, Serialize};
@@ -60,8 +60,9 @@ pub struct Run {
     /// What it has read: always `Untrusted(Screen)` once it has seen the window, and the join of
     /// every extracted value's label. Reports carry it.
     pub taint: Label,
-    /// Digests of the frames so far, for stall detection (no pixels).
-    pub digests: Vec<FrameDigest>,
+    /// The newest frame's digest and how often it has come in a row, for stall detection (no
+    /// pixels).
+    pub frames: Repeats,
     /// The model's batch that has not run yet.
     pub pending: ActionQueue,
     /// The lease it holds, once it has one.
@@ -88,8 +89,15 @@ impl Run {
     /// One transition: the next run and the effects to carry out. Every input in every phase has
     /// a row; `Finished` ignores every input (same run, no effects). Active time is counted from
     /// `at` against the previous instant, and only in active phases.
-    pub fn step(self, input: RunInput, at: Stamp) -> (Run, Vec<RunEffect>) {
-        step::step(self, input, at)
+    pub fn step(mut self, input: RunInput, at: Stamp) -> (Run, Vec<RunEffect>) {
+        let effects = self.advance(input, at);
+        (self, effects)
+    }
+
+    /// The same transition in place: the run is now the next run, and the effects to carry out
+    /// come back.
+    pub fn advance(&mut self, input: RunInput, at: Stamp) -> Vec<RunEffect> {
+        step::advance(self, input, at)
     }
 
     /// The next instant the machine wants a `Tick`: a settle wake-up or the active-budget

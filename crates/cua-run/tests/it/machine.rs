@@ -10,7 +10,8 @@ use cua_desktop::{
     BackendCaps, BackendKind, ConsentGuard, DesktopEvent, LeaseId, Stamp, Suspend, ToplevelIdent,
 };
 use cua_run::{
-    ActionQueue, CuaConfig, CuaSignal, Run, RunEffect, RunEnv, RunInput, RunPhase, RunTrack,
+    ActionQueue, CuaConfig, CuaSignal, Repeats, Run, RunEffect, RunEnv, RunInput, RunPhase,
+    RunTrack,
 };
 use docket_core::{GrantAnswer, RunMode};
 use porter_core::{AppName, DataClass};
@@ -92,7 +93,7 @@ fn in_phase(phase: RunPhase, kind: BackendKind) -> Run {
         phase,
         used: BudgetUse::NONE,
         taint: screen_label(),
-        digests: vec![],
+        frames: Repeats::default(),
         pending: ActionQueue::default(),
         lease: Some(LeaseId(1)),
         served: None,
@@ -258,7 +259,7 @@ fn pause_drops_the_queue_and_resume_observes_afresh() {
     let n = StepIndex(2);
     let mut run = in_phase(RunPhase::Authorising(n), BackendKind::CosmicStock);
     run.pending = ActionQueue {
-        actions: vec![click(), click(), click()],
+        actions: vec![click(), click(), click()].into(),
     };
     let (run, effects) = run.step(RunInput::UserPause, Stamp(7));
     assert_eq!(run.phase, RunPhase::Paused(n));

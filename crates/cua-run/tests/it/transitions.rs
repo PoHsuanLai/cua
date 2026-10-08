@@ -172,7 +172,7 @@ fn an_observation_goes_to_the_model_and_the_run_notes_what_it_read() {
     });
     assert_eq!(call.expect("a model call").step, StepIndex(1));
     assert_eq!(d.run.used.steps, porter_core::Count(1));
-    assert_eq!(d.run.digests.len(), 1);
+    assert_eq!(d.run.frames.count(), porter_core::Count(1));
     assert_eq!(
         d.run.taint.integrity,
         prov::Integrity::Untrusted,
@@ -811,4 +811,43 @@ fn a_confirmation_suspends_input_on_stock() {
         _ => None,
     });
     assert_eq!(by, Some(cua_bus::AuthorisedBy::User));
+}
+
+#[test]
+fn the_bus_is_told_how_many_equal_frames_came_in_a_row() {
+    let mut d = Drive::leased(STOCK, task(model_says()));
+    d.feed(RunInput::Observed(Box::new(observation(5, tree(vec![])))));
+    assert_eq!(d.run.used.stalled, porter_core::Count(1));
+    d.feed(RunInput::ModelFailed(CuaModelError::Transient));
+    d.feed(RunInput::Observed(Box::new(observation(5, tree(vec![])))));
+    assert_eq!(d.run.used.stalled, porter_core::Count(2));
+    d.feed(RunInput::ModelFailed(CuaModelError::Transient));
+    d.feed(RunInput::Observed(Box::new(observation(6, tree(vec![])))));
+    assert_eq!(
+        d.run.used.stalled,
+        porter_core::Count(1),
+        "a new frame starts again"
+    );
+}
+
+#[test]
+fn an_injection_receipt_with_no_action_waiting_fails_the_run_instead_of_panicking() {
+    let mut d = Drive::leased(STOCK, task(model_says()));
+    d.feed(RunInput::Observed(Box::new(observation(1, tree(vec![])))));
+    d.run.phase = RunPhase::Acting(StepIndex(1));
+    d.run.pending.actions.clear();
+    d.feed(RunInput::Injected(receipt(0)));
+    assert_eq!(
+        finished_with(&d),
+        Some(CuaOutcome::Failed(cua_bus::FailReason::Input))
+    );
+    let mut d = Drive::leased(STOCK, task(model_says()));
+    d.feed(RunInput::Observed(Box::new(observation(1, tree(vec![])))));
+    d.run.phase = RunPhase::Acting(StepIndex(1));
+    d.run.pending.actions.clear();
+    d.feed(RunInput::InjectFailed(seat_input::SeatError::Refused));
+    assert_eq!(
+        finished_with(&d),
+        Some(CuaOutcome::Failed(cua_bus::FailReason::Input))
+    );
 }

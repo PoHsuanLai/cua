@@ -261,8 +261,9 @@ the machine under it. What was decided:
   `cuad/tests/it/{supervisor,inflight}.rs` run the supervisor over the fakes with paused time.
 - **Not done:** `CuaProvider` offers no `dry_run`, search or suggest; procedures
   (`ProcedureUse::{Hint, Replay}`) are carried and not used; `data_in` is not sent to the model;
-  there is no price for a cloud model (`ModelReply.cost` is zero), so the spend budget only guards
-  a free local model.
+  inferd reports no price with the token usage, so a reply from a provider's servers counts one
+  micro-dollar (`exec/cost.rs`): a spend cap of zero ("local models only") stops a run on a cloud
+  model, and a larger cap is not yet measured in money.
 
 
 ## The f4-cua-seat fill (2026-10-06)
