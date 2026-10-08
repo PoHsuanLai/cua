@@ -100,7 +100,7 @@ impl RunPhase {
     /// How the run ended; none while it goes on.
     pub fn outcome(&self) -> Option<CuaOutcome> {
         match self {
-            RunPhase::Finished(outcome) => Some(outcome.clone()),
+            RunPhase::Finished(outcome) => Some(*outcome),
             _ => None,
         }
     }

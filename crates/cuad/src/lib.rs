@@ -36,6 +36,7 @@ mod frame_fd;
 mod gate;
 mod guard;
 mod links;
+mod lock;
 mod model;
 mod provider;
 mod serve;

@@ -20,7 +20,8 @@ use docket_core::{
 };
 use futures_util::StreamExt;
 use porter_core::{AppName, Count};
-use prov::{Address, Label, Labelled};
+use prov::{Address, Label, Labelled, RunId};
+use std::collections::BTreeSet;
 use std::sync::Arc;
 use tokio::sync::{broadcast, mpsc};
 use tokio::task::JoinHandle;
@@ -231,16 +232,59 @@ async fn say<S: Drivable>(
     }
 }
 
-/// Relays the supervisor's events to the bus until the connection or the supervisor goes.
+/// The events that bring the bus's run objects (`exported`) in line with the runs the supervisor
+/// has (`live`): an `Added` for each run missing an object and a `Removed` for each object whose
+/// run is gone. The relay needs this after it lagged and missed some of either.
+fn reconcile(exported: &BTreeSet<RunId>, live: &[RunId]) -> Vec<SupervisorEvent> {
+    let live: BTreeSet<&RunId> = live.iter().collect();
+    let stale = exported
+        .iter()
+        .filter(|run| !live.contains(run))
+        .cloned()
+        .map(SupervisorEvent::Removed);
+    let missing = live
+        .iter()
+        .filter(|run| !exported.contains(**run))
+        .map(|run| SupervisorEvent::Added((*run).clone()));
+    stale.chain(missing).collect()
+}
+
+/// Keeps `exported` as the events leave the bus: the runs that have an object.
+fn note_exported(exported: &mut BTreeSet<RunId>, event: &SupervisorEvent) {
+    match event {
+        SupervisorEvent::Added(run) => {
+            exported.insert(run.clone());
+        }
+        SupervisorEvent::Removed(run) => {
+            exported.remove(run);
+        }
+        SupervisorEvent::Signal(..) | SupervisorEvent::Ended(..) => {}
+    }
+}
+
+/// Relays the supervisor's events to the bus until the connection or the supervisor goes. A relay
+/// that fell behind and missed events reconciles the run objects against the supervisor's runs.
 async fn relay<S: Drivable>(
     connection: zbus::Connection,
     supervisor: Arc<Supervisor<S>>,
     mut events: broadcast::Receiver<SupervisorEvent>,
 ) {
+    let mut exported = BTreeSet::new();
     loop {
         match events.recv().await {
-            Ok(event) => say(&connection, &supervisor, event).await,
-            Err(broadcast::error::RecvError::Lagged(_)) => {}
+            Ok(event) => {
+                note_exported(&mut exported, &event);
+                say(&connection, &supervisor, event).await;
+            }
+            Err(broadcast::error::RecvError::Lagged(missed)) => {
+                eprintln!(
+                    "cuad: the bus relay missed {missed} events; reconciling the run objects"
+                );
+                for event in reconcile(&exported, &supervisor.runs()) {
+                    note_exported(&mut exported, &event);
+                    say(&connection, &supervisor, event).await;
+                }
+            }
             Err(broadcast::error::RecvError::Closed) => break,
         }
     }
@@ -311,4 +355,38 @@ pub async fn serve<S: Drivable>(supervisor: Supervisor<S>) -> Result<(), ServeEr
     let mut messages = zbus::MessageStream::from(&connection);
     while messages.next().await.is_some() {}
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::supervisor::mint_run_id;
+
+    fn runs(ns: &[u64]) -> Vec<RunId> {
+        ns.iter().copied().map(mint_run_id).collect()
+    }
+
+    #[test]
+    fn a_lagged_relay_removes_stale_objects_and_adds_missed_ones() {
+        let exported: BTreeSet<RunId> = runs(&[1, 2]).into_iter().collect();
+        let events = reconcile(&exported, &runs(&[2, 3]));
+        assert_eq!(events.len(), 2);
+        assert!(matches!(&events[0], SupervisorEvent::Removed(r) if *r == mint_run_id(1)));
+        assert!(matches!(&events[1], SupervisorEvent::Added(r) if *r == mint_run_id(3)));
+    }
+
+    #[test]
+    fn nothing_to_reconcile_when_the_objects_match_the_runs() {
+        let exported: BTreeSet<RunId> = runs(&[1, 2]).into_iter().collect();
+        assert!(reconcile(&exported, &runs(&[1, 2])).is_empty());
+    }
+
+    #[test]
+    fn exported_follows_added_and_removed() {
+        let mut exported = BTreeSet::new();
+        note_exported(&mut exported, &SupervisorEvent::Added(mint_run_id(1)));
+        assert!(exported.contains(&mint_run_id(1)));
+        note_exported(&mut exported, &SupervisorEvent::Removed(mint_run_id(1)));
+        assert!(exported.is_empty());
+    }
 }

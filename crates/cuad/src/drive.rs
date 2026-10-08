@@ -4,8 +4,9 @@
 
 use crate::config::CuadConfig;
 use crate::events::{RunView, SupervisorEvent};
+use crate::lock::locked;
 use crate::settings::CuaSettings;
-use cua_bus::{BudgetBody, RunEnd};
+use cua_bus::{BudgetBody, CuaOutcome, RunEnd};
 use cua_desktop::Stamp;
 use cua_run::{
     Clock, Exec, Outlet, Parts, Run, RunEffect, RunInput, RunPhase, Seam, Seams, SettleWatch,
@@ -13,7 +14,7 @@ use cua_run::{
 };
 use prov::RunId;
 use std::collections::{BTreeMap, VecDeque};
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::{Arc, Mutex, MutexGuard, RwLock};
 use std::time::Duration;
 use tokio::sync::{OwnedMutexGuard, broadcast, mpsc};
 use tokio::task::JoinHandle;
@@ -114,6 +115,13 @@ impl<S: Seams> Shared<S> {
         }
     }
 
+    /// The supervisor's state. A task that panicked while holding the lock left the state as
+    /// consistent as every update keeps it, so a poisoned lock is taken as it is rather than
+    /// panicking every later call.
+    pub(crate) fn state(&self) -> MutexGuard<'_, State> {
+        locked(&self.state)
+    }
+
     /// Tells whoever listens; nobody listening is not an error.
     pub(crate) fn tell(&self, event: SupervisorEvent) {
         let _ = self.bus.send(event);
@@ -121,7 +129,7 @@ impl<S: Seams> Shared<S> {
 
     /// The bus's view of `run` after a step, and whether the window's input is stopped.
     fn update(&self, run: &Run) {
-        let mut state = self.state.lock().expect("supervisor lock");
+        let mut state = self.state();
         if let Some(live) = state.live.get_mut(&run.id) {
             live.view.phase = run.phase.clone();
             live.view.budget = BudgetBody {
@@ -188,20 +196,18 @@ enum Damage {
 
 /// The run and the effects it has not carried out yet.
 struct Machine {
-    run: Option<Run>,
+    run: Run,
     queue: VecDeque<RunEffect>,
 }
 
 impl Machine {
     fn run(&self) -> &Run {
-        self.run.as_ref().expect("the machine always has its run")
+        &self.run
     }
 
     fn feed<S: Seams>(&mut self, shared: &Shared<S>, input: RunInput, at: Stamp) {
-        let run = self.run.take().expect("the machine always has its run");
-        let (next, effects) = run.step(input, at);
-        shared.update(&next);
-        self.run = Some(next);
+        let effects = self.run.advance(input, at);
+        shared.update(&self.run);
         self.queue.extend(effects);
     }
 
@@ -215,11 +221,7 @@ impl Machine {
     }
 }
 
-fn run_end<S: Seams>(exec: &Exec<'_, S>, run: &Run) -> RunEnd {
-    let outcome = match run.phase {
-        RunPhase::Finished(outcome) => outcome,
-        _ => cua_bus::CuaOutcome::Failed(cua_bus::FailReason::Model),
-    };
+fn run_end<S: Seams>(exec: &Exec<'_, S>, run: &Run, outcome: CuaOutcome) -> RunEnd {
     RunEnd {
         outcome,
         steps: run.used.steps,
@@ -238,10 +240,9 @@ struct Cleanup<S: Seams> {
 
 impl<S: Seams> Drop for Cleanup<S> {
     fn drop(&mut self) {
-        if let Ok(mut state) = self.shared.state.lock() {
-            state.leases = state.leases.release(&self.run);
-            state.live.remove(&self.run);
-        }
+        let mut state = self.shared.state();
+        state.leases = state.leases.release(&self.run);
+        state.live.remove(&self.run);
     }
 }
 
@@ -254,7 +255,7 @@ pub(crate) async fn drive<S: Drivable>(
     mut control: mpsc::UnboundedReceiver<RunInput>,
 ) {
     let id = run.id.clone();
-    let _cleanup = Cleanup {
+    let cleanup = Cleanup {
         shared: shared.clone(),
         run: id.clone(),
     };
@@ -263,11 +264,11 @@ pub(crate) async fn drive<S: Drivable>(
     let mut outlet = Channel(tx);
     let mut guard: Option<OwnedMutexGuard<S::Model>> = None;
     let mut machine = Machine {
-        run: Some(run),
+        run,
         queue: initial.into(),
     };
     let mut damage = Damage::Flowing;
-    loop {
+    let outcome = loop {
         while let Ok(input) = control.try_recv() {
             machine.interrupt(&shared, input, shared.clock.now());
         }
@@ -296,8 +297,8 @@ pub(crate) async fn drive<S: Drivable>(
             }
             continue;
         }
-        if machine.run().phase.is_finished() {
-            break;
+        if let Some(outcome) = machine.run().phase.outcome() {
+            break outcome;
         }
         // Nothing to do: wait for the person, the desktop, the screen or the clock.
         let wake = machine.run().wake();
@@ -322,18 +323,14 @@ pub(crate) async fn drive<S: Drivable>(
         if !matches!(machine.run().track.settle, SettleWatch::Damage { .. }) {
             damage = Damage::Flowing;
         }
-    }
+    };
     while let Ok(event) = wire.try_recv() {
         heard(&shared, &id, &mut machine, event);
     }
-    let end = run_end(&exec, machine.run());
+    let end = run_end(&exec, machine.run(), outcome);
     drop(guard);
     drop(exec);
-    {
-        let mut state = shared.state.lock().expect("supervisor lock");
-        state.leases = state.leases.release(&id);
-        state.live.remove(&id);
-    }
+    drop(cleanup);
     shared.tell(SupervisorEvent::Ended(id.clone(), Box::new(end)));
     shared.tell(SupervisorEvent::Removed(id));
 }

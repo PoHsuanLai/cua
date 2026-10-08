@@ -2,6 +2,7 @@
 //! reports.
 
 use crate::clock::SystemClock;
+use crate::lock::locked;
 use almanac_client::{Memory, Transport as MemoryTransport};
 use almanac_core::{AreaPayload, AreaTag, Cause, EventBody, JsonText, KindTag, Record};
 use cua_bus::{CuaRecord, CuaTask};
@@ -102,7 +103,7 @@ impl<M: MemoryTransport, I: IntentsTransport> DaemonLinks<M, I> {
 
     /// What `record` needs besides the record: what the run's start taught the links.
     fn context_of(&self, record: &CuaRecord) -> Option<RecordContext> {
-        let mut runs = self.runs.lock().expect("links lock");
+        let mut runs = locked(&self.runs);
         let context = runs.get(record.run()).map(|known| RecordContext {
             at: (self.now)(),
             ..known.clone()
@@ -143,7 +144,7 @@ impl<M: MemoryTransport, I: IntentsTransport> RecordSink for DaemonLinks<M, I> {
             DataClass::Screen,
             task.space.clone(),
         );
-        self.runs.lock().expect("links lock").insert(
+        locked(&self.runs).insert(
             run.clone(),
             RecordContext {
                 session: task.session.clone(),

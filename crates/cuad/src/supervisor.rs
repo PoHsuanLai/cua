@@ -40,7 +40,7 @@ impl<S: Seams> std::fmt::Debug for Supervisor<S> {
 
 impl<S: Seams> Drop for Supervisor<S> {
     fn drop(&mut self) {
-        let mut state = self.shared.state.lock().expect("supervisor lock");
+        let mut state = self.shared.state();
         if let Some(pump) = state.pump.take() {
             pump.abort();
         }
@@ -180,37 +180,23 @@ impl<S: Seams> Supervisor<S> {
 
     /// Which run holds which window now.
     pub fn lease_book(&self) -> LeaseBook {
-        self.shared
-            .state
-            .lock()
-            .expect("supervisor lock")
-            .leases
-            .clone()
+        self.shared.state().leases.clone()
     }
 
     /// How many runs have been started (the next id is `r-<this + 1>`).
     pub fn started(&self) -> u64 {
-        self.shared.state.lock().expect("supervisor lock").next
+        self.shared.state().next
     }
 
     /// The ids of the runs now.
     pub fn runs(&self) -> Vec<RunId> {
-        self.shared
-            .state
-            .lock()
-            .expect("supervisor lock")
-            .live
-            .keys()
-            .cloned()
-            .collect()
+        self.shared.state().live.keys().cloned().collect()
     }
 
     /// What the bus shows of one live run.
     pub fn view(&self, run: &RunId) -> Option<RunView> {
         self.shared
-            .state
-            .lock()
-            .expect("supervisor lock")
+            .state()
             .live
             .get(run)
             .map(|live| live.view.clone())
@@ -253,7 +239,7 @@ impl<S: Drivable> Supervisor<S> {
         let env = RunEnv::new(&self.settings(), caps);
         let (control, inbox) = mpsc::unbounded_channel();
         let id = {
-            let mut state = self.shared.state.lock().expect("supervisor lock");
+            let mut state = self.shared.state();
             let id = mint_run_id(state.next + 1);
             if let TaskTarget::Window(ident) = &task.target {
                 state.leases = state
@@ -269,13 +255,13 @@ impl<S: Drivable> Supervisor<S> {
         match self.shared.gate.open_session(&id, &task.space).await {
             Ok(session) => task.session = session,
             Err(_) => {
-                let mut state = self.shared.state.lock().expect("supervisor lock");
+                let mut state = self.shared.state();
                 state.leases = state.leases.release(&id);
                 return Err(ControlRefusal::NotPermitted);
             }
         }
         let (run, effects) = {
-            let mut state = self.shared.state.lock().expect("supervisor lock");
+            let mut state = self.shared.state();
             let (run, effects) = Run::start(id.clone(), task.clone(), env, self.shared.clock.now());
             state.live.insert(
                 id.clone(),
@@ -301,21 +287,14 @@ impl<S: Drivable> Supervisor<S> {
         let id = run.id.clone();
         self.shared.tell(SupervisorEvent::Added(id.clone()));
         let handle = tokio::spawn(drive(self.shared.clone(), run, effects, inbox));
-        if let Some(live) = self
-            .shared
-            .state
-            .lock()
-            .expect("supervisor lock")
-            .live
-            .get_mut(&id)
-        {
+        if let Some(live) = self.shared.state().live.get_mut(&id) {
             live.task = Some(handle);
         }
         Ok(id)
     }
 
     fn send(&self, run: &RunId, input: RunInput) -> Result<(), ControlRefusal> {
-        let state = self.shared.state.lock().expect("supervisor lock");
+        let state = self.shared.state();
         let live = state.live.get(run).ok_or(ControlRefusal::WrongState)?;
         live.control
             .send(input)
@@ -359,7 +338,7 @@ impl<S: Drivable> Supervisor<S> {
     /// Every run is cancelled (the kill chord and the control centre).
     pub async fn stop_all(&self, caller: CuaCaller) -> Result<(), ControlRefusal> {
         guard(caller, CuaMember::StopAll, self.settings().enabled)?;
-        let state = self.shared.state.lock().expect("supervisor lock");
+        let state = self.shared.state();
         for live in state.live.values() {
             let _ = live
                 .control
@@ -374,7 +353,7 @@ impl<S: Drivable> Supervisor<S> {
 async fn pump<S: Drivable>(shared: Arc<Shared<S>>) {
     loop {
         let event = shared.desktop.next_event().await;
-        let state = shared.state.lock().expect("supervisor lock");
+        let state = shared.state();
         for live in state.live.values() {
             let _ = live.control.send(RunInput::Desktop(event.clone()));
         }
