@@ -6,9 +6,9 @@
 //! in front of it.
 
 use cua_action::ActionClass;
-use cua_run::{GateCheck, GateEvent, GateLink, LinkError, window_class_of};
+use cua_run::{GateCheck, GateEvent, GateLink, LinkError};
 use docket_core::{
-    CallRefusal, ConfirmEnd, CuaAsk, GateAnswer, GrantAnswer, GrantAsk, WindowClass,
+    CallRefusal, ConfirmEnd, CuaAsk, EffectBasis, GateAnswer, GrantAnswer, GrantAsk, WindowClass,
 };
 use porter_core::AppName;
 use prov::{ConfirmId, Effect, RunId, SessionId, SpaceId};
@@ -52,7 +52,10 @@ pub fn rule(ask: &CuaAsk) -> Ruling {
         }
         Effect::Read | Effect::UndoableWrite => {}
     }
-    let class = window_class_of(&ask.app, "");
+    let class = match &ask.basis {
+        EffectBasis::WindowClass(class) => *class,
+        EffectBasis::NodeTypedAction(_) | EffectBasis::DefaultTable => WindowClass::Ordinary,
+    };
     let drives = matches!(
         ask.action.class(),
         ActionClass::Pointer | ActionClass::Keyboard
