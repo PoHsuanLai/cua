@@ -1,0 +1,66 @@
+# A notes app: a list of three notes, an editor with a field, a Save button and a Pinned check.
+app = "org.quire.Notes"
+size = [960, 600]
+
+[[screen]]
+id = "list"
+title = "Notes"
+
+[[screen.item]]
+kind = "button"
+id = "new"
+rect = [16, 56, 240, 48]
+text = "New note"
+click = [{ set = ["sel", "New note"] }, { clear = "text" }, { goto = "editor" }]
+
+[[screen.item]]
+kind = "row"
+id = "groceries"
+rect = [16, 130, 928, 56]
+text = "Groceries"
+click = [{ set = ["sel", "Groceries"] }, { goto = "editor" }]
+
+[[screen.item]]
+kind = "row"
+id = "ideas"
+rect = [16, 200, 928, 56]
+text = "Ideas"
+click = [{ set = ["sel", "Ideas"] }, { goto = "editor" }]
+
+[[screen.item]]
+kind = "row"
+id = "travel"
+rect = [16, 270, 928, 56]
+text = "Travel"
+click = [{ set = ["sel", "Travel"] }, { goto = "editor" }]
+
+[[screen]]
+id = "editor"
+title = "Notes - {sel}"
+focus = "text"
+
+[[screen.item]]
+kind = "check"
+id = "pinned"
+rect = [16, 56, 400, 48]
+text = "Pinned"
+
+[[screen.item]]
+kind = "field"
+id = "text"
+rect = [16, 150, 928, 200]
+text = "Note"
+
+[[screen.item]]
+kind = "button"
+id = "save"
+rect = [16, 400, 200, 48]
+text = "Save"
+click = [{ copy = ["text", "saved"] }, { set = ["saved_note", "{sel}"] }]
+
+[[screen.item]]
+kind = "button"
+id = "back"
+rect = [16, 520, 200, 48]
+text = "Back"
+click = [{ goto = "list" }]

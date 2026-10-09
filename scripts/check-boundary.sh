@@ -28,6 +28,10 @@ RULES=(
   # The fakes reach reis (the in-process EIS server) and, through model-replay, an HTTP stack;
   # never a bus, a wayland connection, the accessibility stack or a database.
   "cua-fake: zbus zvariant wayland-client wayland-backend wayland-server atspi oo7 ort fastembed rusqlite notify rmcp cedar-policy"
+  # The eval is a tool, not a daemon: it reaches the fakes (reis), a runtime and, for the live path,
+  # an HTTP client to an engine on this machine; never a bus, a wayland connection, the
+  # accessibility stack, a database or the policy engine.
+  "cua-eval: zbus zvariant wayland-client wayland-backend wayland-server atspi oo7 ort fastembed rusqlite notify rmcp cedar-policy"
   # The daemon reaches the bus, a runtime, wayland, EIS and AT-SPI. It never reaches HTTP,
   # an embedding runtime, the MCP SDK or the policy engine. One decision point lives in the router
   # and cuad asks it through `Intents1.Gate` (SPEC C10): cuad has no edge to `policy-point`
@@ -95,6 +99,7 @@ EDGES=(
   "cua-run: a11y-tree cua-action cua-bus cua-desktop docket-core maskcap porter-core porter-infer prov seat-input"
   "cua-dbus: cua-bus prov"
   "cua-fake: a11y-tree cua-action cua-bus cua-desktop cua-parse cua-run docket-core maskcap model-provider model-replay porter-core porter-infer prov seat-input"
+  "cua-eval: a11y-tree cua-action cua-bus cua-desktop cua-fake cua-parse cua-run cua-session cua-vendors docket-core maskcap model-catalog model-http model-openai-compat model-provider porter-core porter-infer prov seat-input vision-prep"
   "cuad: a11y-tree almanac-client almanac-core cua-bus cua-dbus cua-desktop cua-run docket-client docket-core maskcap porter-client porter-core porter-infer prov seat-input"
 )
 for edge in "${EDGES[@]}"; do

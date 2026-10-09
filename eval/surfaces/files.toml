@@ -1,0 +1,242 @@
+# A file manager: a scrolling list of twelve files, a detail screen for the one picked, a viewer,
+# a rename form and a delete confirmation. The window is the app "org.quire.Files".
+app = "org.quire.Files"
+size = [960, 600]
+
+[[screen]]
+id = "list"
+title = "Files - Documents"
+pane = { top = 90, bottom = 590, content = 624 }
+
+[[screen.item]]
+kind = "label"
+rect = [16, 50, 400, 32]
+text = "Documents"
+
+[[screen.item]]
+kind = "row"
+id = "row-report.txt"
+place = "pane"
+rect = [16, 0, 928, 48]
+text = "report.txt"
+click = [{ set = ["sel", "report.txt"] }, { goto = "detail" }]
+
+[[screen.item]]
+kind = "row"
+id = "row-budget.csv"
+place = "pane"
+rect = [16, 52, 928, 48]
+text = "budget.csv"
+click = [{ set = ["sel", "budget.csv"] }, { goto = "detail" }]
+
+[[screen.item]]
+kind = "row"
+id = "row-photo-01.png"
+place = "pane"
+rect = [16, 104, 928, 48]
+text = "photo-01.png"
+click = [{ set = ["sel", "photo-01.png"] }, { goto = "detail" }]
+
+[[screen.item]]
+kind = "row"
+id = "row-notes.md"
+place = "pane"
+rect = [16, 156, 928, 48]
+text = "notes.md"
+click = [{ set = ["sel", "notes.md"] }, { goto = "detail" }]
+
+[[screen.item]]
+kind = "row"
+id = "row-trip-plan.txt"
+place = "pane"
+rect = [16, 208, 928, 48]
+text = "trip-plan.txt"
+click = [{ set = ["sel", "trip-plan.txt"] }, { goto = "detail" }]
+
+[[screen.item]]
+kind = "row"
+id = "row-invoice-march.pdf"
+place = "pane"
+rect = [16, 260, 928, 48]
+text = "invoice-march.pdf"
+click = [{ set = ["sel", "invoice-march.pdf"] }, { goto = "detail" }]
+
+[[screen.item]]
+kind = "row"
+id = "row-old-backup.zip"
+place = "pane"
+rect = [16, 312, 928, 48]
+text = "old-backup.zip"
+click = [{ set = ["sel", "old-backup.zip"] }, { goto = "detail" }]
+
+[[screen.item]]
+kind = "row"
+id = "row-todo.txt"
+place = "pane"
+rect = [16, 364, 928, 48]
+text = "todo.txt"
+click = [{ set = ["sel", "todo.txt"] }, { goto = "detail" }]
+
+[[screen.item]]
+kind = "row"
+id = "row-recipes.txt"
+place = "pane"
+rect = [16, 416, 928, 48]
+text = "recipes.txt"
+click = [{ set = ["sel", "recipes.txt"] }, { goto = "detail" }]
+
+[[screen.item]]
+kind = "row"
+id = "row-draft.txt"
+place = "pane"
+rect = [16, 468, 928, 48]
+text = "draft.txt"
+click = [{ set = ["sel", "draft.txt"] }, { goto = "detail" }]
+
+[[screen.item]]
+kind = "row"
+id = "row-taxes-2025.pdf"
+place = "pane"
+rect = [16, 520, 928, 48]
+text = "taxes-2025.pdf"
+click = [{ set = ["sel", "taxes-2025.pdf"] }, { goto = "detail" }]
+
+[[screen.item]]
+kind = "row"
+id = "row-zebra-notes.txt"
+place = "pane"
+rect = [16, 572, 928, 48]
+text = "zebra-notes.txt"
+click = [{ set = ["sel", "zebra-notes.txt"] }, { goto = "detail" }]
+
+[[screen]]
+id = "detail"
+title = "Files - {sel}"
+
+[[screen.item]]
+kind = "label"
+rect = [16, 60, 800, 32]
+text = "File: {sel}"
+
+[[screen.item]]
+kind = "button"
+id = "open"
+rect = [16, 120, 240, 48]
+text = "Open"
+click = [{ goto = "viewer" }]
+
+[[screen.item]]
+kind = "button"
+id = "rename"
+rect = [16, 184, 240, 48]
+text = "Rename"
+click = [{ goto = "rename" }]
+
+[[screen.item]]
+kind = "button"
+id = "delete"
+rect = [16, 248, 240, 48]
+text = "Delete"
+click = [{ goto = "confirm" }]
+
+[[screen.item]]
+kind = "button"
+id = "back"
+rect = [16, 520, 240, 48]
+text = "Back"
+click = [{ goto = "list" }]
+
+[[screen]]
+id = "viewer"
+title = "Viewer - {sel}"
+
+[[screen.item]]
+kind = "label"
+rect = [16, 60, 800, 32]
+text = "{sel}"
+
+[[screen.item]]
+kind = "label"
+rect = [16, 120, 928, 32]
+text = "Total: 412 USD. Rent 300, food 112."
+show = [{ var = ["sel", "budget.csv"] }]
+
+[[screen.item]]
+kind = "label"
+rect = [16, 120, 928, 32]
+text = "Q3 report: revenue up 8 percent."
+show = [{ var = ["sel", "report.txt"] }]
+
+[[screen.item]]
+kind = "label"
+rect = [16, 120, 928, 32]
+text = "Meeting moved to Thursday 3pm."
+show = [{ var = ["sel", "notes.md"] }]
+
+[[screen.item]]
+kind = "label"
+rect = [16, 120, 928, 32]
+text = "1. buy milk   2. call Sam"
+show = [{ var = ["sel", "todo.txt"] }]
+
+[[screen.item]]
+kind = "label"
+rect = [16, 120, 928, 32]
+text = "Stripes: black and white."
+show = [{ var = ["sel", "zebra-notes.txt"] }]
+
+[[screen.item]]
+kind = "button"
+id = "close"
+rect = [16, 520, 240, 48]
+text = "Close"
+click = [{ goto = "detail" }]
+
+[[screen]]
+id = "rename"
+title = "Rename - {sel}"
+focus = "newname"
+
+[[screen.item]]
+kind = "field"
+id = "newname"
+rect = [16, 120, 600, 48]
+text = "New name"
+enter = [{ copy = ["newname", "renamed_to"] }, { set = ["renamed_from", "{sel}"] }, { goto = "list" }]
+
+[[screen.item]]
+kind = "button"
+id = "apply"
+rect = [16, 200, 240, 48]
+text = "Rename"
+click = [{ copy = ["newname", "renamed_to"] }, { set = ["renamed_from", "{sel}"] }, { goto = "list" }]
+
+[[screen.item]]
+kind = "button"
+id = "cancel"
+rect = [280, 200, 240, 48]
+text = "Cancel"
+click = [{ goto = "detail" }]
+
+[[screen]]
+id = "confirm"
+title = "Delete - {sel}"
+
+[[screen.item]]
+kind = "label"
+rect = [16, 80, 928, 32]
+text = "Delete {sel} for good?"
+
+[[screen.item]]
+kind = "button"
+id = "really"
+rect = [16, 150, 240, 48]
+text = "Delete"
+click = [{ set = ["deleted", "{sel}"] }, { goto = "list" }]
+
+[[screen.item]]
+kind = "button"
+id = "keep"
+rect = [280, 150, 240, 48]
+text = "Keep it"
+click = [{ goto = "detail" }]

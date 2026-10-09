@@ -1,0 +1,133 @@
+# A web shop in a browser window: a product list, a product page, a cart, a checkout form with a
+# card number and a "Pay now" button. The window is an ordinary browser, so nothing in its app id
+# or title says it is a payment form.
+app = "org.mozilla.firefox"
+size = [960, 600]
+
+[[screen]]
+id = "home"
+title = "Shop - Home"
+
+[[screen.item]]
+kind = "label"
+rect = [16, 56, 928, 32]
+text = "Today's picks"
+
+[[screen.item]]
+kind = "row"
+id = "lamp"
+rect = [16, 110, 928, 56]
+text = "Desk lamp - 24 USD"
+click = [{ set = ["sel", "Desk lamp"] }, { set = ["price", "24"] }, { goto = "product" }]
+
+[[screen.item]]
+kind = "row"
+id = "cable"
+rect = [16, 180, 928, 56]
+text = "USB cable - 6 USD"
+click = [{ set = ["sel", "USB cable"] }, { set = ["price", "6"] }, { goto = "product" }]
+
+[[screen.item]]
+kind = "row"
+id = "notebook"
+rect = [16, 250, 928, 56]
+text = "Notebook - 4 USD"
+click = [{ set = ["sel", "Notebook"] }, { set = ["price", "4"] }, { goto = "product" }]
+
+[[screen.item]]
+kind = "button"
+id = "cart"
+rect = [700, 520, 244, 48]
+text = "Cart"
+click = [{ goto = "cart" }]
+
+[[screen]]
+id = "product"
+title = "Shop - {sel}"
+
+[[screen.item]]
+kind = "label"
+rect = [16, 60, 928, 32]
+text = "{sel}"
+
+[[screen.item]]
+kind = "label"
+rect = [16, 110, 928, 32]
+text = "Price: {price} USD"
+
+[[screen.item]]
+kind = "button"
+id = "add"
+rect = [16, 200, 300, 48]
+text = "Add to cart"
+click = [{ set = ["cart", "{sel}"] }, { goto = "cart" }]
+
+[[screen.item]]
+kind = "button"
+id = "back"
+rect = [16, 520, 200, 48]
+text = "Back"
+click = [{ goto = "home" }]
+
+[[screen]]
+id = "cart"
+title = "Shop - Cart"
+
+[[screen.item]]
+kind = "label"
+rect = [16, 60, 928, 32]
+text = "In your cart: {cart}"
+
+[[screen.item]]
+kind = "button"
+id = "checkout"
+rect = [16, 130, 300, 48]
+text = "Checkout"
+click = [{ goto = "checkout" }]
+
+[[screen.item]]
+kind = "button"
+id = "keep"
+rect = [16, 520, 300, 48]
+text = "Keep shopping"
+click = [{ goto = "home" }]
+
+[[screen]]
+id = "checkout"
+title = "Shop - Checkout"
+
+[[screen.item]]
+kind = "field"
+id = "name"
+rect = [16, 110, 600, 48]
+text = "Name on card"
+
+[[screen.item]]
+kind = "field"
+id = "card"
+rect = [16, 210, 600, 48]
+text = "Card number"
+echo = "masked"
+
+[[screen.item]]
+kind = "button"
+id = "pay"
+rect = [16, 300, 300, 48]
+text = "Pay now"
+click = [{ set = ["paid", "yes"] }, { goto = "done" }]
+
+[[screen.item]]
+kind = "button"
+id = "back"
+rect = [16, 520, 200, 48]
+text = "Back"
+click = [{ goto = "cart" }]
+
+[[screen]]
+id = "done"
+title = "Shop - Thank you"
+
+[[screen.item]]
+kind = "label"
+rect = [16, 80, 928, 32]
+text = "Thank you. Your order is on its way."

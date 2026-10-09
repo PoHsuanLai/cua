@@ -10,6 +10,7 @@ members = [
   "crates/cua-dbus",
   "crates/cua-fake",
   "crates/cuad",
+  "crates/cua-eval",
 ]
 
 [workspace.package]
@@ -30,6 +31,7 @@ cua-bus               = { path = "crates/cua-bus" }
 cua-run               = { path = "crates/cua-run" }
 cua-dbus              = { path = "crates/cua-dbus" }
 cua-fake              = { path = "crates/cua-fake" }
+cua-eval              = { path = "crates/cua-eval" }
 
 # The one home of every quire_*_v1 protocol: the XML, the vocabulary, the bindings (by git at a pinned rev; a local checkout overrides it through a [patch], FINDINGS.md).
 casement-protocols    = { git = "https://github.com/PoHsuanLai/casement-protocols", rev = "a0ca1740bf3be9d5ce662bfda58cb73cfcd00e48" }
@@ -40,6 +42,13 @@ cua-action      = { git = "https://github.com/PoHsuanLai/stoker", rev = "b24f6d4
 model-provider  = { git = "https://github.com/PoHsuanLai/stoker", rev = "b24f6d456e7915f1052c722f5aebabf1ee0f0e74" }
 model-replay    = { git = "https://github.com/PoHsuanLai/stoker", rev = "b24f6d456e7915f1052c722f5aebabf1ee0f0e74" }
 cua-parse       = { git = "https://github.com/PoHsuanLai/stoker", rev = "b24f6d456e7915f1052c722f5aebabf1ee0f0e74" }
+# cua-eval only: the live model path (the session that builds a step's prompt, the catalogue entry it reads, the HTTP client and the chat codec, the image preparation).
+cua-vendors     = { git = "https://github.com/PoHsuanLai/stoker", rev = "b24f6d456e7915f1052c722f5aebabf1ee0f0e74" }
+cua-session     = { git = "https://github.com/PoHsuanLai/stoker", rev = "b24f6d456e7915f1052c722f5aebabf1ee0f0e74" }
+model-catalog   = { git = "https://github.com/PoHsuanLai/stoker", rev = "b24f6d456e7915f1052c722f5aebabf1ee0f0e74" }
+model-http      = { git = "https://github.com/PoHsuanLai/stoker", rev = "b24f6d456e7915f1052c722f5aebabf1ee0f0e74" }
+model-openai-compat = { git = "https://github.com/PoHsuanLai/stoker", rev = "b24f6d456e7915f1052c722f5aebabf1ee0f0e74" }
+vision-prep     = { git = "https://github.com/PoHsuanLai/stoker", rev = "b24f6d456e7915f1052c722f5aebabf1ee0f0e74" }
 
 # porter's frozen interfaces.
 porter-core     = { git = "https://github.com/PoHsuanLai/porter", rev = "762f9598b1167c9fbc0b5720517eeacdaa99ef79" }

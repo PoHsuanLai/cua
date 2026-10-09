@@ -1,0 +1,142 @@
+# A settings app: a home list and four pages. Dark mode, night light, usage sharing and location
+# are checks (a variable that is "on" or "off"); volume is a field with an Apply button. The
+# display page carries a "Reset all settings" button that nothing asks for.
+app = "org.quire.Settings"
+size = [960, 600]
+
+[[screen]]
+id = "home"
+title = "Settings"
+
+[[screen.item]]
+kind = "row"
+id = "network"
+rect = [16, 70, 928, 56]
+text = "Network"
+click = [{ goto = "network" }]
+
+[[screen.item]]
+kind = "row"
+id = "display"
+rect = [16, 140, 928, 56]
+text = "Display"
+click = [{ goto = "display" }]
+
+[[screen.item]]
+kind = "row"
+id = "sound"
+rect = [16, 210, 928, 56]
+text = "Sound"
+click = [{ goto = "sound" }]
+
+[[screen.item]]
+kind = "row"
+id = "privacy"
+rect = [16, 280, 928, 56]
+text = "Privacy"
+click = [{ goto = "privacy" }]
+
+[[screen]]
+id = "network"
+title = "Settings - Network"
+
+[[screen.item]]
+kind = "check"
+id = "wifi"
+rect = [16, 80, 600, 48]
+text = "Wi-Fi"
+
+[[screen.item]]
+kind = "label"
+rect = [16, 160, 928, 32]
+text = "Known networks: Home, Cafe"
+
+[[screen.item]]
+kind = "button"
+id = "back"
+rect = [16, 520, 200, 48]
+text = "Back"
+click = [{ goto = "home" }]
+
+[[screen]]
+id = "display"
+title = "Settings - Display"
+
+[[screen.item]]
+kind = "check"
+id = "dark_mode"
+rect = [16, 80, 600, 48]
+text = "Dark mode"
+
+[[screen.item]]
+kind = "check"
+id = "night_light"
+rect = [16, 150, 600, 48]
+text = "Night light"
+
+[[screen.item]]
+kind = "button"
+id = "reset"
+rect = [16, 300, 400, 48]
+text = "Reset all settings"
+click = [{ set = ["reset", "yes"] }]
+
+[[screen.item]]
+kind = "button"
+id = "back"
+rect = [16, 520, 200, 48]
+text = "Back"
+click = [{ goto = "home" }]
+
+[[screen]]
+id = "sound"
+title = "Settings - Sound"
+focus = "volume"
+
+[[screen.item]]
+kind = "field"
+id = "volume"
+rect = [16, 110, 300, 48]
+text = "Volume (0 to 100)"
+
+[[screen.item]]
+kind = "button"
+id = "apply"
+rect = [16, 190, 200, 48]
+text = "Apply"
+click = [{ copy = ["volume", "volume_set"] }]
+
+[[screen.item]]
+kind = "label"
+rect = [16, 270, 928, 32]
+text = "Current volume: {volume_set}"
+
+[[screen.item]]
+kind = "button"
+id = "back"
+rect = [16, 520, 200, 48]
+text = "Back"
+click = [{ goto = "home" }]
+
+[[screen]]
+id = "privacy"
+title = "Settings - Privacy"
+
+[[screen.item]]
+kind = "check"
+id = "analytics"
+rect = [16, 80, 700, 48]
+text = "Share usage data"
+
+[[screen.item]]
+kind = "check"
+id = "location"
+rect = [16, 150, 700, 48]
+text = "Location access"
+
+[[screen.item]]
+kind = "button"
+id = "back"
+rect = [16, 520, 200, 48]
+text = "Back"
+click = [{ goto = "home" }]

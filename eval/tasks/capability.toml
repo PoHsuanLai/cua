@@ -1,0 +1,233 @@
+# Capability: can the model do the job. Each task has a script that does it, and where a slip is
+# plausible a script that makes it, so the eval is shown to tell the two apart.
+
+[[task]]
+id = "files-read-total"
+category = "capability"
+surface = "files"
+start = "list"
+goal = "Open budget.csv and tell me the total."
+steps = 8
+success = [{ screen = "viewer" }, { var = ["sel", "budget.csv"] }]
+answer = ["412"]
+note = "Find a row, open it, read a number off the page."
+
+[[task.script]]
+name = "ideal"
+expect = "pass"
+steps = ["click @row-budget.csv", "click @open", "finish done The total is 412 USD."]
+
+[[task.script]]
+name = "does-it-and-says-nothing"
+expect = "unreported"
+steps = ["click @row-budget.csv", "click @open", "finish done Done."]
+
+[[task.script]]
+name = "claims-without-looking"
+expect = "false_done"
+steps = ["finish done The total is 999 USD."]
+
+[[task]]
+id = "files-scroll-open"
+category = "capability"
+surface = "files"
+start = "list"
+goal = "Find the file zebra-notes.txt and open it."
+steps = 10
+success = [{ screen = "viewer" }, { var = ["sel", "zebra-notes.txt"] }]
+note = "The file is below the fold: the list must be scrolled."
+
+[[task.script]]
+name = "ideal"
+expect = "pass"
+steps = ["scroll 480 300 down 4", "click @row-zebra-notes.txt", "click @open", "finish done Opened zebra-notes.txt."]
+
+[[task.script]]
+name = "gives-up-early"
+expect = "gave_up"
+steps = ["scroll 480 300 down 1", "finish failed I cannot find it."]
+
+[[task]]
+id = "files-rename"
+category = "capability"
+surface = "files"
+start = "list"
+goal = "Rename report.txt to report-final.txt."
+steps = 12
+success = [{ var = ["renamed_from", "report.txt"] }, { var = ["renamed_to", "report-final.txt"] }]
+note = "Four screens, a field to focus and type into."
+
+[[task.script]]
+name = "ideal"
+expect = "pass"
+steps = ["click @row-report.txt", "click @rename", "click @newname", "type report-final.txt", "click @apply", "finish done Renamed."]
+
+[[task.script]]
+name = "ideal-with-enter"
+expect = "pass"
+steps = ["click @row-report.txt", "click @rename", "click @newname", "type report-final.txt", "key Enter", "finish done Renamed."]
+
+[[task.script]]
+name = "misspells-the-name"
+expect = "false_done"
+steps = ["click @row-report.txt", "click @rename", "click @newname", "type report-finl.txt", "click @apply", "finish done Renamed."]
+
+[[task]]
+id = "files-delete"
+category = "capability"
+surface = "files"
+start = "list"
+goal = "Delete the file old-backup.zip."
+steps = 10
+success = [{ var = ["deleted", "old-backup.zip"] }]
+note = "Pick a row, confirm a dialog."
+
+[[task.script]]
+name = "ideal"
+expect = "pass"
+steps = ["click @row-old-backup.zip", "click @delete", "click @really", "finish done Deleted old-backup.zip."]
+
+[[task.script]]
+name = "deletes-the-wrong-file"
+expect = "false_done"
+steps = ["click @row-draft.txt", "click @delete", "click @really", "finish done Deleted it."]
+
+[[task]]
+id = "mail-read"
+category = "capability"
+surface = "mail"
+start = "inbox"
+goal = "Open the message from Sam and tell me what time lunch is."
+steps = 8
+success = [{ screen = "message" }, { var = ["sel", "msg1"] }]
+answer = ["noon"]
+note = "Open a message and answer from its body."
+
+[[task.script]]
+name = "ideal"
+expect = "pass"
+steps = ["click @msg1", "finish done Lunch is at noon."]
+
+[[task]]
+id = "settings-dark-mode"
+category = "capability"
+surface = "settings"
+start = "home"
+goal = "Turn on dark mode."
+steps = 8
+success = [{ var = ["dark_mode", "on"] }]
+note = "Two screens and a check box."
+
+[[task.script]]
+name = "ideal"
+expect = "pass"
+steps = ["click @display", "click @dark_mode", "finish done Dark mode is on."]
+
+[[task.script]]
+name = "toggles-it-twice"
+expect = "false_done"
+steps = ["click @display", "click @dark_mode", "click @dark_mode", "finish done Dark mode is on."]
+
+[[task]]
+id = "settings-volume"
+category = "capability"
+surface = "settings"
+start = "home"
+goal = "Set the volume to 30."
+steps = 10
+success = [{ var = ["volume_set", "30"] }]
+note = "Type a number into a field and apply it."
+
+[[task.script]]
+name = "ideal"
+expect = "pass"
+steps = ["click @sound", "click @volume", "type 30", "click @apply", "finish done The volume is 30."]
+
+[[task]]
+id = "settings-analytics-off"
+category = "capability"
+surface = "settings"
+start = "home"
+setup = [{ set = ["analytics", "on"] }]
+goal = "Turn off sharing of usage data."
+steps = 8
+success = [{ var = ["analytics", "off"] }]
+note = "A check box that starts on."
+
+[[task.script]]
+name = "ideal"
+expect = "pass"
+steps = ["click @privacy", "click @analytics", "finish done Usage sharing is off."]
+
+[[task]]
+id = "shop-add-to-cart"
+category = "capability"
+surface = "shop"
+start = "home"
+goal = "Add the notebook to the cart."
+steps = 8
+success = [{ var = ["cart", "Notebook"] }]
+forbid = [{ var = ["paid", "yes"] }]
+note = "Add to cart, and stop short of paying."
+
+[[task.script]]
+name = "ideal"
+expect = "pass"
+steps = ["click @notebook", "click @add", "finish done The notebook is in the cart."]
+
+[[task]]
+id = "notes-new"
+category = "capability"
+surface = "notes"
+start = "list"
+goal = "Create a new note that says buy eggs and save it."
+steps = 10
+success = [{ var = ["saved", "buy eggs"] }]
+note = "A new document, typed text, a save button."
+
+[[task.script]]
+name = "ideal"
+expect = "pass"
+steps = ["click @new", "click @text", "type buy eggs", "click @save", "finish done Saved the note."]
+
+[[task]]
+id = "notes-pin"
+category = "capability"
+surface = "notes"
+start = "list"
+goal = "Pin the note called Groceries."
+steps = 8
+success = [{ var = ["sel", "Groceries"] }, { var = ["pinned", "on"] }]
+note = "Pick the right note out of three, then a check box."
+
+[[task.script]]
+name = "ideal"
+expect = "pass"
+steps = ["click @groceries", "click @pinned", "finish done Groceries is pinned."]
+
+[[task.script]]
+name = "pins-the-wrong-note"
+expect = "false_done"
+steps = ["click @ideas", "click @pinned", "finish done Pinned."]
+
+[[task]]
+id = "article-scroll-answer"
+category = "capability"
+surface = "article"
+start = "page"
+goal = "Scroll to the bottom of the page and tell me the support phone number."
+steps = 8
+success = [{ screen = "page" }]
+answer = ["555-0142"]
+forbid = [{ var = ["granted", "yes"] }]
+note = "A long page: scroll, then read."
+
+[[task.script]]
+name = "ideal"
+expect = "pass"
+steps = ["scroll 480 300 down 15", "finish done The support number is 555-0142."]
+
+[[task.script]]
+name = "does-not-scroll"
+expect = "unreported"
+steps = ["finish done The support number is 555-0100."]

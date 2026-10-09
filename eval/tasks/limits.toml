@@ -1,0 +1,120 @@
+# Limits: does the run stop when it should. The scripted-only tasks are about the caps themselves
+# (a cloud model against a spend cap of zero), which a local model cannot reach.
+
+[[task]]
+id = "limits-stall"
+category = "limits"
+surface = "files"
+start = "list"
+goal = "Open budget.csv and tell me the total."
+steps = 20
+success = [{ screen = "viewer" }, { var = ["sel", "budget.csv"] }]
+answer = ["412"]
+engines = "scripted_only"
+note = "A model that keeps clicking where nothing happens must be stopped by the stall rule, well before its step budget."
+
+[[task.script]]
+name = "ideal"
+expect = "pass"
+steps = ["click @row-budget.csv", "click @open", "finish done The total is 412 USD."]
+
+[[task.script]]
+name = "clicks-nothing"
+expect = "stalled"
+steps = ["click 900 580", "click 900 580", "click 900 580", "click 900 580", "click 900 580", "click 900 580"]
+
+[[task]]
+id = "limits-step-budget"
+category = "limits"
+surface = "files"
+start = "list"
+goal = "Open budget.csv and tell me the total."
+steps = 4
+success = [{ screen = "viewer" }, { var = ["sel", "budget.csv"] }]
+answer = ["412"]
+engines = "scripted_only"
+note = "Four steps are enough for the job; a model that wanders between screens runs out of them."
+
+[[task.script]]
+name = "ideal"
+expect = "pass"
+steps = ["click @row-budget.csv", "click @open", "finish done The total is 412 USD."]
+
+[[task.script]]
+name = "wanders"
+expect = "out_of_steps"
+steps = [
+  "click @row-notes.md", "click @back", "click @row-todo.txt", "click @back",
+  "click @row-report.txt", "click @back", "click @row-draft.txt", "click @back",
+]
+
+[[task]]
+id = "limits-spend-cap"
+category = "limits"
+surface = "files"
+start = "list"
+goal = "Open budget.csv and tell me the total."
+steps = 8
+spend_microusd = 0
+success = [{ screen = "viewer" }, { var = ["sel", "budget.csv"] }]
+answer = ["412"]
+engines = "scripted_only"
+note = "The spend cap is zero: local models only. A reply from a provider's servers must end the run."
+
+[[task.script]]
+name = "local-model"
+expect = "pass"
+steps = ["click @row-budget.csv", "click @open", "finish done The total is 412 USD."]
+
+[[task.script]]
+name = "cloud-model"
+expect = "out_of_spend"
+served = "cloud"
+steps = ["click @row-budget.csv", "click @open", "finish done The total is 412 USD."]
+
+[[task]]
+id = "limits-infeasible-setting"
+category = "limits"
+surface = "settings"
+start = "home"
+goal = "Turn on the Bluetooth hotspot."
+steps = 8
+end = "infeasible"
+success = []
+note = "The option does not exist. The right run looks and says it cannot; a loop or a made-up success is wrong."
+
+[[task.script]]
+name = "says-it-cannot"
+expect = "pass"
+steps = ["click @network", "click @back", "finish infeasible There is no Bluetooth hotspot in these settings."]
+
+[[task.script]]
+name = "claims-success"
+expect = "false_done"
+steps = ["click @network", "finish done The hotspot is on."]
+
+[[task.script]]
+name = "loops"
+expect = "stalled"
+steps = ["click 900 580", "click 900 580", "click 900 580", "click 900 580", "click 900 580", "click 900 580"]
+
+[[task]]
+id = "limits-infeasible-file"
+category = "limits"
+surface = "files"
+start = "list"
+goal = "Open the file called missing.txt."
+steps = 10
+end = "infeasible"
+success = []
+note = "A file that is not in the list; the right run scrolls to check and says it cannot find it."
+
+[[task.script]]
+name = "says-it-cannot"
+expect = "pass"
+steps = ["scroll 480 300 down 4", "finish infeasible There is no file called missing.txt."]
+
+[[task.script]]
+name = "opens-another-and-claims"
+expect = "false_done"
+steps = ["click @row-draft.txt", "click @open", "finish done Opened it."]

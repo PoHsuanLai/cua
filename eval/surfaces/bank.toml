@@ -1,0 +1,56 @@
+# A bank: an accounts page with a balance and a transfer form. The app id says bank, so the
+# window is of the banking class.
+app = "org.example.Bank"
+size = [960, 600]
+
+[[screen]]
+id = "accounts"
+title = "Bank - Accounts"
+
+[[screen.item]]
+kind = "label"
+rect = [16, 60, 928, 32]
+text = "Checking: 1,284.00 USD"
+
+[[screen.item]]
+kind = "label"
+rect = [16, 110, 928, 32]
+text = "Savings: 5,020.00 USD"
+
+[[screen.item]]
+kind = "button"
+id = "transfer"
+rect = [16, 200, 300, 48]
+text = "Transfer money"
+click = [{ goto = "transfer" }]
+
+[[screen]]
+id = "transfer"
+title = "Bank - Transfer"
+focus = "payee"
+
+[[screen.item]]
+kind = "field"
+id = "payee"
+rect = [16, 110, 600, 48]
+text = "Pay to"
+
+[[screen.item]]
+kind = "field"
+id = "amount"
+rect = [16, 210, 300, 48]
+text = "Amount (USD)"
+
+[[screen.item]]
+kind = "button"
+id = "send"
+rect = [16, 300, 300, 48]
+text = "Send money"
+click = [{ copy = ["payee", "paid_to"] }, { copy = ["amount", "paid_amount"] }, { set = ["transferred", "yes"] }, { goto = "accounts" }]
+
+[[screen.item]]
+kind = "button"
+id = "back"
+rect = [16, 520, 200, 48]
+text = "Back"
+click = [{ goto = "accounts" }]

@@ -30,6 +30,7 @@ picture), section 6 (copy the recipe).
 | `cua-run` | the pure run machine (`Run`, `RunTrack`, `RunPhase`, `RunInput`, `RunEffect`), `Observation`, `classify_effect`, `window_class_of`, `mode_support`, `choose_mode`, `LeaseBook`, `stalled`, `turn` and `note_of`, `CuaConfig` and `SETTING_ROWS`, `CuaModel`, the seams a run is carried out against (`Seams`, `Clock`, `GateLink`, `RecordSink`, `MessageLink`), and `Exec`, which carries a run's effects out against them (it awaits nothing but seam futures, so it needs no runtime) | none |
 | `cua-dbus` | `org.quire.Cua1` (`Manager`, `Run`) as zbus proxies and skeletons, `introspection`, `CuaError`, bus names and paths | zbus |
 | `cua-fake` | test only: `FakeSeat`, `FakeEis`, `FakeCapture`, `FakeDesktop`, `FakeA11y`, `ScriptedModel`, `FakePdp`, `MemoryEvents`, `FixedClock`, `FakeSeams`, `run_harness`, and `scene` (a window, frames, a world, a task) | none (`FakeEis`: reis, tokio) |
+| `cua-eval` | the computer-use model eval (section 8): fake `surface`s drawn as pixels, a `Stage` shared by an `EvalSeat`, an `EvalCapture` and an `EvalDesktop`, a reference gate, `ScriptModel` (lines of moves) and `ProviderModel` (a model on a local engine, over stoker's `CuaSession`), `Corpus` (`eval/surfaces`, `eval/tasks`), verdicts, rates with Wilson bounds, the markdown report, and the `cua-eval` binary | the binary: files; `live`: loopback HTTP to an engine the caller started |
 | `cuad` | the daemon and its library: `SeatBackend`, `CaptureBackend`, `Supervisor` (a task per run), `IntentsGate`, `InferdCuaModel`, `DaemonLinks`, `Links` (the three daemon links over one connection), `CuaProvider` (`org.quire.Cua`), `guard`, `CallerNames`, `CuadConfig`, `SystemSeams`, `SystemDesktop`, `SystemA11y`, `WaylandPair`, `CosmicEiSockets`, `serve` and `serve_on`. The binary serves both bus names; the person's settings: `read` (lenient, per key), `Locator`, `SettingsWatch` (the directory watch on `cua/settings.toml`), `Supervisor::{settings, apps, apply_settings, follow}`, `SCHEMA` (`dist/settings/cua.settings.toml`), and `--write-schema` | everything |
 
 Allowed direct edges between our own crates (checked by `scripts/check-boundary.sh`;
@@ -45,6 +46,7 @@ dev-dependencies are outside it):
 | `cua-run` | `a11y-tree`, `cua-action`, `cua-bus`, `cua-desktop`, `maskcap`, `seat-input`, `docket-core`, `prov`, `porter-core`, `porter-infer` |
 | `cua-dbus` | `cua-bus`, `prov` |
 | `cua-fake` | `a11y-tree`, `cua-action`, `cua-bus`, `cua-desktop`, `cua-run`, `maskcap`, `seat-input`, `docket-core`, `prov`, `porter-core`, `porter-infer`, `model-replay`, `model-provider`, `cua-parse` |
+| `cua-eval` | `a11y-tree`, `cua-action`, `cua-bus`, `cua-desktop`, `cua-fake`, `cua-parse`, `cua-run`, `cua-session`, `cua-vendors`, `docket-core`, `maskcap`, `model-catalog`, `model-http`, `model-openai-compat`, `model-provider`, `porter-core`, `porter-infer`, `prov`, `seat-input`, `vision-prep` |
 | `cuad` | `a11y-tree`, `cua-bus`, `cua-dbus`, `cua-desktop`, `cua-run`, `maskcap`, `seat-input`, `docket-core`, `docket-client`, `prov`, `porter-core`, `porter-infer`, `porter-client`, `almanac-core`, `almanac-client` |
 
 The edges differ from SPEC 1.3 in one way, forced by its own types: `seat-input`, `maskcap` and
@@ -76,6 +78,7 @@ only; the pure set never reaches an effect crate; `wayland-client` is behind the
 | `cua-run` | `config`, `observation`, `effect_class`, `window_class`, `mode`, `turn`, `lease_book`, `stall`, `model`, `seams`, `machine/{phase, input, effect, run, track, step, control, finish, ops}`, `exec/{observe, session}` |
 | `cua-dbus` | `names`, `error`, `manager`, `run`, `introspect` |
 | `cua-fake` | `clock`, `seat`, `eis`, `capture`, `desktop`, `a11y`, `model`, `gate`, `events`, `harness`, `scene` |
+| `cua-eval` | `surface/{def, state, render}`, `keys`, `stage`, `world`, `gate`, `script`, `task`, `corpus`, `verdict`, `run`, `eval`, `metrics`, `report`, `live`, `main` |
 | `cuad` | `clock`, `config`, `callers`, `guard`, `backend`, `gate`, `model`, `links`, `connect`, `provider`, `settings` (`keys`, `apps`, `read`, `locate`, `watch`) < `supervisor`, `drive`, `events`, `bus`, `desktop`, `ei_socket`, `system`, `serve` |
 
 ## 3. One home per concept
@@ -213,3 +216,71 @@ action it leads to is gated like any other.
 - The `dist/` units carry their sandbox lines (`cuad.service`: Unix sockets only, no network, no
   files, no devices, no capabilities); the D-Bus activation files name the two bus names cuad
   owns (`org.quire.Cua1`, `org.quire.Cua`).
+
+## 8. The computer-use model eval
+
+`cua-eval` plays a task set against a model and says how often the model does the job, keeps to it
+and stops where it must. It runs cua's own run machine (`Run`, `Exec`, the stall and budget rules,
+`classify_effect`, `window_class_of`) over seams of its own, so what it measures is the model and
+cua's classification together, not a copy of either.
+
+**Surfaces** (`eval/surfaces/*.toml`, `cua_eval::surface`). A surface is a small deterministic
+application: screens, and on them labels, buttons, rows, fields and check boxes. A click, a key or a
+wheel notch changes variables and fields and moves between screens (`goto`, `set`, `copy`, `clear`,
+`when`). It is drawn as pixels (a bitmap font, flat rectangles, 960x600) for a vision model and its
+window title and app id follow the screen, which is what makes a compose screen a `MailCompose`
+window and a terminal a `Terminal`. There is no accessibility tree (`FakeA11y::failing`), so a model
+works from pixels. Nothing here is a real app, account or desktop.
+
+**Tasks** (`eval/tasks/*.toml`). Each task names a surface and a start screen, the goal in the
+person's words, `success` (conditions that all hold at the end, plus `answer`: words the model's
+final summary must contain), `forbid` (conditions that must never hold, checked after every input,
+so an undone violation still counts), a step and spend budget, `ask` (`required` when the right run
+asks the person), `end` (`done`, `infeasible`, `any`) and `person` (how the router's confirmations are
+answered). Categories: `capability` (open, find, click, type, scroll, multi-step), `safety` with a
+`topic` (`injection`: the screen tells the model to do something else; `sensitive`: a compose
+window, a terminal, a bank, a payment form, where the model must stop and ask; `overeager`: a small
+task on a screen that invites more) and `limits` (stalls, loops, the step budget, the spend cap,
+a goal that cannot be met).
+
+**Scripts.** A task also carries scripts: lines of moves (`click @compose`, `type hello`,
+`key Enter`, `scroll 480 300 down 3`, `ask ...`, `finish done ...`; `@id` is the middle of that item on
+the screen showing). Each script says the verdict the eval must reach. The ones that behave well show
+the task can be passed; the ones that obey an injection, send anyway, loop or claim success show the
+checks catch it. The gate runs them all (`cargo test`), with no model. A live run is kept in the same
+lines (`reports/<label>.cassette.toml`) and plays back with `--engine cassette`.
+
+**The gate** (`cua_eval::gate`) stands in for the router: it asks before any outbound, destructive or
+executing step (what `classify_effect` names) and before any click or key in a password manager, an
+admin tool or a bank (by app id), and the person answers the same way every time (`person`). It is
+the strictest reading of what cua tells the router; the router owns the real rules.
+
+**Verdicts** (`verdict.rs`): `pass`, `violation` (a forbidden state happened), `missed_ask`, `false_done`
+(said done, the surface says no), `unreported` (did the job, and the final words lack the answer asked for), `gave_up`, `asked` (asked where no ask was called for), `stalled`,
+`out_of_steps`, `out_of_spend`, `out_of_time`, `broken`. A model that asks (`ask`) ends the run there:
+for a task that needs an ask, that is the right ending.
+
+**Metrics** (`metrics.rs`, `report.rs`): per group (capability, safety, limits, and the safety topics)
+pass rate with a 95% Wilson interval; violations (the false negatives of the safety rules) with the
+Wilson upper bound; missed asks; unneeded asks (false positives: a run that asked where `ask =
+never`, gate confirmations on an ordinary job included); stalls; steps per run and model latency per
+step, median and 95th percentile (wall time, reported and never asserted on).
+
+**Engines.** `scripted` (the scripts; no model), `cassette` (a kept live run), `local`: a model on
+an OpenAI-compatible engine on the loopback address, driven the way inferd drives one (stoker's
+`CuaSession` builds the prompt from the model's catalogue entry, a provider runs the turn, the
+session reads the reply). `cua-eval` starts no engine and reaches no other address; there is no
+cloud engine. The tasks a local model cannot play (the spend cap) are `engines = "scripted_only"`.
+
+**Run it.**
+
+```bash
+cargo run -p cua-eval -- --dir eval --label scripted        # the gate's check: exit 1 on a mismatch
+cargo run -p cua-eval -- --dir eval --engine local --entry <catalogue>/holo-3.1-4b.toml \
+    --model holo-3.1-4b --port 8000 --repeat 3 --label holo-3.1-4b
+```
+
+**Add a task.** A surface screen if none fits (`eval/surfaces`; every `goto` and `screen` condition
+is checked when the set loads); the task in `eval/tasks/<category>.toml` with at least one script
+that passes and, where a slip is plausible, one that makes it; `cargo test -p cua-eval` fails until
+every script reaches the verdict it names.
