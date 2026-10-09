@@ -116,7 +116,7 @@ fn node_with(snapshot_nodes: &[A11yNode], id: cua_action::NodeId) -> Option<&A11
 }
 
 /// The tree of the step's observation, if there is one.
-fn nodes_of(obs: &Observation) -> &[A11yNode] {
+pub(crate) fn nodes_of(obs: &Observation) -> &[A11yNode] {
     match &obs.tree {
         TreeObs::Present(snapshot) => &snapshot.nodes,
         TreeObs::Absent(_) => &[],

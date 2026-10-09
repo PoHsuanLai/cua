@@ -1,6 +1,7 @@
 //! What the machine remembers between inputs beyond the phase: small, typed, and never pixels or
 //! thought text.
 
+use crate::sensitivity::WindowSensitivity;
 use cua_bus::{ActionOutcome, AuthorisedBy, FrameNote, ThoughtDigest};
 use cua_desktop::Stamp;
 use maskcap::DamageAt;
@@ -37,6 +38,17 @@ pub enum SettleWatch {
     },
 }
 
+/// Whether the head action waits for the person's yes because its window is sensitive.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(tag = "kind", content = "v", rename_all = "snake_case")]
+pub enum Held {
+    /// Nothing is held; a question that is waiting is the model's own.
+    #[default]
+    Nothing,
+    /// The head action waits for the person's answer to the question the run asked for it.
+    Sensitive(WindowSensitivity),
+}
+
 /// The machine's own notes on the current run.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RunTrack {
@@ -57,6 +69,9 @@ pub struct RunTrack {
     /// How many of the current batch's actions the model already announced while it streamed
     /// (so the reply announces only the rest).
     pub proposed: u32,
+    /// Whether the question now waiting was asked by the run for a sensitive window.
+    #[serde(default)]
+    pub held: Held,
 }
 
 impl RunTrack {
@@ -71,6 +86,7 @@ impl RunTrack {
             thought: None,
             frame: None,
             proposed: 0,
+            held: Held::Nothing,
         }
     }
 }

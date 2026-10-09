@@ -61,6 +61,7 @@ mod mode;
 mod model;
 mod observation;
 mod seams;
+mod sensitivity;
 mod stall;
 mod turn;
 mod window_class;
@@ -77,7 +78,7 @@ pub use machine::effect::{CuaSignal, HintSource, RunEffect};
 pub use machine::input::{CheckResult, ModelReply, RunInput};
 pub use machine::phase::{ActionQueue, RunPhase};
 pub use machine::run::{Run, RunEnv};
-pub use machine::track::{CaptureTries, RunTrack, SettleWatch};
+pub use machine::track::{CaptureTries, Held, RunTrack, SettleWatch};
 pub use mode::{choose_mode, mode_support};
 pub use model::{CuaModel, CuaModelError, StepEvent, StepSink, ThoughtText};
 pub use observation::{
@@ -86,6 +87,7 @@ pub use observation::{
 pub use seams::{
     Clock, GateCheck, GateEvent, GateLink, LinkError, MessageLink, Parts, RecordSink, Seams,
 };
+pub use sensitivity::{FORCED_NO, FORCED_YES, WindowSensitivity, window_sensitivity};
 pub use stall::{Repeats, Stall};
 pub use turn::{FrameAttachment, note_of, turn};
 pub use window_class::{window_class_in, window_class_of};

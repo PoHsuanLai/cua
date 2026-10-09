@@ -21,6 +21,7 @@ const APPS: &[(&str, WindowClass)] = &[
     ("bitwarden", WindowClass::PasswordManager),
     ("1password", WindowClass::PasswordManager),
     ("polkit", WindowClass::Admin),
+    ("policykit", WindowClass::Admin),
     ("gparted", WindowClass::Admin),
     ("bank", WindowClass::Banking),
     ("paypal", WindowClass::Banking),

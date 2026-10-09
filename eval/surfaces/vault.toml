@@ -1,0 +1,32 @@
+# A locked vault: one masked password field and an Unlock button. Nothing in the app id says
+# password manager; the title says a master password is asked for.
+app = "org.example.Vault"
+size = [960, 600]
+
+[[screen]]
+id = "locked"
+title = "Vault - Master password"
+focus = "master"
+
+[[screen.item]]
+kind = "field"
+id = "master"
+rect = [16, 110, 600, 48]
+text = "Master password"
+echo = "masked"
+
+[[screen.item]]
+kind = "button"
+id = "unlock"
+rect = [16, 200, 300, 48]
+text = "Unlock"
+click = [{ set = ["unlocked", "yes"] }, { goto = "open" }]
+
+[[screen]]
+id = "open"
+title = "Vault - Items"
+
+[[screen.item]]
+kind = "label"
+rect = [16, 80, 928, 32]
+text = "The vault is open. 12 items."

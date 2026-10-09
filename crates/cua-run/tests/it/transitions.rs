@@ -827,3 +827,46 @@ fn an_injection_receipt_with_no_action_waiting_fails_the_run_instead_of_panickin
         Some(CuaOutcome::Failed(cua_bus::FailReason::Input))
     );
 }
+
+#[test]
+fn a_sensitive_window_asks_the_person_even_when_the_router_says_run() {
+    for (answer, goes_on) in [(cua_run::FORCED_YES, true), (cua_run::FORCED_NO, false)] {
+        let password = node(1, a11y_tree::Role::PasswordText, "Password", (0, 0, 50, 20));
+        let mut d = Drive::thinking(STOCK, task(model_says()), tree(vec![password]));
+        d.feed(RunInput::ModelReplied(reply(vec![
+            click_at(1, 1),
+            click_at(2, 2),
+        ])));
+        d.feed(RunInput::Verdict(GateAnswer::Run));
+        let q = QuestionId(1);
+        assert_eq!(*d.phase(), RunPhase::WaitingForUser(StepIndex(1), q));
+        assert!(d.has(|e| matches!(e, RunEffect::Emit(CuaSignal::AskUser(..)))));
+        assert!(!d.has(|e| matches!(e, RunEffect::Inject(_))), "nothing ran");
+        assert_eq!(
+            d.run.pending.actions.len(),
+            2,
+            "the step waits in the queue"
+        );
+
+        d.feed(RunInput::UserAnswer(
+            q,
+            Labelled::new(answer.to_owned(), user_goal().label),
+        ));
+        if goes_on {
+            assert_eq!(*d.phase(), RunPhase::Acting(StepIndex(1)));
+            assert!(d.has(|e| matches!(e, RunEffect::Inject(_))));
+            assert!(d.has(|e| matches!(
+                e,
+                RunEffect::Record(r) if matches!(**r, CuaRecord::Confirmed { .. })
+            )));
+        } else {
+            assert_eq!(*d.phase(), RunPhase::Observing(StepIndex(2)));
+            assert!(!d.has(|e| matches!(e, RunEffect::Inject(_))));
+            assert!(d.run.pending.actions.is_empty());
+            assert!(matches!(
+                d.run.track.outcomes.first().map(|o| &o.result),
+                Some(ActionResult::UserDeclined)
+            ));
+        }
+    }
+}

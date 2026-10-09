@@ -135,7 +135,7 @@ fn dispatch(run: &mut Run, fx: &mut Vec<RunEffect>, input: RunInput, at: Stamp) 
         RunInput::InjectFailed(error) => inject_failed(run, fx, error),
         RunInput::Damage(damage) => damaged(run, fx, at, damage),
         RunInput::Checked(result) => checked(run, fx, result),
-        RunInput::UserAnswer(question, answer) => answered(run, fx, question, answer),
+        RunInput::UserAnswer(question, answer) => answered(run, fx, at, question, answer),
     }
 }
 

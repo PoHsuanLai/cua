@@ -5,13 +5,14 @@ use crate::machine::control::{self, pause};
 use crate::machine::effect::{CuaSignal, RunEffect};
 use crate::machine::finish::{Said, finish, finish_plain};
 use crate::machine::ops::{
-    AlsoContext, action_ended, aim, ask_for, drop_rest, enter, next, observe, screen_label,
-    targeted,
+    AlsoContext, action_ended, aim, ask_for, drop_rest, enter, next, nodes_of, observe,
+    screen_label, targeted,
 };
 use crate::machine::phase::RunPhase;
 use crate::machine::run::Run;
-use crate::machine::track::SettleWatch;
-use cua_action::{CuaAction, FinishOutcome};
+use crate::machine::track::{Held, SettleWatch};
+use crate::sensitivity::{FORCED_NO, FORCED_YES, WindowSensitivity, window_sensitivity};
+use cua_action::{ActionClass, CuaAction, FinishOutcome};
 use cua_bus::{
     ActionOutcome, ActionResult, AskBody, AuthorisedBy, BlockedOn, ConfirmBy, CuaOutcome,
     CuaRecord, FailReason, LocalRefusal, QuestionId, Refusal, SuccessCheck, TargetedAction,
@@ -118,16 +119,24 @@ pub(super) fn ask(run: &mut Run, fx: &mut Vec<RunEffect>, n: StepIndex, head: Ta
     let CuaAction::Ask { question, choices } = &head.action else {
         return;
     };
+    run.pending.actions.truncate(1);
+    run.track.held = Held::Nothing;
+    let choices: Vec<&str> = choices.iter().map(|c| c.as_str()).collect();
+    raise(run, fx, n, question.as_str(), &choices);
+}
+
+/// Puts a question to the person and waits for the answer: the model's own, or the one a
+/// sensitive window forces.
+fn raise(run: &mut Run, fx: &mut Vec<RunEffect>, n: StepIndex, question: &str, choices: &[&str]) {
     let id = QuestionId(u64::from(n.0));
     let label: Label = screen_label(run);
     let body = AskBody {
-        question: Labelled::new(question.as_str().to_owned(), label.clone()),
+        question: Labelled::new(question.to_owned(), label.clone()),
         choices: choices
             .iter()
-            .map(|c| Labelled::new(c.as_str().to_owned(), label.clone()))
+            .map(|c| Labelled::new((*c).to_owned(), label.clone()))
             .collect(),
     };
-    run.pending.actions.truncate(1);
     fx.push(RunEffect::Emit(CuaSignal::AskUser(id, body.clone())));
     fx.push(RunEffect::Record(Box::new(CuaRecord::Asked {
         run: run.id.clone(),
@@ -136,13 +145,81 @@ pub(super) fn ask(run: &mut Run, fx: &mut Vec<RunEffect>, n: StepIndex, head: Ta
         question: body.question,
     })));
     fx.push(RunEffect::Glow(cua_desktop::GlowState::WaitingForYou));
-    control::progress(run, fx, question.as_str());
+    control::progress(run, fx, question);
     enter(run, fx, RunPhase::WaitingForUser(n, id));
+}
+
+/// How sensitive the window is that the head action drives; none for an action that is not
+/// input, and for an ordinary window.
+fn sensitive_head(run: &Run) -> Option<WindowSensitivity> {
+    let obs = run.working.as_ref()?;
+    let head = run.pending.actions.front()?;
+    let drives = matches!(
+        head.action.class(),
+        ActionClass::Pointer | ActionClass::Keyboard
+    );
+    let sensitivity = window_sensitivity(
+        &obs.window.app,
+        &obs.window.title.value,
+        obs.window.trust,
+        nodes_of(obs),
+    );
+    (drives && sensitivity.asks()).then_some(sensitivity)
+}
+
+/// The router said run, and the window is sensitive: the person is asked first, as for any
+/// question, and the head action stays queued until they answer.
+fn hold(run: &mut Run, fx: &mut Vec<RunEffect>, n: StepIndex, why: WindowSensitivity) {
+    run.track.held = Held::Sensitive(why);
+    let question = format!("The next step is in {}. Go ahead with it?", why.noun());
+    raise(run, fx, n, &question, &[FORCED_YES, FORCED_NO]);
+}
+
+/// The person's answer to a held step: yes lets it run as a confirmed step; anything else
+/// declines it.
+fn held_answer(
+    run: &mut Run,
+    fx: &mut Vec<RunEffect>,
+    at: Stamp,
+    n: StepIndex,
+    answer: &Labelled<String>,
+) {
+    run.track.held = Held::Nothing;
+    fx.push(RunEffect::Glow(cua_desktop::GlowState::Working));
+    if answer.value == FORCED_YES {
+        fx.push(RunEffect::Record(Box::new(CuaRecord::Confirmed {
+            run: run.id.clone(),
+            n,
+            by: ConfirmBy::ShellPrompt,
+        })));
+        run.track.authorised = AuthorisedBy::User;
+        act(run, fx, at, n);
+    } else {
+        end_head(run, fx, n, ActionResult::UserDeclined);
+    }
+}
+
+/// The head action ends without running, the rest of the batch with it, and the run looks again.
+fn end_head(run: &mut Run, fx: &mut Vec<RunEffect>, n: StepIndex, result: ActionResult) {
+    if let Some(head) = run.pending.actions.pop_front() {
+        action_ended(
+            run,
+            fx,
+            ActionOutcome {
+                action: head,
+                result,
+            },
+            None,
+        );
+    }
+    drop_rest(run);
+    observe(run, fx, next(n), FrameWant::Now, AlsoContext::No);
 }
 
 pub(super) fn answered(
     run: &mut Run,
     fx: &mut Vec<RunEffect>,
+    at: Stamp,
     question: QuestionId,
     answer: Labelled<String>,
 ) {
@@ -150,6 +227,10 @@ pub(super) fn answered(
         return;
     };
     if question != asked {
+        return;
+    }
+    if run.track.held != Held::Nothing {
+        held_answer(run, fx, at, n, &answer);
         return;
     }
     let action = run
@@ -212,6 +293,9 @@ pub(super) fn verdict(run: &mut Run, fx: &mut Vec<RunEffect>, at: Stamp, answer:
                     by,
                 })));
                 run.track.authorised = AuthorisedBy::User;
+            } else if let Some(why) = sensitive_head(run) {
+                hold(run, fx, n, why);
+                return;
             }
             act(run, fx, at, n);
         }
@@ -224,19 +308,7 @@ pub(super) fn verdict(run: &mut Run, fx: &mut Vec<RunEffect>, at: Stamp, answer:
                 CallRefusal::Unconfirmed(_) => ActionResult::UserDeclined,
                 other => ActionResult::Refused(Refusal::Gate(other)),
             };
-            if let Some(head) = run.pending.actions.pop_front() {
-                action_ended(
-                    run,
-                    fx,
-                    ActionOutcome {
-                        action: head,
-                        result,
-                    },
-                    None,
-                );
-            }
-            drop_rest(run);
-            observe(run, fx, next(n), FrameWant::Now, AlsoContext::No);
+            end_head(run, fx, n, result);
         }
     }
 }

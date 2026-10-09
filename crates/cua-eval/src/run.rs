@@ -1,6 +1,6 @@
 //! One task played to its end against one model, and what is kept of it.
 
-use crate::gate::{EvalGate, GateLog, GateNote, Ruling};
+use crate::gate::{EvalGate, GateLog, GateNote, Person, Ruling};
 use crate::stage::{Exposure, Stage};
 use crate::surface::{Surface, SurfaceDef, SurfaceError};
 use crate::task::TaskDef;
@@ -14,8 +14,9 @@ use cua_bus::{
 use cua_desktop::{BackendCaps, BackendKind, Stamp, ToplevelIdent};
 use cua_fake::{FakeA11y, FixedClock, MemoryEvents};
 use cua_run::{
-    Clock, Collected, CuaConfig, CuaModel, CuaModelError, CuaSignal, Exec, FrameAttachment, Run,
-    RunEffect, RunEnv, RunInput, Seam, SettleWatch, StepEvent, StepSink,
+    Clock, Collected, CuaConfig, CuaModel, CuaModelError, CuaSignal, Exec, FORCED_NO, FORCED_YES,
+    FrameAttachment, Held, Run, RunEffect, RunEnv, RunInput, Seam, SettleWatch, StepEvent,
+    StepSink,
 };
 use docket_core::RunMode;
 use porter_core::{AppName, Count, MicroUsd, UnixSeconds};
@@ -27,6 +28,7 @@ use prov::{
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeSet, VecDeque};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::Instant;
 
 /// The most inputs a run takes before the eval gives up on it.
@@ -233,6 +235,8 @@ pub struct Arena {
     log: GateLog,
     clock: EvalClock,
     task: TaskDef,
+    /// How many questions the run forced for a sensitive window and the eval's person answered.
+    forced: AtomicU32,
 }
 
 impl Arena {
@@ -251,6 +255,7 @@ impl Arena {
                 UnixSeconds(1_700_000_000),
             ))),
             task: task.clone(),
+            forced: AtomicU32::new(0),
         })
     }
 
@@ -386,12 +391,25 @@ async fn drive<M: CuaModel + 'static>(
         while let Some(effect) = effects.pop_front() {
             exec.carry_out(effect, Some(&mut *model), &mut out).await;
         }
-        if out
-            .signals
-            .drain(..)
-            .any(|s| matches!(s, CuaSignal::AskUser(..)))
-        {
-            return Ended::Asked;
+        let asked = out.signals.drain(..).find_map(|s| match s {
+            CuaSignal::AskUser(id, _) => Some(id),
+            _ => None,
+        });
+        if let Some(id) = asked {
+            if run.track.held == Held::Nothing {
+                return Ended::Asked;
+            }
+            // The run asked for a sensitive window: the person answers as in every
+            // confirmation of the task.
+            arena.forced.fetch_add(1, Ordering::Relaxed);
+            let answer = match arena.task.person {
+                Person::Approves => FORCED_YES,
+                Person::Declines => FORCED_NO,
+            };
+            out.inputs.push_back(RunInput::UserAnswer(
+                id,
+                Labelled::new(answer.to_owned(), Label::trusted_user()),
+            ));
         }
         let input = match out.inputs.pop_front() {
             Some(input) => input,
@@ -465,9 +483,14 @@ fn record(
         .iter()
         .filter(|r| matches!(r, CuaRecord::Asked { .. }))
         .count();
+    let forced = arena.forced.load(Ordering::Relaxed);
     let asks = Asks {
-        gate: u32::try_from(log.iter().filter(|g| g.person.is_some()).count()).unwrap_or(u32::MAX),
-        model: u32::try_from(model_asks).unwrap_or(u32::MAX),
+        gate: u32::try_from(log.iter().filter(|g| g.person.is_some()).count())
+            .unwrap_or(u32::MAX)
+            .saturating_add(forced),
+        model: u32::try_from(model_asks)
+            .unwrap_or(u32::MAX)
+            .saturating_sub(forced),
     };
     let evidence = Evidence {
         ended,

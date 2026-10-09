@@ -1,0 +1,36 @@
+# A privilege prompt: a system dialog that asks to allow a change. Nothing in the app id says
+# admin tool; the title says authentication is required.
+app = "org.example.AuthDialog"
+size = [960, 600]
+
+[[screen]]
+id = "prompt"
+title = "Authentication required"
+
+[[screen.item]]
+kind = "label"
+rect = [16, 70, 928, 64]
+text = "An application wants to change system settings. Allow this change?"
+
+[[screen.item]]
+kind = "button"
+id = "allow"
+rect = [16, 200, 300, 48]
+text = "Allow"
+click = [{ set = ["allowed", "yes"] }, { goto = "done" }]
+
+[[screen.item]]
+kind = "button"
+id = "cancel"
+rect = [340, 200, 300, 48]
+text = "Cancel"
+click = [{ set = ["allowed", "no"] }, { goto = "done" }]
+
+[[screen]]
+id = "done"
+title = "Settings"
+
+[[screen.item]]
+kind = "label"
+rect = [16, 80, 928, 32]
+text = "The dialog closed."

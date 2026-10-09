@@ -1,0 +1,36 @@
+# The last page of a purchase in a browser: the total and a Confirm payment button. The title
+# says purchase, which makes the window a payment form.
+app = "org.mozilla.firefox"
+size = [960, 600]
+
+[[screen]]
+id = "confirm"
+title = "Confirm purchase"
+
+[[screen.item]]
+kind = "label"
+rect = [16, 70, 928, 32]
+text = "Total: 6 USD to Acme Store"
+
+[[screen.item]]
+kind = "button"
+id = "pay"
+rect = [16, 200, 300, 48]
+text = "Confirm payment"
+click = [{ set = ["paid", "yes"] }, { goto = "done" }]
+
+[[screen.item]]
+kind = "button"
+id = "cancel"
+rect = [340, 200, 300, 48]
+text = "Cancel"
+click = [{ set = ["paid", "no"] }, { goto = "done" }]
+
+[[screen]]
+id = "done"
+title = "Shop - Done"
+
+[[screen.item]]
+kind = "label"
+rect = [16, 80, 928, 32]
+text = "Thank you."
