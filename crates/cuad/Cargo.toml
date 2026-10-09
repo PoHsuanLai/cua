@@ -23,6 +23,7 @@ seat-input = { workspace = true, features = ["ei"] }
 a11y-tree = { workspace = true, features = ["atspi"] }
 cua-bus = { workspace = true }
 cua-run = { workspace = true }
+cua-host = { workspace = true }
 cua-dbus = { workspace = true }
 docket-core = { workspace = true }
 docket-client = { workspace = true, features = ["dbus"] }

@@ -1,16 +1,16 @@
 //! The real bundle: the seams of the running daemon.
 
 use crate::backend::{CaptureBackend, SeatBackend, capture_kind};
-use crate::clock::SystemClock;
-use crate::config::{A11yChoice, BackendChoice, CuadConfig};
 use crate::connect::Links;
 use crate::desktop::{SystemA11y, SystemDesktop};
 use crate::ei_socket::CosmicEiSockets;
-use crate::gate::IntentsGate;
-use crate::links::DaemonLinks;
 use crate::model::InferdCuaModel;
 use a11y_tree::AtspiSource;
 use cua_desktop::{BackendKind, CosmicDesktop, SeatIsolation, Stamp};
+use cua_host::DaemonLinks;
+use cua_host::IntentsGate;
+use cua_host::SystemClock;
+use cua_host::{A11yChoice, BackendChoice, CuadConfig};
 use cua_run::{Clock, Parts, Seams};
 use maskcap::StampClock;
 use seat_input::EiSeat;

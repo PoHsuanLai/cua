@@ -3,8 +3,7 @@
 //! the inode by rename), a 30 ms debounce, then the whole file is read again through the lenient
 //! reader.
 
-use super::read::Loaded;
-use super::{CuaSettings, Locator, SETTINGS_FILE};
+use cua_host::{CuaSettings, Loaded, Locator, SETTINGS_FILE, SettingsFeed};
 use notify::{RecommendedWatcher, RecursiveMode, Watcher};
 use std::ffi::OsStr;
 use std::time::Duration;
@@ -86,6 +85,12 @@ async fn settle(
         if out.send(locator.read(&base)).is_err() {
             return;
         }
+    }
+}
+
+impl SettingsFeed for SettingsWatch {
+    async fn changed(&mut self) -> Option<Loaded> {
+        SettingsWatch::changed(self).await
     }
 }
 

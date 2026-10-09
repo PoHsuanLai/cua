@@ -6,15 +6,15 @@
 //! is derived from the connection: the well-known names the sender owns (`CallerNames`), never
 //! anything in a body.
 
-use crate::callers::CallerNames;
-use crate::drive::Drivable;
-use crate::supervisor::Supervisor;
 use cua_bus::{
     CuaCaller, CuaEnvelope, CuaMember, CuaTask, CuaVocab, QuestionId, WindowBody, backend_wire,
     modes_wire, slug_of,
 };
 use cua_dbus::{CUA_PATH, CuaError, run_path};
 use cua_desktop::{Desktop, WindowTitle};
+use cua_host::CallerNames;
+use cua_host::Drivable;
+use cua_host::Supervisor;
 use cua_run::mode_support;
 use docket_core::RunMode;
 use prov::{Label, Labelled, RunId};
@@ -175,7 +175,7 @@ impl<S: Drivable> RunObject<S> {
         Ok(self.supervisor.control(caller, &self.id, member).await?)
     }
 
-    fn view(&self) -> fdo::Result<crate::events::RunView> {
+    fn view(&self) -> fdo::Result<cua_host::RunView> {
         self.supervisor
             .view(&self.id)
             .ok_or_else(|| fdo::Error::UnknownObject("the run is over".into()))

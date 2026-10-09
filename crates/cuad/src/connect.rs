@@ -2,10 +2,10 @@
 //! (`Intents1`) for the gate and the message path, memoryd (`Memory1`) for the event log and
 //! inferd (`Inference1`) for the model.
 
-use crate::gate::IntentsGate;
-use crate::links::DaemonLinks;
 use crate::model::InferdCuaModel;
 use almanac_client::Memory;
+use cua_host::DaemonLinks;
+use cua_host::IntentsGate;
 use docket_client::Intents;
 use porter_core::Tier;
 use zbus::Connection;

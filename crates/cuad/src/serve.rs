@@ -2,16 +2,16 @@
 //! `org.quire.IntentProvider1` as `org.quire.Cua` with the one action `cua.run.start`.
 
 use crate::bus::{MANAGER_PATH, ManagerObject, RunObject, enveloped};
-use crate::drive::Drivable;
-use crate::events::SupervisorEvent;
 use crate::provider::{CuaProvider, ModeChoice, StartRequest};
-use crate::supervisor::Supervisor;
 use cua_bus::{
     AskBody, ControlRefusal, CuaCaller, CuaTask, ProcedureUse, ReportRoute, RunOrigin,
     SuccessCheck, TaskTarget,
 };
 use cua_dbus::{CUA_BUS, CUA_PATH, run_path};
 use cua_desktop::{Desktop, RunMode};
+use cua_host::Drivable;
+use cua_host::Supervisor;
+use cua_host::SupervisorEvent;
 use cua_run::{CuaSignal, choose_mode};
 use docket_client::{ContextSource, SummonTarget};
 use docket_core::{
@@ -360,7 +360,7 @@ pub async fn serve<S: Drivable>(supervisor: Supervisor<S>) -> Result<(), ServeEr
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::supervisor::mint_run_id;
+    use cua_host::mint_run_id;
 
     fn runs(ns: &[u64]) -> Vec<RunId> {
         ns.iter().copied().map(mint_run_id).collect()

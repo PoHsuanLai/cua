@@ -877,6 +877,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "cua-host"
+version = "0.1.0"
+dependencies = [
+ "a11y-tree",
+ "almanac-client",
+ "almanac-core",
+ "cua-action",
+ "cua-bus",
+ "cua-desktop",
+ "cua-run",
+ "docket-client",
+ "docket-core",
+ "maskcap",
+ "porter-core",
+ "prov",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+ "tokio",
+ "toml",
+]
+
+[[package]]
 name = "cua-parse"
 version = "0.1.0"
 source = "git+https://github.com/PoHsuanLai/stoker?rev=916da297d564e35cee9302d2d1e6607ae45962a7#916da297d564e35cee9302d2d1e6607ae45962a7"
@@ -949,6 +973,7 @@ dependencies = [
  "cua-dbus",
  "cua-desktop",
  "cua-fake",
+ "cua-host",
  "cua-run",
  "docket-client",
  "docket-core",

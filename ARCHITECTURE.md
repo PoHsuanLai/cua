@@ -32,7 +32,8 @@ picture), section 6 (copy the recipe).
 | `cua-fake` | test only: `FakeSeat`, `FakeEis`, `FakeCapture`, `FakeDesktop`, `FakeA11y`, `ScriptedModel`, `FakePdp`, `MemoryEvents`, `FixedClock`, `FakeSeams`, `run_harness`, and `scene` (a window, frames, a world, a task) | none (`FakeEis`: reis, tokio) |
 | `cua-eval` | the computer-use model eval (section 8): fake `surface`s drawn as pixels, a `Stage` shared by an `EvalSeat`, an `EvalCapture` and an `EvalDesktop`, a reference gate, `ScriptModel` (lines of moves) and `ProviderModel` (a model on a local engine, over stoker's `CuaSession`), `Corpus` (`eval/surfaces`, `eval/tasks`), verdicts, rates with Wilson bounds, the markdown report, and the `cua-eval` binary | the binary: files; `live`: loopback HTTP to an engine the caller started |
 | `cua-eval-cloud` | the eval against a hosted model (section 8): `InferdProvider` (a stoker `Provider` whose turns are inferd chat turns, `Need::Llm` with images on class `screen`), `request` (a stoker turn as an inferd `ChatRequest`), `Watch` (turns, tokens, a spend refusal), `isolation` (what this process can reach), and the `cua-eval-cloud` binary | the bus to inferd (the key stays in accountd) |
-| `cuad` | the daemon and its library: `SeatBackend`, `CaptureBackend`, `Supervisor` (a task per run), `IntentsGate`, `InferdCuaModel`, `DaemonLinks`, `Links` (the three daemon links over one connection), `CuaProvider` (`org.quire.Cua`), `guard`, `CallerNames`, `CuadConfig`, `SystemSeams`, `SystemDesktop`, `SystemA11y`, `WaylandPair`, `CosmicEiSockets`, `serve` and `serve_on`. The binary serves both bus names; the person's settings: `read` (lenient, per key), `Locator`, `SettingsWatch` (the directory watch on `cua/settings.toml`), `Supervisor::{settings, apps, apply_settings, follow}`, `SCHEMA` (`dist/settings/cua.settings.toml`), and `--write-schema` | everything |
+| `cua-host` | the run executor as a library: `Supervisor` (a task per run), `Drivable`, `SupervisorEvent`, `IntentsGate`, `DaemonLinks`, `record_of`, `guard`, `CallerNames`, `CuadConfig`, `SystemClock`, and the settings read from text: `read`, `Locator`, `SettingsFeed`, `SCHEMA`, `Supervisor::{settings, apps, apply_settings, follow}`. No backend, bus or file watch | docket-client and almanac-client without `dbus` |
+| `cuad` | the daemon and its library: `SeatBackend`, `CaptureBackend`, `InferdCuaModel`, `Links` (the three daemon links over one connection), `CuaProvider` (`org.quire.Cua`), `SystemSeams`, `SystemDesktop`, `SystemA11y`, `WaylandPair`, `CosmicEiSockets`, `serve` and `serve_on`. The binary serves both bus names; the person's settings: `SettingsWatch` (the directory watch on `cua/settings.toml`), `cua-host`'s names re-exported, `SCHEMA` (`dist/settings/cua.settings.toml`), and `--write-schema` | everything |
 
 Allowed direct edges between our own crates (checked by `scripts/check-boundary.sh`;
 dev-dependencies are outside it):
@@ -49,7 +50,8 @@ dev-dependencies are outside it):
 | `cua-fake` | `a11y-tree`, `cua-action`, `cua-bus`, `cua-desktop`, `cua-run`, `maskcap`, `seat-input`, `docket-core`, `prov`, `porter-core`, `porter-infer`, `model-replay`, `model-provider`, `cua-parse` |
 | `cua-eval` | `a11y-tree`, `cua-action`, `cua-bus`, `cua-desktop`, `cua-fake`, `cua-parse`, `cua-run`, `cua-session`, `cua-vendors`, `docket-core`, `maskcap`, `model-catalog`, `model-http`, `model-openai-compat`, `model-provider`, `porter-core`, `porter-infer`, `prov`, `seat-input`, `vision-prep` |
 | `cua-eval-cloud` | `cua-eval`, `model-catalog`, `model-provider`, `porter-client`, `porter-core`, `porter-infer`, `vision-prep` |
-| `cuad` | `a11y-tree`, `cua-bus`, `cua-dbus`, `cua-desktop`, `cua-run`, `maskcap`, `seat-input`, `docket-core`, `docket-client`, `prov`, `porter-core`, `porter-infer`, `porter-client`, `almanac-core`, `almanac-client` |
+| `cua-host` | `cua-bus`, `cua-desktop`, `cua-run`, `docket-core`, `docket-client`, `prov`, `porter-core`, `almanac-core`, `almanac-client` |
+| `cuad` | `a11y-tree`, `cua-bus`, `cua-dbus`, `cua-host`, `cua-desktop`, `cua-run`, `maskcap`, `seat-input`, `docket-core`, `docket-client`, `prov`, `porter-core`, `porter-infer`, `porter-client`, `almanac-core`, `almanac-client` |
 
 The edges differ from SPEC 1.3 in one way, forced by its own types: `seat-input`, `maskcap` and
 `a11y-tree` take `cua-desktop` as their base (a lease, a stamp, a seat's isolation and who masks
@@ -82,7 +84,8 @@ only; the pure set never reaches an effect crate; `wayland-client` is behind the
 | `cua-fake` | `clock`, `seat`, `eis`, `capture`, `desktop`, `a11y`, `model`, `gate`, `events`, `harness`, `scene` |
 | `cua-eval` | `surface/{def, state, render}`, `keys`, `stage`, `world`, `gate`, `script`, `task`, `corpus`, `verdict`, `run`, `eval`, `metrics`, `report`, `live`, `main` |
 | `cua-eval-cloud` | `watch`, `request`, `entry`, `isolation`, `provider`, `main` |
-| `cuad` | `clock`, `config`, `callers`, `guard`, `backend`, `gate`, `model`, `links`, `connect`, `provider`, `settings` (`keys`, `apps`, `read`, `locate`, `watch`) < `supervisor`, `drive`, `events`, `bus`, `desktop`, `ei_socket`, `system`, `serve` |
+| `cua-host` | `lock`, `clock`, `config`, `callers`, `guard`, `gate`, `links`, `settings` (`keys`, `apps`, `read`, `locate`) < `supervisor`, `drive`, `events` |
+| `cuad` | `backend`, `model`, `connect`, `provider`, `watch` < `bus`, `desktop`, `ei_socket`, `system`, `serve` |
 
 ## 3. One home per concept
 

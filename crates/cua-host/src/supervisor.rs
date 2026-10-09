@@ -4,7 +4,7 @@ use crate::config::CuadConfig;
 use crate::drive::{Drivable, LiveRun, Shared, drive};
 use crate::events::{RunView, SupervisorEvent};
 use crate::guard::guard;
-use crate::settings::{Apps, CuaSettings, Loaded, SettingsWatch};
+use crate::settings::{Apps, CuaSettings, Loaded, SettingsFeed};
 use cua_bus::{
     BudgetBody, ControlRefusal, CuaCaller, CuaMember, CuaTask, ModeSupport, QuestionId, TaskTarget,
 };
@@ -134,7 +134,7 @@ impl<S: Seams> Supervisor<S> {
     }
 
     /// Waits for the next change of the settings file and applies it; `None` when the watch ended.
-    pub async fn follow(&self, watch: &mut SettingsWatch) -> Option<Loaded> {
+    pub async fn follow(&self, watch: &mut impl SettingsFeed) -> Option<Loaded> {
         let loaded = watch.changed().await?;
         for line in loaded.lines("cuad") {
             eprintln!("{line}");

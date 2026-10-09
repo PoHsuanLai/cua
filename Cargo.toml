@@ -7,6 +7,7 @@ members = [
   "crates/a11y-tree",
   "crates/cua-bus",
   "crates/cua-run",
+  "crates/cua-host",
   "crates/cua-dbus",
   "crates/cua-fake",
   "crates/cuad",
@@ -30,6 +31,7 @@ maskcap               = { path = "crates/maskcap" }
 cua-desktop           = { path = "crates/cua-desktop" }
 cua-bus               = { path = "crates/cua-bus" }
 cua-run               = { path = "crates/cua-run" }
+cua-host              = { path = "crates/cua-host" }
 cua-dbus              = { path = "crates/cua-dbus" }
 cua-fake              = { path = "crates/cua-fake" }
 cua-eval              = { path = "crates/cua-eval" }
@@ -60,13 +62,13 @@ porter-client   = { git = "https://github.com/PoHsuanLai/porter", rev = "55d1ade
 
 # almanac's frozen interfaces: cuad records `CuaRecord`s as `EventBody::Area` through memoryd.
 almanac-core    = { git = "https://github.com/PoHsuanLai/almanac", rev = "ccf5a9d28956c9eb25df58257f55e4d4159f81e7" }
-almanac-client  = { git = "https://github.com/PoHsuanLai/almanac", rev = "ccf5a9d28956c9eb25df58257f55e4d4159f81e7" }
+almanac-client  = { git = "https://github.com/PoHsuanLai/almanac", rev = "ccf5a9d28956c9eb25df58257f55e4d4159f81e7", default-features = false }
 
 # docket's frozen interfaces: the gate contract (`CuaAsk`, `GateAnswer`, `RunMode`,
 # `WindowTrust`), the message draft and the provider trait. docket sits below cua and has no cua
 # dependency.
 docket-core     = { git = "https://github.com/PoHsuanLai/docket", rev = "abbb62ccae1d988dfaf04b50176e7e943bf43b5a" }
-docket-client   = { git = "https://github.com/PoHsuanLai/docket", rev = "abbb62ccae1d988dfaf04b50176e7e943bf43b5a" }
+docket-client   = { git = "https://github.com/PoHsuanLai/docket", rev = "abbb62ccae1d988dfaf04b50176e7e943bf43b5a", default-features = false }
 
 # Dev-dependencies of cuad's tests only: a real intentd on a private bus over docket's fakes, and
 # a real memory service over almanac's fakes. Nothing outside `[dev-dependencies]` names them.

@@ -24,45 +24,29 @@
 
 mod backend;
 mod bus;
-mod callers;
-mod clock;
-mod config;
 mod connect;
 mod desktop;
-mod drive;
 mod ei_socket;
-mod events;
 mod frame_fd;
-mod gate;
-mod guard;
-mod links;
-mod lock;
 mod model;
 mod provider;
 mod serve;
-mod settings;
-mod supervisor;
 mod system;
+mod watch;
 
 pub use backend::{CaptureBackend, CaptureKind, CaptureSessionKind, SeatBackend, capture_kind};
-pub use callers::CallerNames;
-pub use clock::SystemClock;
-pub use config::{A11yChoice, BackendChoice, ConfigError, CuadConfig};
 pub use connect::Links;
+pub use cua_host::{
+    A11yChoice, AppAllow, AppRule, Apps, BackendChoice, CallerNames, ConfigError, CuaSettings,
+    CuadConfig, DaemonLinks, Drivable, Fallback, IntentsCheck, IntentsGate, Loaded, Locator,
+    RecordContext, RecordError, RunView, SCHEMA, SETTINGS_FILE, SettingsFeed, Supervisor,
+    SupervisorEvent, SystemClock, Why, guard, is_browser, mint_run_id, read, record_of,
+};
 pub use desktop::{SystemA11y, SystemDesktop};
-pub use drive::Drivable;
 pub use ei_socket::{CosmicEiSockets, EI_BUS_NAME, EI_INTERFACE, EI_PATH, OSK_NAME};
-pub use events::{RunView, SupervisorEvent};
 pub use frame_fd::{FrameFdError, frame_fd};
-pub use gate::{IntentsCheck, IntentsGate};
-pub use guard::guard;
-pub use links::{DaemonLinks, RecordContext, RecordError, record_of};
 pub use model::InferdCuaModel;
 pub use provider::{CuaProvider, ModeChoice, ProviderError, StartRequest, manifest_for};
 pub use serve::{ServeError, Serving, serve, serve_on};
-pub use settings::{
-    AppAllow, AppRule, Apps, CuaSettings, DEBOUNCE, Fallback, Loaded, Locator, SCHEMA,
-    SETTINGS_FILE, SettingsWatch, WatchState, Why, is_browser, read,
-};
-pub use supervisor::{Supervisor, mint_run_id};
 pub use system::{SystemSeams, WaylandPair};
+pub use watch::{DEBOUNCE, SettingsWatch, WatchState};

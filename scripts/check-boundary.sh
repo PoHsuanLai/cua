@@ -23,6 +23,9 @@ RULES=(
   "a11y-tree: $EFFECTS"
   "cua-bus: $EFFECTS"
   "cua-run: $EFFECTS"
+  # The run executor as a library: a runtime and the docket/almanac client traits, but no bus
+  # (their `dbus` features are the daemon's), no backend and no file watcher.
+  "cua-host: zbus zvariant reqwest hyper hyper-util rustls pipewire wayland-client wayland-backend wayland-server reis atspi oo7 ort fastembed rusqlite notify rmcp cedar-policy"
   # zbus (with its tokio feature) lives in cua-dbus; no wayland, no EIS, no accessibility stack.
   "cua-dbus: reqwest hyper hyper-util rustls pipewire wayland-client wayland-backend wayland-server reis atspi oo7 ort fastembed rusqlite notify rmcp cedar-policy"
   # The fakes reach reis (the in-process EIS server) and, through model-replay, an HTTP stack;
@@ -101,11 +104,12 @@ EDGES=(
   "a11y-tree: cua-action cua-desktop porter-core prov"
   "cua-bus: a11y-tree almanac-core cua-action cua-desktop docket-core maskcap porter-core porter-infer prov seat-input"
   "cua-run: a11y-tree cua-action cua-bus cua-desktop docket-core maskcap porter-core porter-infer prov seat-input"
+  "cua-host: a11y-tree almanac-client almanac-core cua-bus cua-desktop cua-run docket-client docket-core maskcap porter-core prov"
   "cua-dbus: cua-bus prov"
   "cua-fake: a11y-tree cua-action cua-bus cua-desktop cua-parse cua-run docket-core maskcap model-provider model-replay porter-core porter-infer prov seat-input"
   "cua-eval: a11y-tree cua-action cua-bus cua-desktop cua-fake cua-parse cua-run cua-session cua-vendors docket-core maskcap model-catalog model-http model-openai-compat model-provider porter-core porter-infer prov seat-input vision-prep"
   "cua-eval-cloud: cua-eval model-catalog model-provider porter-client porter-core porter-infer vision-prep"
-  "cuad: a11y-tree almanac-client almanac-core cua-bus cua-dbus cua-desktop cua-run docket-client docket-core maskcap porter-client porter-core porter-infer prov seat-input"
+  "cuad: a11y-tree almanac-client almanac-core cua-bus cua-dbus cua-desktop cua-host cua-run docket-client docket-core maskcap porter-client porter-core porter-infer prov seat-input"
 )
 for edge in "${EDGES[@]}"; do
   crate="${edge%%:*}"
