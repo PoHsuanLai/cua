@@ -244,7 +244,7 @@ fn a_click_on_a_commit_control_in_a_form_window_is_outbound() {
         let want = if commits {
             outbound(class)
         } else {
-            plain.clone()
+            plain(class)
         };
         let node = named(role, name);
         assert_eq!(
