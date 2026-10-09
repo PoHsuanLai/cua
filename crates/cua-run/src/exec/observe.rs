@@ -45,9 +45,10 @@ impl Staged {
 
 fn absence_of(error: &A11yError) -> TreeAbsence {
     match error {
-        A11yError::NoBus | A11yError::NotExposed | A11yError::Protocol(_) => {
-            TreeAbsence::NotExposed
-        }
+        A11yError::NoBus
+        | A11yError::NotExposed
+        | A11yError::Protocol(_)
+        | A11yError::BackendUnavailable => TreeAbsence::NotExposed,
         A11yError::NoMatchingWindow | A11yError::Gone => TreeAbsence::NoMatch,
         A11yError::Timeout => TreeAbsence::Timeout,
     }

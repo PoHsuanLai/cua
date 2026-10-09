@@ -69,6 +69,7 @@ fn a_target_and_every_error_round_trip() {
         A11yError::Timeout,
         A11yError::Gone,
         A11yError::Protocol("bad reply".into()),
+        A11yError::BackendUnavailable,
     ] {
         round_trip(&error);
     }

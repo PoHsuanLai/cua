@@ -36,6 +36,9 @@ pub enum CaptureError {
     /// The compositor's answer did not follow the protocol.
     #[error("protocol: {0}")]
     Protocol(String),
+    /// The capture path is declared but not built yet.
+    #[error("this capture path is not built")]
+    BackendUnavailable,
 }
 
 /// Opens capture sessions on a leased window.

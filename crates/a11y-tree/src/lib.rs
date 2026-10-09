@@ -6,8 +6,8 @@
 //! sensitive controls) are never rendered and their rectangles ([`secret_rects`]) become mask
 //! hints for `maskcap`.
 //!
-//! Pure by default. The `atspi` feature is the AT-SPI backend ([`AtspiSource`]); its body is
-//! `todo!()` until Spike E's measurements are built.
+//! Pure by default. The `atspi` feature is the AT-SPI backend ([`AtspiSource`]); its body answers
+//! [`A11yError::BackendUnavailable`] until Spike E's measurements are built.
 
 #[cfg(feature = "atspi")]
 mod atspi;

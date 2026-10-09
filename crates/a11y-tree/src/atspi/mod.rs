@@ -34,9 +34,9 @@ impl A11ySource for AtspiSource {
         target: &A11yTarget,
         budget: NodeBudget,
     ) -> Result<A11ySnapshot, A11yError> {
+        // Not built: find the window by pid and title, walk the tree breadth-first to the
+        // budget, parse roles, states, bounds (screen to window-local) and actions.
         let _ = (target, budget);
-        todo!(
-            "find the window by pid and title, walk the tree breadth-first to the budget, parse roles, states, bounds (screen to window-local) and actions"
-        )
+        Err(A11yError::BackendUnavailable)
     }
 }

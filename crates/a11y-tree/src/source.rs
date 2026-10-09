@@ -42,6 +42,9 @@ pub enum A11yError {
     /// The bus's answer did not follow the protocol.
     #[error("protocol: {0}")]
     Protocol(String),
+    /// The backend is declared but not built yet.
+    #[error("the accessibility backend is not built")]
+    BackendUnavailable,
 }
 
 /// Takes accessibility snapshots.

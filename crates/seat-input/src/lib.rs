@@ -5,8 +5,7 @@
 //! [`InputReceipt`]. Window-local points map to the EI region in the `region` module (its `GlobalPoint` is named nowhere else):
 //! the identity on the fork, the window origin plus the point on stock.
 //!
-//! Pure by default. The `ei` feature is the reis client ([`EiSeat`]); its bodies are `todo!()`
-//! until Spike A's handshake is built against the fake EIS server.
+//! Pure by default. The `ei` feature is the reis client ([`EiSeat`]).
 
 mod caps;
 #[cfg(feature = "ei")]

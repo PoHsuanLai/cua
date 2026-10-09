@@ -32,7 +32,7 @@ pub struct StockToplevelCapture {
 
 /// Capture through the lease's `get_capture_source`: the compositor masks before the buffer
 /// leaves. Not built: it needs casement's agent socket (P2-Q2, `Compositor1.Connect("agent")`),
-/// which does not exist yet; `open` is `todo!()` until then.
+/// which does not exist yet; `open` answers [`CaptureError::BackendUnavailable`] until then.
 #[derive(Debug)]
 pub struct QuireMaskedCapture {
     connection: Connection,
@@ -107,10 +107,10 @@ impl WindowCapture for QuireMaskedCapture {
     type Session = WaylandSession;
 
     async fn open(&self, lease: &LeaseGrant) -> Result<WaylandSession, CaptureError> {
+        // Not built: needs casement's agent socket (P2-Q2): lease.get_capture_source,
+        // create_session over it, set_mask_hints before each frame.
         let _ = (lease, &self.connection);
-        todo!(
-            "needs casement's agent socket (P2-Q2): lease.get_capture_source, create_session over it, set_mask_hints before each frame"
-        )
+        Err(CaptureError::BackendUnavailable)
     }
 }
 

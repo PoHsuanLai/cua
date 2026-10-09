@@ -251,3 +251,15 @@ async fn two_sessions_share_one_connection() {
     assert_eq!(fa.unwrap().pixels.size, DeviceSize { w: 4, h: 3 });
     assert_eq!(fb.unwrap().pixels.size, DeviceSize { w: 2, h: 2 });
 }
+
+#[tokio::test]
+async fn the_compositor_masked_path_answers_unavailable_until_it_is_built() {
+    let mut server = FakeCompositor::start(Vec::new());
+    let masked = maskcap::QuireMaskedCapture::over(
+        Connection::from_socket(server.client()).expect("connect"),
+    );
+    assert_eq!(
+        masked.open(&grant("w1")).await.err(),
+        Some(CaptureError::BackendUnavailable)
+    );
+}
