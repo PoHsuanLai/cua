@@ -35,7 +35,10 @@ pub fn classify_effect(
     if commits_in(action, node, class) {
         return (Effect::Outbound, EffectBasis::WindowClass(class));
     }
-    (default, EffectBasis::DefaultTable)
+    match class {
+        WindowClass::Ordinary => (default, EffectBasis::DefaultTable),
+        _ => (default, EffectBasis::WindowClass(class)),
+    }
 }
 
 /// A click in a form window (mail compose, payments, banking) on a commit control

@@ -180,7 +180,25 @@ fn classify_effect_table() {
             name: "click in a terminal is not typing",
             action: click(),
             class: Terminal,
-            want: (Effect::UndoableWrite, EffectBasis::DefaultTable),
+            want: (Effect::UndoableWrite, EffectBasis::WindowClass(Terminal)),
+        },
+        Row {
+            name: "a click in a password manager names the class",
+            action: click(),
+            class: WindowClass::PasswordManager,
+            want: (
+                Effect::UndoableWrite,
+                EffectBasis::WindowClass(WindowClass::PasswordManager),
+            ),
+        },
+        Row {
+            name: "a key in an admin tool names the class",
+            action: enter(),
+            class: WindowClass::Admin,
+            want: (
+                Effect::UndoableWrite,
+                EffectBasis::WindowClass(WindowClass::Admin),
+            ),
         },
     ];
     for row in rows {
@@ -205,7 +223,10 @@ fn a_click_on_a_commit_control_in_a_form_window_is_outbound() {
     use WindowClass::{Banking, MailCompose, Ordinary, Payments, Terminal};
     let named = |role, name: &str| secret_node(1, role, name, Sensitivity::Normal, "");
     let outbound = |class| (Effect::Outbound, EffectBasis::WindowClass(class));
-    let plain = (Effect::UndoableWrite, EffectBasis::DefaultTable);
+    let plain = |class| match class {
+        Ordinary => (Effect::UndoableWrite, EffectBasis::DefaultTable),
+        _ => (Effect::UndoableWrite, EffectBasis::WindowClass(class)),
+    };
     let rows = [
         ("Send", Role::Button, MailCompose, true),
         ("Pay now", Role::Button, Payments, true),
@@ -237,7 +258,7 @@ fn a_click_on_a_commit_control_in_a_form_window_is_outbound() {
         outbound(Payments),
         "a click on an unknown node in a payment form might be the commit"
     );
-    assert_eq!(classify_effect(&click(), None, Ordinary), plain);
+    assert_eq!(classify_effect(&click(), None, Ordinary), plain(Ordinary));
 }
 
 #[test]
