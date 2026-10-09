@@ -201,6 +201,46 @@ fn classify_effect_table() {
 }
 
 #[test]
+fn a_click_on_a_commit_control_in_a_form_window_is_outbound() {
+    use WindowClass::{Banking, MailCompose, Ordinary, Payments, Terminal};
+    let named = |role, name: &str| secret_node(1, role, name, Sensitivity::Normal, "");
+    let outbound = |class| (Effect::Outbound, EffectBasis::WindowClass(class));
+    let plain = (Effect::UndoableWrite, EffectBasis::DefaultTable);
+    let rows = [
+        ("Send", Role::Button, MailCompose, true),
+        ("Pay now", Role::Button, Payments, true),
+        ("Confirm transfer", Role::Button, Banking, true),
+        ("Submit order", Role::Link, Payments, true),
+        ("Send & close", Role::MenuItem, MailCompose, true),
+        ("Back", Role::Button, Payments, false),
+        ("Discard", Role::Button, MailCompose, false),
+        ("Sender", Role::Button, MailCompose, false),
+        ("Send", Role::Entry, MailCompose, false),
+        ("Send", Role::Button, Ordinary, false),
+        ("Send", Role::Button, Terminal, false),
+    ];
+    for (name, role, class, commits) in rows {
+        let want = if commits {
+            outbound(class)
+        } else {
+            plain.clone()
+        };
+        let node = named(role, name);
+        assert_eq!(
+            classify_effect(&click(), Some(&node), class),
+            want,
+            "{name} {role:?} {class:?}"
+        );
+    }
+    assert_eq!(
+        classify_effect(&click(), None, Payments),
+        outbound(Payments),
+        "a click on an unknown node in a payment form might be the commit"
+    );
+    assert_eq!(classify_effect(&click(), None, Ordinary), plain);
+}
+
+#[test]
 fn a_pay_button_on_screen_makes_an_untitled_window_a_payment_form() {
     let app = AppName::parse("org.mozilla.firefox").unwrap();
     let pay = secret_node(1, Role::Button, "Pay now", Sensitivity::Normal, "");
