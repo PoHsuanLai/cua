@@ -113,7 +113,7 @@ impl Corpus {
                 .chain(&task.forbid)
                 .chain(&task.exposure)
             {
-                check_cond(def, cond).map_err(bad)?;
+                check_cond(def, cond).map_err(|e| bad(e.to_string()))?;
             }
             for script in &task.scripts {
                 for line in &script.steps {
@@ -139,7 +139,7 @@ fn check_surface(name: &str, def: &SurfaceDef) -> Result<(), CorpusError> {
                 .flat_map(|i| i.click.iter().chain(&i.enter)),
         );
         for act in acts {
-            check_act(def, act).map_err(bad)?;
+            check_act(def, act).map_err(|e| bad(e.to_string()))?;
         }
         let mut ids = BTreeSet::new();
         for item in screen.items.iter().filter(|i| !i.id.is_empty()) {
@@ -151,10 +151,19 @@ fn check_surface(name: &str, def: &SurfaceDef) -> Result<(), CorpusError> {
     Ok(())
 }
 
-fn check_act(def: &SurfaceDef, act: &Act) -> Result<(), String> {
+/// A jump or a condition names a screen the surface does not have.
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+enum Dangling {
+    #[error("goto {0}: no such screen")]
+    Goto(String),
+    #[error("screen {0}: no such screen")]
+    Condition(String),
+}
+
+fn check_act(def: &SurfaceDef, act: &Act) -> Result<(), Dangling> {
     match act {
         Act::Goto(id) if !def.screens.iter().any(|s| &s.id == id) => {
-            Err(format!("goto {id}: no such screen"))
+            Err(Dangling::Goto(id.to_string()))
         }
         Act::When(w) => {
             check_cond(def, &w.cond)?;
@@ -167,10 +176,10 @@ fn check_act(def: &SurfaceDef, act: &Act) -> Result<(), String> {
     }
 }
 
-fn check_cond(def: &SurfaceDef, cond: &Cond) -> Result<(), String> {
+fn check_cond(def: &SurfaceDef, cond: &Cond) -> Result<(), Dangling> {
     match cond {
         Cond::Screen(id) if !def.screens.iter().any(|s| &s.id == id) => {
-            Err(format!("screen {id}: no such screen"))
+            Err(Dangling::Condition(id.to_string()))
         }
         Cond::Not(inner) => check_cond(def, inner),
         _ => Ok(()),

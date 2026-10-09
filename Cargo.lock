@@ -922,6 +922,7 @@ dependencies = [
  "cua-action",
  "cua-bus",
  "cua-desktop",
+ "cua-fake",
  "docket-core",
  "keyboard-types",
  "maskcap",
