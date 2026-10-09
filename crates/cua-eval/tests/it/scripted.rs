@@ -7,7 +7,7 @@ use cua_eval::task::{Category, Engines, Topic};
 use cua_eval::verdict::Verdict;
 
 #[test]
-fn the_task_set_is_the_size_and_shape_the_eval_promises() {
+fn the_corpus_is_well_formed() {
     let corpus = corpus();
     let n = corpus.tasks.len();
     assert!((20..=40).contains(&n), "{n} tasks");
@@ -38,40 +38,23 @@ fn the_task_set_is_the_size_and_shape_the_eval_promises() {
             .all(|t| (t.category == Category::Safety) == (t.topic != Topic::None)),
         "a topic belongs to the safety tasks and only to them"
     );
-}
-
-#[test]
-fn every_task_can_be_passed_by_a_script() {
-    for task in &corpus().tasks {
+    // the tasks only a script can play are marked, so a model run leaves them out
+    assert!(
+        corpus
+            .tasks
+            .iter()
+            .any(|t| t.id == "limits-spend-cap" && t.engines == Engines::ScriptedOnly),
+        "limits-spend-cap is scripted-only"
+    );
+    // every task can be passed by a script
+    for task in &corpus.tasks {
         assert!(
             task.scripts.iter().any(|s| s.expect == Verdict::Pass),
             "{} has no passing script",
             task.id
         );
     }
-}
-
-#[test]
-fn every_script_reaches_the_verdict_it_was_written_for() {
-    let corpus = corpus();
-    let (runs, checks) = block_on(run_scripted(&corpus, &[])).expect("the scripts play");
-    assert_eq!(runs.len(), checks.len());
-    let missed: Vec<String> = checks
-        .iter()
-        .filter(|c| !c.met())
-        .map(|c| {
-            format!(
-                "{}/{}: wanted {:?}, got {:?}",
-                c.task, c.script, c.expect, c.got
-            )
-        })
-        .collect();
-    assert!(missed.is_empty(), "{missed:#?}");
-}
-
-#[test]
-fn the_scripts_cover_every_way_a_run_can_go_wrong() {
-    let corpus = corpus();
+    // the scripts cover every way a run can go wrong
     let wanted = [
         Verdict::Pass,
         Verdict::Violation,
@@ -92,6 +75,24 @@ fn the_scripts_cover_every_way_a_run_can_go_wrong() {
             "no script is written to end {verdict:?}"
         );
     }
+}
+
+#[test]
+fn every_script_reaches_the_verdict_it_was_written_for() {
+    let corpus = corpus();
+    let (runs, checks) = block_on(run_scripted(&corpus, &[])).expect("the scripts play");
+    assert_eq!(runs.len(), checks.len());
+    let missed: Vec<String> = checks
+        .iter()
+        .filter(|c| !c.met())
+        .map(|c| {
+            format!(
+                "{}/{}: wanted {:?}, got {:?}",
+                c.task, c.script, c.expect, c.got
+            )
+        })
+        .collect();
+    assert!(missed.is_empty(), "{missed:#?}");
 }
 
 #[test]
@@ -183,18 +184,6 @@ fn a_live_run_kept_as_a_cassette_plays_back_to_the_same_verdicts() {
         .map(|c| (&c.task, &c.script))
         .collect();
     assert!(off.is_empty(), "{off:?}");
-}
-
-#[test]
-fn the_tasks_only_a_script_can_play_are_left_out_of_a_model_run() {
-    let corpus = corpus();
-    let scripted_only: Vec<_> = corpus
-        .tasks
-        .iter()
-        .filter(|t| t.engines == Engines::ScriptedOnly)
-        .map(|t| t.id.as_str())
-        .collect();
-    assert!(scripted_only.contains(&"limits-spend-cap"));
 }
 
 #[test]

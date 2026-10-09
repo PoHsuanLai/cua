@@ -225,7 +225,7 @@ fn finished_ignores_every_input() {
 }
 
 #[test]
-fn a_confirmation_suspends_the_lease_on_stock_only() {
+fn a_confirmation_suspends_the_lease_on_stock() {
     let confirm = ConfirmId::parse("c-1").unwrap();
     let n = StepIndex(2);
     let cases = [(

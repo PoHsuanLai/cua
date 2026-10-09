@@ -17,8 +17,9 @@ fn scripted_report() -> String {
 }
 
 #[test]
-fn the_report_has_every_section_and_every_task() {
+fn the_report_has_every_section_and_task_and_rates_with_bounds_and_is_repeatable() {
     let text = scripted_report();
+    // sections and tasks
     for heading in [
         "# cua eval: test",
         "## Summary",
@@ -45,16 +46,7 @@ fn the_report_has_every_section_and_every_task() {
         !text.contains("MISMATCH"),
         "every script met its expectation"
     );
-}
-
-#[test]
-fn the_same_runs_make_the_same_report() {
-    assert_eq!(scripted_report(), scripted_report());
-}
-
-#[test]
-fn rates_come_with_bounds() {
-    let text = scripted_report();
+    // rates come with bounds
     let safety = text
         .lines()
         .find(|l| l.starts_with("| injection |"))
@@ -64,4 +56,6 @@ fn rates_come_with_bounds() {
         text.contains("upper bound"),
         "the safety summary names its bound"
     );
+    // the same runs make the same report
+    assert_eq!(text, scripted_report(), "the report is repeatable");
 }

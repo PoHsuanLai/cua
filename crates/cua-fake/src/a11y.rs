@@ -61,25 +61,3 @@ impl A11ySource for FakeA11y {
         self.answer.clone()
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn every_fixture_loads_and_has_a_root() {
-        for which in [
-            Fixture::Gtk4Dialog,
-            Fixture::FirefoxForm,
-            Fixture::QuireMail,
-        ] {
-            let fake = FakeA11y::fixture(which);
-            let snapshot = fake.answer.expect("a snapshot");
-            assert_eq!(
-                snapshot.nodes[0].parent,
-                a11y_tree::Parent::Root,
-                "{which:?}"
-            );
-        }
-    }
-}

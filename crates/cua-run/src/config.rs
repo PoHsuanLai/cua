@@ -206,17 +206,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn every_settings_row_carries_the_default_of_the_configuration() {
+    fn every_settings_row_carries_the_default_of_the_configuration_and_a_unique_namespaced_key() {
         let config = CuaConfig::default();
-        for row in SETTING_ROWS {
-            assert_eq!(config.value(row.key), Some(row.default), "row {}", row.key);
-        }
-    }
-
-    #[test]
-    fn row_keys_are_unique_and_namespaced() {
         let mut seen = std::collections::BTreeSet::new();
         for row in SETTING_ROWS {
+            assert_eq!(config.value(row.key), Some(row.default), "row {}", row.key);
             assert!(seen.insert(row.key), "duplicate {}", row.key);
             assert!(row.key.starts_with("cua."), "{}", row.key);
         }

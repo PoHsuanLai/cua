@@ -272,6 +272,11 @@ mod tests {
             let manifest = valid.manifest();
             assert_eq!(manifest.app.as_str(), "org.quire.Cua");
             assert_eq!(manifest.actions.len(), 1);
+            assert_eq!(
+                manifest.entities.len(),
+                1,
+                "{enabled:?}: no entity but the one"
+            );
             let start = &manifest.actions[0];
             assert_eq!(start.name.as_str(), "cua.run.start");
             assert_eq!(start.effect, Effect::Read);
@@ -290,11 +295,5 @@ mod tests {
         let reach = |enabled| manifest_for(enabled).unwrap().manifest().actions[0].reach;
         assert_eq!(reach(Enabled::Off), AgentReach::Hidden);
         assert_eq!(reach(Enabled::On), AgentReach::Offered);
-    }
-
-    #[test]
-    fn the_provider_offers_nothing_but_the_one_action() {
-        let provider = CuaProvider::new(Enabled::On).unwrap();
-        assert_eq!(provider.manifest().manifest().entities.len(), 1);
     }
 }

@@ -95,22 +95,18 @@ mod tests {
     use super::*;
 
     #[test]
-    fn stock_is_shared_seat_masked_by_cuad_and_guarded_by_suspending_input() {
-        let stock = BackendCaps::of(BackendKind::CosmicStock);
-        assert_eq!(stock.seat, SeatIsolation::SharedSeat);
-        assert_eq!(stock.masking, MaskWhere::Cuad);
-        assert_eq!(stock.consent, ConsentGuard::CuadSuspendsInput);
-        assert_eq!(stock.hidden, HiddenCapture::Renders);
-        assert_eq!(stock.glow, GlowDraw::ShellOnly);
-    }
-
-    #[test]
-    fn every_backend_is_a_shared_seat_masked_by_cuad() {
+    fn every_backend_is_a_shared_seat_masked_by_cuad_and_guarded_by_suspending_input() {
         for kind in [BackendKind::CosmicStock, BackendKind::KwinStock] {
             let caps = BackendCaps::of(kind);
             assert_eq!(caps.kind, kind);
             assert_eq!(caps.seat, SeatIsolation::SharedSeat, "{kind:?} seat");
             assert_eq!(caps.masking, MaskWhere::Cuad, "{kind:?} masking");
+            assert_eq!(
+                caps.consent,
+                ConsentGuard::CuadSuspendsInput,
+                "{kind:?} consent"
+            );
+            assert_eq!(caps.hidden, HiddenCapture::Renders, "{kind:?} hidden");
             assert_eq!(caps.glow, GlowDraw::ShellOnly, "{kind:?} glow");
         }
     }

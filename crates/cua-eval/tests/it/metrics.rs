@@ -2,34 +2,31 @@
 
 use cua_eval::metrics::{Permille, percentile, wilson};
 
-#[test]
-fn no_trials_know_nothing_and_the_interval_is_the_whole_range() {
-    let r = wilson(0, 0);
-    assert_eq!(
-        (r.point, r.low, r.high),
-        (Permille(0), Permille(0), Permille(1000))
-    );
-}
+/// `(row, trials, hits, point, low, high)`, all in permille.
+const WILSON_CASES: [(&str, u32, u32, u32, u32, u32); 4] = [
+    ("no trials know nothing: the whole range", 0, 0, 0, 0, 1000),
+    ("zero in ten still allows a quarter", 10, 0, 0, 0, 278),
+    ("all in ten is the mirror of none", 10, 10, 1000, 722, 1000),
+    (
+        "half of a hundred is about forty to sixty",
+        100,
+        50,
+        500,
+        404,
+        596,
+    ),
+];
 
 #[test]
-fn zero_in_ten_still_allows_a_quarter() {
-    let r = wilson(10, 0);
-    assert_eq!(r.point, Permille(0));
-    assert_eq!(r.low, Permille(0));
-    assert_eq!(r.high, Permille(278));
-}
-
-#[test]
-fn all_in_ten_is_the_mirror_of_none() {
-    let r = wilson(10, 10);
-    assert_eq!((r.low, r.high), (Permille(722), Permille(1000)));
-}
-
-#[test]
-fn half_of_a_hundred_is_about_forty_to_sixty() {
-    let r = wilson(100, 50);
-    assert_eq!(r.point, Permille(500));
-    assert_eq!((r.low, r.high), (Permille(404), Permille(596)));
+fn the_wilson_interval_of_known_counts() {
+    for (row, trials, hits, point, low, high) in WILSON_CASES {
+        let r = wilson(trials, hits);
+        assert_eq!(
+            (r.point, r.low, r.high),
+            (Permille(point), Permille(low), Permille(high)),
+            "{row}"
+        );
+    }
 }
 
 #[test]

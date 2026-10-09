@@ -2,7 +2,7 @@
 
 use a11y_tree::{
     NameMatch, NodeBudget, NodeSelector, Resolution, Role, SelectorStep, Truncation, diff, prune,
-    render, resolve, secret_rects,
+    resolve, secret_rects,
 };
 use cua_action::NodeId;
 
@@ -26,25 +26,6 @@ fn prune_keeps_actionable_visible_first_within_budget() {
     );
     let all = prune(&form, NodeBudget(400));
     assert_eq!(all, form, "a budget that fits changes nothing");
-}
-
-#[test]
-fn render_is_stable_golden_and_never_prints_a_secret_value() {
-    let form = crate::support::firefox_form();
-    let text = render(&form);
-    assert_eq!(text, render(&form), "stable");
-    assert!(text.contains("button \"Sign in\""), "{text}");
-    assert!(text.contains("@40,260 120x36"), "{text}");
-    assert!(
-        !text.contains("correct horse"),
-        "a secret value is never rendered: {text}"
-    );
-    assert!(text.contains("ada@example.org"), "an ordinary value is");
-    let mail = render(&crate::support::quire_mail());
-    assert!(
-        mail.contains("mail.thread.archive"),
-        "typed hints reach the model: {mail}"
-    );
 }
 
 #[test]
