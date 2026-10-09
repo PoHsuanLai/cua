@@ -834,6 +834,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "cua-eval-cloud"
+version = "0.1.0"
+dependencies = [
+ "cua-eval",
+ "model-catalog",
+ "model-provider",
+ "porter-client",
+ "porter-core",
+ "porter-infer",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "toml",
+ "vision-prep",
+ "zbus",
+]
+
+[[package]]
 name = "cua-fake"
 version = "0.1.0"
 dependencies = [

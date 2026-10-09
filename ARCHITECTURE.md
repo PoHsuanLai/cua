@@ -31,6 +31,7 @@ picture), section 6 (copy the recipe).
 | `cua-dbus` | `org.quire.Cua1` (`Manager`, `Run`) as zbus proxies and skeletons, `introspection`, `CuaError`, bus names and paths | zbus |
 | `cua-fake` | test only: `FakeSeat`, `FakeEis`, `FakeCapture`, `FakeDesktop`, `FakeA11y`, `ScriptedModel`, `FakePdp`, `MemoryEvents`, `FixedClock`, `FakeSeams`, `run_harness`, and `scene` (a window, frames, a world, a task) | none (`FakeEis`: reis, tokio) |
 | `cua-eval` | the computer-use model eval (section 8): fake `surface`s drawn as pixels, a `Stage` shared by an `EvalSeat`, an `EvalCapture` and an `EvalDesktop`, a reference gate, `ScriptModel` (lines of moves) and `ProviderModel` (a model on a local engine, over stoker's `CuaSession`), `Corpus` (`eval/surfaces`, `eval/tasks`), verdicts, rates with Wilson bounds, the markdown report, and the `cua-eval` binary | the binary: files; `live`: loopback HTTP to an engine the caller started |
+| `cua-eval-cloud` | the eval against a hosted model (section 8): `InferdProvider` (a stoker `Provider` whose turns are inferd chat turns, `Need::Llm` with images on class `screen`), `request` (a stoker turn as an inferd `ChatRequest`), `Watch` (turns, tokens, a spend refusal), `isolation` (what this process can reach), and the `cua-eval-cloud` binary | the bus to inferd (the key stays in accountd) |
 | `cuad` | the daemon and its library: `SeatBackend`, `CaptureBackend`, `Supervisor` (a task per run), `IntentsGate`, `InferdCuaModel`, `DaemonLinks`, `Links` (the three daemon links over one connection), `CuaProvider` (`org.quire.Cua`), `guard`, `CallerNames`, `CuadConfig`, `SystemSeams`, `SystemDesktop`, `SystemA11y`, `WaylandPair`, `CosmicEiSockets`, `serve` and `serve_on`. The binary serves both bus names; the person's settings: `read` (lenient, per key), `Locator`, `SettingsWatch` (the directory watch on `cua/settings.toml`), `Supervisor::{settings, apps, apply_settings, follow}`, `SCHEMA` (`dist/settings/cua.settings.toml`), and `--write-schema` | everything |
 
 Allowed direct edges between our own crates (checked by `scripts/check-boundary.sh`;
@@ -47,6 +48,7 @@ dev-dependencies are outside it):
 | `cua-dbus` | `cua-bus`, `prov` |
 | `cua-fake` | `a11y-tree`, `cua-action`, `cua-bus`, `cua-desktop`, `cua-run`, `maskcap`, `seat-input`, `docket-core`, `prov`, `porter-core`, `porter-infer`, `model-replay`, `model-provider`, `cua-parse` |
 | `cua-eval` | `a11y-tree`, `cua-action`, `cua-bus`, `cua-desktop`, `cua-fake`, `cua-parse`, `cua-run`, `cua-session`, `cua-vendors`, `docket-core`, `maskcap`, `model-catalog`, `model-http`, `model-openai-compat`, `model-provider`, `porter-core`, `porter-infer`, `prov`, `seat-input`, `vision-prep` |
+| `cua-eval-cloud` | `cua-eval`, `model-catalog`, `model-provider`, `porter-client`, `porter-core`, `porter-infer`, `vision-prep` |
 | `cuad` | `a11y-tree`, `cua-bus`, `cua-dbus`, `cua-desktop`, `cua-run`, `maskcap`, `seat-input`, `docket-core`, `docket-client`, `prov`, `porter-core`, `porter-infer`, `porter-client`, `almanac-core`, `almanac-client` |
 
 The edges differ from SPEC 1.3 in one way, forced by its own types: `seat-input`, `maskcap` and
@@ -79,6 +81,7 @@ only; the pure set never reaches an effect crate; `wayland-client` is behind the
 | `cua-dbus` | `names`, `error`, `manager`, `run`, `introspect` |
 | `cua-fake` | `clock`, `seat`, `eis`, `capture`, `desktop`, `a11y`, `model`, `gate`, `events`, `harness`, `scene` |
 | `cua-eval` | `surface/{def, state, render}`, `keys`, `stage`, `world`, `gate`, `script`, `task`, `corpus`, `verdict`, `run`, `eval`, `metrics`, `report`, `live`, `main` |
+| `cua-eval-cloud` | `watch`, `request`, `entry`, `isolation`, `provider`, `main` |
 | `cuad` | `clock`, `config`, `callers`, `guard`, `backend`, `gate`, `model`, `links`, `connect`, `provider`, `settings` (`keys`, `apps`, `read`, `locate`, `watch`) < `supervisor`, `drive`, `events`, `bus`, `desktop`, `ei_socket`, `system`, `serve` |
 
 ## 3. One home per concept
@@ -269,8 +272,24 @@ step, median and 95th percentile (wall time, reported and never asserted on).
 **Engines.** `scripted` (the scripts; no model), `cassette` (a kept live run), `local`: a model on
 an OpenAI-compatible engine on the loopback address, driven the way inferd drives one (stoker's
 `CuaSession` builds the prompt from the model's catalogue entry, a provider runs the turn, the
-session reads the reply). `cua-eval` starts no engine and reaches no other address; there is no
-cloud engine. The tasks a local model cannot play (the spend cap) are `engines = "scripted_only"`.
+session reads the reply). `cua-eval` starts no engine and reaches no other address. The tasks a
+local model cannot play (the spend cap) are `engines = "scripted_only"`.
+
+**The cloud engine** is the `cua-eval-cloud` crate (the bus is not allowed in `cua-eval`). It plays
+the same tasks with the same `ProviderModel` and `CuaSession`, but the provider under them is
+`InferdProvider`: each model turn is a chat turn asked of porter's inferd over the bus (`Need::Llm`
+with chat, vision and, for a tool dialect, tools; data class `screen`; the screenshot inline). inferd
+picks the model by tier from its own config, fetches the API key from accountd for that one turn and
+meters the reply against `[ai.spend]`; the eval process never has the key (`isolation::look` checks
+its environment and descriptors and the binary refuses to run if a credential is in reach). This is
+one layer above cuad's `InferdCuaModel`, which opens `Need::ComputerUse`: inferd refuses a computer-use
+session on a hosted model today (porter FINDINGS, "inferd hosted"), so the cloud eval cannot use that
+path; what it exercises of the production path is the prompt, the parse, the run machine and the
+broker's routing, consent and spend. A model is a trial entry under `eval/cloud-catalog/` (the
+hosted entries of stoker's catalogue say nothing of a computer-use dialect); a refusal on a spend
+cap ends the whole eval (`--max-steps` bounds the steps of all runs). `scripts/cloud-eval.sh` builds
+the world: a private bus, scratch HOME and XDG, a fake proc root that places the eval as inferd's
+`intentd` unit, accountd (the one process whose environment names the key file) and inferd.
 
 **Run it.**
 
@@ -278,6 +297,12 @@ cloud engine. The tasks a local model cannot play (the spend cap) are `engines =
 cargo run -p cua-eval -- --dir eval --label scripted        # the gate's check: exit 1 on a mismatch
 cargo run -p cua-eval -- --dir eval --engine local --entry <catalogue>/holo-3.1-4b.toml \
     --model holo-3.1-4b --port 8000 --repeat 3 --label holo-3.1-4b
+```
+
+```bash
+scripts/cloud-eval.sh --accountd <accountd test-keys build> --inferd <inferd test-proc-root build> \
+    --eval <cua-eval-cloud> --home <filled accountd home> --entry eval/cloud-catalog/<model>.toml \
+    --label <model> -- --max-steps 400
 ```
 
 **Add a task.** A surface screen if none fits (`eval/surfaces`; every `goto` and `screen` condition

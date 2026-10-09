@@ -521,3 +521,23 @@ runs a task, 78 runs).
 
 Not measured: a repeat of the greedy run (it is deterministic), any other model, and anything on
 a real desktop. The model-time figures are wall time on a shared machine and are reported, not asserted.
+
+## The cloud eval (lane cuacloud, 2026-10-10)
+
+- `cua-eval-cloud` plays the eval task set on a hosted model through inferd (`Need::Llm` with images,
+  class `screen`), not through `Need::ComputerUse` as cuad does: inferd refuses a computer-use
+  session on a hosted model (porter FINDINGS, "inferd hosted: only chat and task turns"), and
+  `catalog::claims_of` makes no computer-use claim for a remote entry. Closes when porter gives
+  `structured`/`cua_step` a model that is not a `LocalModel`; then the provider can be replaced by
+  `InferdCuaModel` and the eval will exercise the production path whole.
+- Stoker's hosted entries carry no `actions_out`, and `claude-sonnet-5.5` and `ui-tars-1.5-7b` are
+  not in the catalogue: trial entries live in `eval/cloud-catalog/` (a copy of `kimi-k3` with the rows
+  added). Closes when stoker has them.
+- The `Holo31` tool schema does not say which sign `pixels` has on a scroll (the parser reads positive
+  as up). Sonnet 5.5 scrolled the wrong way on every scroll task. Closes when the prompt states it (a
+  stoker change), then re-run `claude-sonnet-5.5-greedy`.
+- Surfaces: a right click and an unfocused field do nothing (`files-rename`, `files-delete`,
+  `notes-pin`, `notes-new` fail for every model, Sonnet 5.5 included). Closes when the surfaces answer
+  them or the tasks say what they measure. See `eval/reports/cloud-comparison.md`.
+- The run machine counts one micro-dollar a reply from a provider's servers, so every cloud task gets
+  a budget (`Lot::spend_microusd`); the money is inferd's `[ai.spend]` cap.

@@ -11,6 +11,7 @@ members = [
   "crates/cua-fake",
   "crates/cuad",
   "crates/cua-eval",
+  "crates/cua-eval-cloud",
 ]
 
 [workspace.package]
@@ -32,6 +33,7 @@ cua-run               = { path = "crates/cua-run" }
 cua-dbus              = { path = "crates/cua-dbus" }
 cua-fake              = { path = "crates/cua-fake" }
 cua-eval              = { path = "crates/cua-eval" }
+cua-eval-cloud        = { path = "crates/cua-eval-cloud" }
 
 # The one home of every quire_*_v1 protocol: the XML, the vocabulary, the bindings (by git at a pinned rev; a local checkout overrides it through a [patch], FINDINGS.md).
 casement-protocols    = { git = "https://github.com/PoHsuanLai/casement-protocols", rev = "a0ca1740bf3be9d5ce662bfda58cb73cfcd00e48" }

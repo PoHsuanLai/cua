@@ -1,0 +1,39 @@
+# TRIAL ENTRY for the cloud eval (crates/cua-eval-cloud); stoker's catalogue does not have it.
+# UI-TARS 1.5 7B (ByteDance), a computer-use specialist, hosted on OpenRouter.
+# - OpenRouter /api/v1/models, read 2026-10-10: id bytedance/ui-tars-1.5-7b, context 128000,
+#   max completion 2048, $0.0000001 / $0.0000002 per token (100000 / 200000 micro-USD per MTok),
+#   input modalities image and text, no tools (supported parameters: sampling knobs only), no reasoning.
+# - The model answers in text (`Thought: ... Action: click(start_box='(x,y)')`): stoker's UI-TARS-1.5
+#   dialect. Points are pixels of the image it was shown, resized by Qwen2.5-VL's smart_resize
+#   (factor 28), so the eval sends the image already at that size.
+# - sampling: reasoning is absent, so both settings are greedy.
+id = "ui-tars-1.5-7b"
+label = "UI-TARS 1.5 7B"
+licence = { kind = "open", v = "Apache-2.0" }
+family = "qwen"
+cold_start_estimate_s = 0
+source = { kind = "hosted" }
+vram = { weights_mib = 0, kv_per_1k_ctx_mib = 0, overhead_mib = 0 }
+locality = { kind = "remote", v = { reach = [
+  { provider = "openrouter", model = "bytedance/ui-tars-1.5-7b", price = { input_per_mtok = 100000, output_per_mtok = 200000 }, wire = "open_ai_compat" },
+] } }
+inputs = ["text", "image"]
+outputs = ["text", "actions"]
+
+[text_out]
+tools = "absent"
+structured = []
+reasoning = "absent"
+streaming = "present"
+context = 128000
+max_output = 2048
+sampling = { reasoning_on = { temperature = 0, top_p = { kind = "off" }, top_k = { kind = "off" }, min_p = { kind = "off" }, repeat_penalty = { kind = "off" }, seed = { kind = "off" } }, reasoning_off = { temperature = 0, top_p = { kind = "off" }, top_k = { kind = "off" }, min_p = { kind = "off" }, repeat_penalty = { kind = "off" }, seed = { kind = "off" } }, reasoning_default = "off" }
+
+[image_in]
+per_prompt = 3
+rule = { kind = "smart_resize", v = { factor = 28, min_pixels = 78400, max_pixels = 12845056 } }
+space = { kind = "image" }
+
+[actions_out]
+kind = "dialect"
+v = { dialect = { kind = "text", v = "ui_tars15" }, batching = "one", zoom = "absent" }

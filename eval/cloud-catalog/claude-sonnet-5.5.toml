@@ -1,0 +1,42 @@
+# TRIAL ENTRY for the cloud eval (crates/cua-eval-cloud); stoker's catalogue has claude-opus-5.5 and
+# claude-haiku-4.5 but not this one.
+# Claude Sonnet 5.5, the frontier reference, reached through OpenRouter (inferd speaks no Messages
+# wire yet), driven with OUR action tools (the Holo 3.1 function schema the session prompt declares),
+# not Anthropic's computer tool.
+# - OpenRouter /api/v1/models, read 2026-10-10: id anthropic/claude-sonnet-5.5, context 1000000, max
+#   completion 128000, $0.000002 / $0.00001 per token (2000000 / 10000000 micro-USD per MTok), input
+#   modalities text, image and file, parameters include tools, tool_choice, reasoning; NO temperature.
+# - image_in: Anthropic downsizes images over about 1568 px on the long side; the eval's windows are
+#   960x600, so one image at its own pixels. per_prompt 3 so the session keeps two past frames.
+# - sampling: the provider takes none, so both settings are written as temperature 0 and the codec's
+#   value is dropped by inferd's body shaping when the app sets no sampling.
+id = "claude-sonnet-5.5"
+label = "Claude Sonnet 5.5"
+licence = { kind = "proprietary" }
+family = "claude"
+cold_start_estimate_s = 0
+source = { kind = "hosted" }
+vram = { weights_mib = 0, kv_per_1k_ctx_mib = 0, overhead_mib = 0 }
+locality = { kind = "remote", v = { reach = [
+  { provider = "openrouter", model = "anthropic/claude-sonnet-5.5", price = { input_per_mtok = 2000000, output_per_mtok = 10000000 }, wire = "open_ai_compat" },
+] } }
+inputs = ["text", "image"]
+outputs = ["text", "actions"]
+
+[text_out]
+tools = "native"
+structured = []
+reasoning = "present"
+streaming = "present"
+context = 1000000
+max_output = 8192
+sampling = { reasoning_on = { temperature = 0, top_p = { kind = "off" }, top_k = { kind = "off" }, min_p = { kind = "off" }, repeat_penalty = { kind = "off" }, seed = { kind = "off" } }, reasoning_off = { temperature = 0, top_p = { kind = "off" }, top_k = { kind = "off" }, min_p = { kind = "off" }, repeat_penalty = { kind = "off" }, seed = { kind = "off" } }, reasoning_default = "off" }
+
+[image_in]
+per_prompt = 3
+rule = { kind = "identity" }
+space = { kind = "grid", v = 1000 }
+
+[actions_out]
+kind = "dialect"
+v = { dialect = { kind = "tool", v = "holo31" }, batching = "one", zoom = "absent" }

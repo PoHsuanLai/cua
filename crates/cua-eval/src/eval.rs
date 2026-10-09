@@ -142,21 +142,66 @@ pub async fn run_live<P: Provider + 'static>(
     repeat: u32,
     only: &[String],
 ) -> Result<Vec<RunRecord>, SetupError> {
-    let id = |e: &dyn std::fmt::Display| SetupError::Id(e.to_string());
     let served = ServedBy {
-        account: AccountId::parse("acct-local").map_err(|e| id(&e))?,
-        model: ModelId::parse("model-local").map_err(|e| id(&e))?,
+        account: AccountId::parse("acct-local").map_err(|e| SetupError::Id(e.to_string()))?,
+        model: ModelId::parse("model-local").map_err(|e| SetupError::Id(e.to_string()))?,
         locality: porter_core::Locality::OnDevice,
     };
+    let lot = Lot {
+        player,
+        repeat,
+        only,
+        served,
+        spend_microusd: None,
+    };
+    let (records, _) = run_live_until(corpus, provider, plan, &lot, |_: &[RunRecord]| None).await?;
+    Ok(records)
+}
+
+/// Which runs a live eval plays and who it says answered.
+#[derive(Debug, Clone)]
+pub struct Lot<'a> {
+    /// The name the runs carry.
+    pub player: &'a str,
+    /// How many runs of each task.
+    pub repeat: u32,
+    /// The tasks picked by id; all when empty.
+    pub only: &'a [String],
+    /// Who the model says it is.
+    pub served: ServedBy,
+    /// A spend budget for every task, replacing the task's own: a task's zero means "local models
+    /// only" and ends a run at the first reply from a provider's servers. The run machine counts
+    /// a micro-dollar a reply, so this is a cap on replies; the money is the broker's to cap.
+    pub spend_microusd: Option<u64>,
+}
+
+/// [`run_live`] for a model somewhere else, that stops early: before each run `halt` is asked with
+/// the runs so far, and a reason ends the whole eval there (a spend refusal, a step budget). The
+/// runs played are kept; the reason comes back with them.
+pub async fn run_live_until<P: Provider + 'static>(
+    corpus: &Corpus,
+    provider: Arc<P>,
+    plan: &Plan,
+    lot: &Lot<'_>,
+    halt: impl Fn(&[RunRecord]) -> Option<String>,
+) -> Result<(Vec<RunRecord>, Option<String>), SetupError> {
     let mut records = Vec::new();
-    for task in picked(corpus, only).filter(|t| t.engines == Engines::Both) {
-        for _ in 0..repeat {
-            let arena = corpus.arena(task)?;
-            let model = ProviderModel::new(provider.clone(), plan.clone(), served.clone());
-            records.push(play(&arena, model, player).await?);
+    for task in picked(corpus, lot.only).filter(|t| t.engines == Engines::Both) {
+        for _ in 0..lot.repeat {
+            if let Some(why) = halt(&records) {
+                return Ok((records, Some(why)));
+            }
+            let task = TaskDef {
+                spend_microusd: lot.spend_microusd.unwrap_or(task.spend_microusd),
+                ..task.clone()
+            };
+            let arena = corpus.arena(&task)?;
+            let model = ProviderModel::new(provider.clone(), plan.clone(), lot.served.clone());
+            records.push(play(&arena, model, lot.player).await?);
         }
     }
-    Ok(records)
+    let last = halt(&records);
+    Ok((records, last))
 }
 
 /// What the model sees first on each picked task, as PNG bytes under the task's id: for a person
