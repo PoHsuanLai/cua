@@ -17,6 +17,7 @@ struct State {
     surface: Surface,
     pointer: [u32; 2],
     down: Option<[u32; 2]>,
+    down_right: Option<[u32; 2]>,
     commands: u8,
     generation: u64,
     reported: u64,
@@ -62,6 +63,7 @@ impl Stage {
                 surface,
                 pointer: [0, 0],
                 down: None,
+                down_right: None,
                 commands: 0,
                 generation: 0,
                 reported: 0,
@@ -177,6 +179,19 @@ fn act(state: &mut State, op: &InputOp) {
             if state.down.take() == Some(state.pointer) {
                 let [x, y] = state.pointer;
                 state.surface.click(x, y);
+            }
+        }
+        InputOp::Button {
+            button: Button::Right,
+            dir: Press::Down,
+        } => state.down_right = Some(state.pointer),
+        InputOp::Button {
+            button: Button::Right,
+            dir: Press::Up,
+        } => {
+            if state.down_right.take() == Some(state.pointer) {
+                let [x, y] = state.pointer;
+                state.surface.context_click(x, y);
             }
         }
         InputOp::Button { .. } => {}

@@ -63,6 +63,11 @@ expect = "pass"
 steps = ["click @row-report.txt", "click @rename", "click @newname", "type report-final.txt", "click @apply", "finish done Renamed."]
 
 [[task.script]]
+name = "ideal-by-context-menu"
+expect = "pass"
+steps = ["right @row-report.txt", "click @rename", "click @newname", "type report-final.txt", "click @apply", "finish done Renamed."]
+
+[[task.script]]
 name = "ideal-with-enter"
 expect = "pass"
 steps = ["click @row-report.txt", "click @rename", "click @newname", "type report-final.txt", "key Enter", "finish done Renamed."]
@@ -86,6 +91,11 @@ note = "Pick a row, confirm a dialog."
 name = "ideal"
 expect = "pass"
 steps = ["click @row-old-backup.zip", "click @delete", "click @really", "finish done Deleted old-backup.zip."]
+
+[[task.script]]
+name = "ideal-by-context-menu"
+expect = "pass"
+steps = ["right @row-old-backup.zip", "click @delete", "click @really", "finish done Deleted old-backup.zip."]
 
 [[task.script]]
 name = "deletes-the-wrong-file"
@@ -182,13 +192,18 @@ surface = "notes"
 start = "list"
 goal = "Create a new note that says buy eggs and save it."
 steps = 10
-success = [{ var = ["saved", "buy eggs"] }]
-note = "A new document, typed text, a save button."
+success = [{ like = ["saved", "buy eggs"] }]
+note = "A new document, typed text, a save button that says Saved. Case does not matter: a note that says Buy eggs says buy eggs."
 
 [[task.script]]
 name = "ideal"
 expect = "pass"
 steps = ["click @new", "click @text", "type buy eggs", "click @save", "finish done Saved the note."]
+
+[[task.script]]
+name = "types-without-clicking-the-field"
+expect = "pass"
+steps = ["click @new", "type Buy eggs", "click @save", "finish done Saved the note."]
 
 [[task]]
 id = "notes-pin"
@@ -204,6 +219,11 @@ note = "Pick the right note out of three, then a check box."
 name = "ideal"
 expect = "pass"
 steps = ["click @groceries", "click @pinned", "finish done Groceries is pinned."]
+
+[[task.script]]
+name = "ideal-by-context-menu"
+expect = "pass"
+steps = ["right @groceries", "click @ctx-pin", "finish done Groceries is pinned."]
 
 [[task.script]]
 name = "pins-the-wrong-note"

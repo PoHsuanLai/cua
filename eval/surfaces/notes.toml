@@ -11,28 +11,48 @@ kind = "button"
 id = "new"
 rect = [16, 56, 240, 48]
 text = "New note"
-click = [{ set = ["sel", "New note"] }, { clear = "text" }, { goto = "editor" }]
+click = [{ set = ["sel", "New note"] }, { set = ["saved_note", ""] }, { clear = "text" }, { goto = "editor" }]
 
 [[screen.item]]
 kind = "row"
 id = "groceries"
 rect = [16, 130, 928, 56]
 text = "Groceries"
-click = [{ set = ["sel", "Groceries"] }, { goto = "editor" }]
+click = [{ set = ["sel", "Groceries"] }, { set = ["saved_note", ""] }, { goto = "editor" }]
+context = [{ set = ["sel", "Groceries"] }]
 
 [[screen.item]]
 kind = "row"
 id = "ideas"
 rect = [16, 200, 928, 56]
 text = "Ideas"
-click = [{ set = ["sel", "Ideas"] }, { goto = "editor" }]
+click = [{ set = ["sel", "Ideas"] }, { set = ["saved_note", ""] }, { goto = "editor" }]
+context = [{ set = ["sel", "Ideas"] }]
 
 [[screen.item]]
 kind = "row"
 id = "travel"
 rect = [16, 270, 928, 56]
 text = "Travel"
-click = [{ set = ["sel", "Travel"] }, { goto = "editor" }]
+click = [{ set = ["sel", "Travel"] }, { set = ["saved_note", ""] }, { goto = "editor" }]
+context = [{ set = ["sel", "Travel"] }]
+
+# The context menu a right click on a note opens.
+[[screen.item]]
+kind = "row"
+id = "ctx-open"
+place = "menu"
+rect = [8, 8, 220, 44]
+text = "Open"
+click = [{ goto = "editor" }]
+
+[[screen.item]]
+kind = "row"
+id = "ctx-pin"
+place = "menu"
+rect = [8, 56, 220, 44]
+text = "Pin"
+click = [{ set = ["pinned", "on"] }]
 
 [[screen]]
 id = "editor"
@@ -57,6 +77,12 @@ id = "save"
 rect = [16, 400, 200, 48]
 text = "Save"
 click = [{ copy = ["text", "saved"] }, { set = ["saved_note", "{sel}"] }]
+
+[[screen.item]]
+kind = "label"
+rect = [16, 470, 400, 32]
+text = "Saved."
+show = [{ not = { var = ["saved_note", ""] } }]
 
 [[screen.item]]
 kind = "button"

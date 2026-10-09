@@ -145,7 +145,8 @@ pub fn render(surface: &Surface) -> PixelBuf {
 }
 
 fn draw(canvas: &mut Canvas, placed: &Placed<'_>, focus: bool, surface: &Surface, clip: Clip) {
-    let [x, _, w, h] = placed.item.rect;
+    let [_, _, w, h] = placed.item.rect;
+    let x = placed.left;
     let top = u32::try_from(placed.top).unwrap_or(0);
     let rect = [x, top, w, h];
     let pad = (h.saturating_sub(CELL_H)) / 2;
@@ -189,6 +190,15 @@ fn draw(canvas: &mut Canvas, placed: &Placed<'_>, focus: bool, surface: &Surface
 
 fn draw_field(canvas: &mut Canvas, placed: &Placed<'_>, rect: [u32; 4], focus: bool, clip: Clip) {
     let [x, top, w, h] = rect;
+    if placed.item.echo == Echo::Inline {
+        let cursor = if focus { "|" } else { "" };
+        let line = format!("{}{}{}", placed.text, placed.value, cursor);
+        let room = columns(w);
+        let skip = line.chars().count().saturating_sub(room);
+        let tail: String = line.chars().skip(skip).collect();
+        canvas.text([x, top], &tail, INK, clip);
+        return;
+    }
     if !placed.text.is_empty() {
         canvas.text(
             [x, top.saturating_sub(CELL_H + 2)],
@@ -206,7 +216,7 @@ fn draw_field(canvas: &mut Canvas, placed: &Placed<'_>, rect: [u32; 4], focus: b
     );
     let mut shown: String = match placed.item.echo {
         Echo::Plain => placed.value.clone(),
-        Echo::Masked => "*".repeat(placed.value.chars().count()),
+        Echo::Masked | Echo::Inline => "*".repeat(placed.value.chars().count()),
     };
     if focus {
         shown.push('|');

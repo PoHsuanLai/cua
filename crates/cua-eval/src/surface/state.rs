@@ -49,6 +49,8 @@ pub struct Placed<'a> {
     pub item: &'a ItemDef,
     /// Left, top, width and height of the part the viewport shows, in window pixels.
     pub rect: [u32; 4],
+    /// Where the item's left edge is, which differs from its definition for a menu item.
+    pub left: u32,
     /// Where the item's top edge is, which is above the viewport when it is cut off there.
     pub top: i64,
     /// Its text with the variables filled in.
@@ -66,6 +68,8 @@ pub struct Surface {
     fields: BTreeMap<String, String>,
     focus: Option<usize>,
     scroll: u32,
+    /// Where the context menu was opened, while it is open.
+    menu: Option<[u32; 2]>,
 }
 
 impl Surface {
@@ -79,6 +83,7 @@ impl Surface {
             fields: BTreeMap::new(),
             focus: None,
             scroll: 0,
+            menu: None,
         };
         surface.focus = surface.first_focus();
         surface.run(setup);
@@ -129,6 +134,11 @@ impl Surface {
                     || has(&self.vars, name).contains(text.as_str())
             }
             Cond::Var([name, value]) => has(&self.vars, name) == *value,
+            Cond::Like([name, text]) => {
+                let text = text.to_lowercase();
+                has(&self.fields, name).to_lowercase().contains(&text)
+                    || has(&self.vars, name).to_lowercase().contains(&text)
+            }
             Cond::Not(inner) => !self.holds(inner),
         }
     }
@@ -167,11 +177,20 @@ impl Surface {
             return None;
         }
         let [x, y, w, h] = item.rect;
-        let top = match (item.place, screen.pane) {
-            (Place::Pane, Some(pane)) => {
-                i64::from(pane.top) + i64::from(y) - i64::from(self.scroll)
+        let (left, top) = match (item.place, screen.pane, self.menu) {
+            (Place::Menu, _, None) => return None,
+            (Place::Menu, _, Some([mx, my])) => {
+                let [width, height] = self.def.size;
+                (
+                    mx.saturating_add(x).min(width.saturating_sub(w)),
+                    i64::from(my.saturating_add(y).min(height.saturating_sub(h))),
+                )
             }
-            _ => i64::from(y),
+            (Place::Pane, Some(pane), _) => (
+                x,
+                i64::from(pane.top) + i64::from(y) - i64::from(self.scroll),
+            ),
+            _ => (x, i64::from(y)),
         };
         let (from, to) = match (item.place, screen.pane) {
             (Place::Pane, Some(pane)) => (
@@ -187,11 +206,12 @@ impl Surface {
             index,
             item,
             rect: [
-                x,
+                left,
                 u32::try_from(from).ok()?,
                 w,
                 u32::try_from(to - from).ok()?,
             ],
+            left,
             top,
             text: self.fill(&item.text),
             value: self.fields.get(&item.id).cloned().unwrap_or_default(),
@@ -206,23 +226,28 @@ impl Surface {
             .map(|p| [p.rect[0] + p.rect[2] / 2, p.rect[1] + p.rect[3] / 2])
     }
 
-    /// A click at a window pixel.
-    pub fn click(&mut self, x: u32, y: u32) -> Hit {
-        let hit = self
-            .visible()
+    /// The topmost item that reacts at a window pixel, with its place among the screen's items.
+    fn item_at(&self, x: u32, y: u32) -> Option<(usize, ItemDef)> {
+        self.visible()
             .into_iter()
             .rev()
             .find(|p| reacts(p.item.kind) && inside(p.rect, x, y))
-            .map(|p| (p.index, p.item.clone()));
+            .map(|p| (p.index, p.item.clone()))
+    }
+
+    /// A click at a window pixel. While the context menu is open, a click outside its items only
+    /// closes it.
+    pub fn click(&mut self, x: u32, y: u32) -> Hit {
+        let hit = self.item_at(x, y);
+        let menu_was_open = self.menu.take().is_some();
         let Some((index, item)) = hit else {
             self.focus = None;
             return Hit::Nothing;
         };
-        let name = if item.id.is_empty() {
-            item.text.clone()
-        } else {
-            item.id.clone()
-        };
+        if menu_was_open && item.place != Place::Menu {
+            return Hit::Nothing;
+        }
+        let name = name_of(&item);
         match item.kind {
             Kind::Field => self.focus = Some(index),
             Kind::Check => {
@@ -240,12 +265,36 @@ impl Surface {
         Hit::Item(name)
     }
 
-    /// Typed text goes to the field with the focus; with none, nowhere.
+    /// A right click at a window pixel: on an item that has a context menu, it runs the item's
+    /// context acts and opens the menu at the pointer; anywhere else it only closes an open menu.
+    pub fn context_click(&mut self, x: u32, y: u32) -> Hit {
+        self.menu = None;
+        let Some((_, item)) = self.item_at(x, y).filter(|(_, i)| !i.context.is_empty()) else {
+            return Hit::Nothing;
+        };
+        self.focus = None;
+        self.run(&item.context);
+        self.menu = Some([x, y]);
+        Hit::Item(name_of(&item))
+    }
+
+    /// Typed text goes to the field with the focus; with none, nowhere. A newline is the Enter
+    /// key and a tab the Tab key, as on a real keyboard.
     pub fn type_text(&mut self, text: &str) {
+        for c in text.chars() {
+            match c {
+                '\n' | '\r' => self.press(Stroke::Enter),
+                '\t' => self.press(Stroke::Tab),
+                c => self.put(c),
+            }
+        }
+    }
+
+    fn put(&mut self, c: char) {
         let Some(id) = self.focused().map(str::to_owned) else {
             return;
         };
-        self.fields.entry(id).or_default().push_str(text);
+        self.fields.entry(id).or_default().push(c);
     }
 
     /// A key.
@@ -259,6 +308,9 @@ impl Surface {
                 self.run(&acts);
             }
             Stroke::Escape => {
+                if self.menu.take().is_some() {
+                    return;
+                }
                 let acts = self.current().escape.clone();
                 self.run(&acts);
             }
@@ -336,6 +388,7 @@ impl Surface {
     fn goto(&mut self, id: &str) {
         if let Ok(screen) = index_of(&self.def, id) {
             self.screen = screen;
+            self.menu = None;
             self.focus = self.first_focus();
             self.scroll = 0;
         }
@@ -347,6 +400,14 @@ fn index_of(def: &SurfaceDef, id: &str) -> Result<usize, SurfaceError> {
         .iter()
         .position(|s| s.id == id)
         .ok_or_else(|| SurfaceError::NoScreen(id.to_owned()))
+}
+
+fn name_of(item: &ItemDef) -> String {
+    if item.id.is_empty() {
+        item.text.clone()
+    } else {
+        item.id.clone()
+    }
 }
 
 fn reacts(kind: Kind) -> bool {

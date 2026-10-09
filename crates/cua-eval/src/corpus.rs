@@ -136,7 +136,7 @@ fn check_surface(name: &str, def: &SurfaceDef) -> Result<(), CorpusError> {
             screen
                 .items
                 .iter()
-                .flat_map(|i| i.click.iter().chain(&i.enter)),
+                .flat_map(|i| i.click.iter().chain(&i.enter).chain(&i.context)),
         );
         for act in acts {
             check_act(def, act).map_err(|e| bad(e.to_string()))?;

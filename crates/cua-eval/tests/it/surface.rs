@@ -100,6 +100,65 @@ fn a_terminal_takes_typing_at_once() {
 }
 
 #[test]
+fn a_newline_in_typed_text_is_enter() {
+    let mut s = Surface::new(def("terminal"), "shell", &[]).unwrap();
+    s.type_text("ls\n");
+    assert!(s.holds(&Cond::Var(["last".into(), "ls".into()])));
+    assert!(s.holds(&Cond::Field(["cmd".into(), "".into()])));
+}
+
+#[test]
+fn a_right_click_on_a_row_opens_its_menu_and_a_click_elsewhere_only_closes_it() {
+    let mut s = files();
+    let [x, y] = s.centre_of("row-report.txt").unwrap();
+    assert!(s.centre_of("rename").is_none(), "no menu yet");
+    assert_eq!(s.context_click(x, y), Hit::Item("row-report.txt".into()));
+    assert_eq!(s.screen_id(), "list", "a right click does not open the row");
+    assert!(s.holds(&Cond::Var(["sel".into(), "report.txt".into()])));
+    assert!(s.centre_of("rename").is_some(), "the menu shows");
+
+    assert_eq!(s.click(940, 590), Hit::Nothing);
+    assert!(
+        s.centre_of("rename").is_none(),
+        "a click elsewhere closes it"
+    );
+    assert_eq!(s.screen_id(), "list");
+
+    s.context_click(x, y);
+    let [mx, my] = s.centre_of("rename").unwrap();
+    assert_eq!(s.click(mx, my), Hit::Item("rename".into()));
+    assert_eq!(s.screen_id(), "rename");
+    assert!(
+        s.centre_of("open").is_none(),
+        "the menu closed with the screen"
+    );
+}
+
+#[test]
+fn escape_closes_the_menu_and_a_right_click_on_nothing_opens_none() {
+    let mut s = files();
+    let [x, y] = s.centre_of("row-report.txt").unwrap();
+    s.context_click(x, y);
+    s.press(Stroke::Escape);
+    assert!(s.centre_of("delete").is_none());
+    assert_eq!(s.context_click(940, 590), Hit::Nothing);
+    assert!(s.centre_of("delete").is_none());
+}
+
+#[test]
+fn saving_a_note_shows_that_it_was_saved() {
+    let mut s = Surface::new(def("notes"), "list", &[]).unwrap();
+    let [x, y] = s.centre_of("new").unwrap();
+    s.click(x, y);
+    s.type_text("Buy eggs");
+    let before = render(&s);
+    let [x, y] = s.centre_of("save").unwrap();
+    s.click(x, y);
+    assert!(s.holds(&Cond::Like(["saved".into(), "buy eggs".into()])));
+    assert_ne!(before.data, render(&s).data, "the screen answers the click");
+}
+
+#[test]
 fn the_same_surface_draws_the_same_bytes_and_each_screen_differs() {
     let mut s = files();
     let first = render(&s);

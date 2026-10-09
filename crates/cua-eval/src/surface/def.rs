@@ -75,6 +75,9 @@ pub enum Place {
     Fixed,
     /// Scrolls with the pane.
     Pane,
+    /// Part of the context menu: `rect` is an offset from the point where the menu was opened,
+    /// and the item shows only while the menu is open.
+    Menu,
 }
 
 /// How a field shows what was typed.
@@ -86,6 +89,8 @@ pub enum Echo {
     Plain,
     /// As dots.
     Masked,
+    /// On the window itself after its text, with no box, as a terminal's prompt line.
+    Inline,
 }
 
 /// One item of a screen.
@@ -107,6 +112,10 @@ pub struct ItemDef {
     /// What Enter does while this field has the focus.
     #[serde(default)]
     pub enter: Vec<Act>,
+    /// What a right click does. A right click on an item with acts here runs them and opens the
+    /// context menu (the `menu` items) at the pointer.
+    #[serde(default)]
+    pub context: Vec<Act>,
     /// Whether it scrolls.
     #[serde(default)]
     pub place: Place,
@@ -160,6 +169,8 @@ pub enum Cond {
     Has([String; 2]),
     /// A variable is exactly this: `[name, value]`.
     Var([String; 2]),
+    /// A field or a variable contains this, in any case: `[name, text]`.
+    Like([String; 2]),
     /// The condition does not hold.
     Not(Box<Cond>),
 }
