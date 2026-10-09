@@ -8,8 +8,8 @@ use cua_bus::{
 };
 use cua_desktop::{BackendKind, DesktopEvent, Suspend};
 use cua_fake::scene::{click, finish, reply, task, user_goal, window};
-use cua_fake::{DesktopCall, FakePdp, SeatEvent, Verdict};
-use cua_run::{CuaSignal, RunPhase};
+use cua_fake::{DesktopCall, FakePdp, Fixture, SeatEvent, Verdict};
+use cua_run::{CuaSignal, FORCED_YES, RunPhase};
 use cuad::Supervisor;
 use docket_core::GateAnswer;
 use prov::{Labelled, MessageKind, ReportStatus};
@@ -37,6 +37,17 @@ async fn end_to_end_scripted_run_done() {
         .await
         .expect("started");
     assert_eq!(id.as_str(), "r-1");
+    // The fixture window is a sign-in form with a password field: the run asks before the
+    // click whatever the gate says, and the person says yes.
+    until(&sup, &id, |p| matches!(p, RunPhase::WaitingForUser(..))).await;
+    sup.answer(
+        CuaCaller::Shell,
+        &id,
+        QuestionId(1),
+        Labelled::new(FORCED_YES.to_owned(), user_goal().label),
+    )
+    .await
+    .unwrap();
     let (end, signals) = ended_with(&mut events, &id).await;
     assert_eq!(end.outcome, CuaOutcome::Done);
     assert_eq!(end.steps, porter_core::Count(2));
@@ -60,7 +71,16 @@ async fn end_to_end_scripted_run_done() {
     );
 
     let kinds: Vec<String> = sup.events().records().iter().map(|r| r.kind()).collect();
-    assert_eq!(kinds, ["cua.run.started", "cua.step", "cua.run.finished"]);
+    assert_eq!(
+        kinds,
+        [
+            "cua.run.started",
+            "cua.asked",
+            "cua.confirmed",
+            "cua.step",
+            "cua.run.finished"
+        ]
+    );
     let performed = sup
         .seat()
         .events()
@@ -75,11 +95,11 @@ async fn end_to_end_scripted_run_done() {
     let sent = sup.events().sent();
     assert_eq!(
         sent.len(),
-        1,
-        "one report, no progress: the run never waited for the person"
+        2,
+        "a progress report for the question, then the final one"
     );
     assert_eq!(
-        sent[0].1.kind,
+        sent[1].1.kind,
         MessageKind::Report {
             status: ReportStatus::Done
         }
@@ -368,7 +388,14 @@ async fn stock_consent_guard_injects_nothing_while_prompt_shown() {
 async fn the_run_acts_in_the_session_it_opened_before_its_first_check() {
     let session = prov::SessionId::parse("s-9").unwrap();
     let pdp = FakePdp::allow_all().opening(session.clone());
-    let sup = supervisor(STOCK, vec![reply(click()), reply(finish())], pdp);
+    // This test is about the session, not about sensitive windows: a dialog without a password
+    // field, so that the run does not stop to ask before the click.
+    let sup = supervisor_over(
+        STOCK,
+        vec![reply(click()), reply(finish())],
+        pdp,
+        Fixture::Gtk4Dialog,
+    );
     let mut events = sup.subscribe();
     let mut planned = task();
     planned.session = prov::SessionId::parse("s-1").unwrap();

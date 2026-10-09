@@ -128,7 +128,10 @@ pub(super) fn ask(run: &mut Run, fx: &mut Vec<RunEffect>, n: StepIndex, head: Ta
 /// Puts a question to the person and waits for the answer: the model's own, or the one a
 /// sensitive window forces.
 fn raise(run: &mut Run, fx: &mut Vec<RunEffect>, n: StepIndex, question: &str, choices: &[&str]) {
-    let id = QuestionId(u64::from(n.0));
+    // The step's index, or the one after the last question when a step asks twice (a forced
+    // question, then the model's own).
+    let id = QuestionId(u64::from(n.0).max(run.track.last_question.saturating_add(1)));
+    run.track.last_question = id.0;
     let label: Label = screen_label(run);
     let body = AskBody {
         question: Labelled::new(question.to_owned(), label.clone()),

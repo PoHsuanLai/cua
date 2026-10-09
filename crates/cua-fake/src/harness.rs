@@ -63,6 +63,18 @@ const MAX_INPUTS: usize = 2_000;
 /// carried out here); a finished one is returned as it is. Whatever the machine waits for
 /// that no fake will send (the person's answer, a confirmation nobody shows) is `Stuck`.
 pub async fn run_harness(run: Run, world: &mut World) -> Result<HarnessReport, HarnessError> {
+    run_harness_answering(run, world, Vec::new()).await
+}
+
+/// [`run_harness`] with a scripted person: each question the run asks (the model's own, or one a
+/// sensitive window forces) is answered with the next of `answers`, in order. Once they are
+/// used up, a question is left unanswered and the run is `Stuck`.
+pub async fn run_harness_answering(
+    run: Run,
+    world: &mut World,
+    answers: Vec<String>,
+) -> Result<HarnessReport, HarnessError> {
+    let mut answers: VecDeque<String> = answers.into();
     let mut signals = Vec::new();
     if run.phase.is_finished() {
         return Ok(HarnessReport { run, signals });
@@ -99,6 +111,14 @@ pub async fn run_harness(run: Run, world: &mut World) -> Result<HarnessReport, H
     for _ in 0..MAX_INPUTS {
         while let Some(effect) = effects.pop_front() {
             exec.carry_out(effect, Some(&mut *model), &mut out).await;
+        }
+        for signal in &out.signals {
+            if let (CuaSignal::AskUser(id, _), Some(answer)) = (signal, answers.pop_front()) {
+                out.inputs.push_back(RunInput::UserAnswer(
+                    *id,
+                    prov::Labelled::new(answer, prov::Label::trusted_user()),
+                ));
+            }
         }
         signals.append(&mut out.signals);
         let input = match out.inputs.pop_front() {

@@ -29,6 +29,8 @@ pub use desktop::{DesktopCall, FakeDesktop};
 pub use eis::{EisEvent, FakeEis};
 pub use events::MemoryEvents;
 pub use gate::{FakeCheck, FakePdp, Verdict};
-pub use harness::{FakeSeams, HarnessError, HarnessReport, World, run_harness};
+pub use harness::{
+    FakeSeams, HarnessError, HarnessReport, World, run_harness, run_harness_answering,
+};
 pub use model::{ScriptError, ScriptedModel};
 pub use seat::{FakeSeat, SeatEvent};

@@ -5,8 +5,8 @@ pub mod bus;
 
 use cua_bus::RunEnd;
 use cua_desktop::BackendKind;
-use cua_fake::scene::world;
-use cua_fake::{FakePdp, FakeSeams};
+use cua_fake::scene::{world, world_over};
+use cua_fake::{FakePdp, FakeSeams, Fixture};
 use cua_run::{CuaConfig, CuaModelError, CuaSignal, Enabled};
 use cuad::{CuadConfig, Supervisor, SupervisorEvent};
 use porter_infer::CuaStepReply;
@@ -30,6 +30,16 @@ pub fn supervisor(
     gate: FakePdp,
 ) -> Supervisor<FakeSeams> {
     Supervisor::new(world(kind, script, gate), enabled())
+}
+
+/// [`supervisor`] over another window's accessibility tree.
+pub fn supervisor_over(
+    kind: BackendKind,
+    script: Vec<Result<CuaStepReply, CuaModelError>>,
+    gate: FakePdp,
+    fixture: Fixture,
+) -> Supervisor<FakeSeams> {
+    Supervisor::new(world_over(kind, script, gate, fixture), enabled())
 }
 
 /// Waits for `run` to end, giving up after a (virtual) minute; the signals it sent on the way

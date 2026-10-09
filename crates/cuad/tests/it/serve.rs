@@ -162,6 +162,15 @@ async fn the_planner_starts_a_run_the_shell_answers_it_and_the_end_is_told_on_th
     );
     run_s.answer(1, "the work one").await.unwrap();
 
+    // The fixture window is a sign-in form with a password field, so the click that follows is
+    // held for a question of the run's own, with the next id.
+    let signal = tokio::time::timeout(Duration::from_secs(10), asked.next())
+        .await
+        .expect("the run asks again before the click")
+        .expect("a signal");
+    assert_eq!(signal.args().unwrap().question, 2);
+    run_s.answer(2, cua_run::FORCED_YES).await.unwrap();
+
     let signal = tokio::time::timeout(Duration::from_secs(20), finished.next())
         .await
         .expect("the run ends")
@@ -187,6 +196,7 @@ async fn the_planner_starts_a_run_the_shell_answers_it_and_the_end_is_told_on_th
             "observing",
             "thinking",
             "authorising",
+            "waiting_for_user",
             "acting",
             "settling",
             "observing",

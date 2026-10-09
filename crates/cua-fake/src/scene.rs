@@ -116,11 +116,22 @@ pub fn world(
     script: Vec<Result<CuaStepReply, CuaModelError>>,
     gate: FakePdp,
 ) -> World {
+    world_over(kind, script, gate, Fixture::FirefoxForm)
+}
+
+/// [`world`] over another window's accessibility tree: a test about something other than a
+/// sign-in form uses one without a password field.
+pub fn world_over(
+    kind: BackendKind,
+    script: Vec<Result<CuaStepReply, CuaModelError>>,
+    gate: FakePdp,
+    fixture: Fixture,
+) -> World {
     World {
         desktop: FakeDesktop::new(kind, vec![window()]),
         seat: FakeSeat::new(BackendCaps::of(kind).seat, Stamp(0)),
         capture: FakeCapture::scripted((1..=8).map(frame).collect(), vec![]),
-        a11y: FakeA11y::fixture(Fixture::FirefoxForm),
+        a11y: FakeA11y::fixture(fixture),
         model: ScriptedModel::new(script),
         gate,
         events: MemoryEvents::new(),

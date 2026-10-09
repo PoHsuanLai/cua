@@ -72,6 +72,9 @@ pub struct RunTrack {
     /// Whether the question now waiting was asked by the run for a sensitive window.
     #[serde(default)]
     pub held: Held,
+    /// The id of the last question asked, so that no two questions of a run share one.
+    #[serde(default)]
+    pub last_question: u64,
 }
 
 impl RunTrack {
@@ -87,6 +90,7 @@ impl RunTrack {
             frame: None,
             proposed: 0,
             held: Held::Nothing,
+            last_question: 0,
         }
     }
 }

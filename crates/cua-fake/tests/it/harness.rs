@@ -10,9 +10,9 @@ use cua_bus::{
 use cua_desktop::{BackendCaps, BackendKind, MaskWhere, Stamp, ToplevelIdent};
 use cua_fake::{
     DesktopCall, FakeA11y, FakeCapture, FakeDesktop, FakePdp, FakeSeat, FixedClock, Fixture,
-    MemoryEvents, ScriptedModel, SeatEvent, World, run_harness,
+    MemoryEvents, ScriptedModel, SeatEvent, World, run_harness_answering,
 };
-use cua_run::{CuaConfig, CuaSignal, Run, RunEnv, RunPhase};
+use cua_run::{CuaConfig, CuaSignal, FORCED_YES, Run, RunEnv, RunPhase};
 use docket_core::{RunMode, WindowTrust};
 use maskcap::{Frame, FrameSeq, MaskReport, PixelBuf, WholeMask};
 use porter_core::{AppName, Px, UnixSeconds};
@@ -142,7 +142,14 @@ fn end_to_end_scripted_run_done() {
     );
     let (run, _) = Run::start(RunId::parse("r-1").unwrap(), task, env, Stamp(0));
 
-    let report = block_on(run_harness(run, &mut world)).expect("the run ends");
+    // The fixture is a sign-in form with a password field: a sensitive window, so the run asks
+    // before the click whatever the gate says, and the scripted person says yes.
+    let report = block_on(run_harness_answering(
+        run,
+        &mut world,
+        vec![FORCED_YES.to_owned()],
+    ))
+    .expect("the run ends");
 
     assert_eq!(report.run.phase, RunPhase::Finished(CuaOutcome::Done));
     assert_eq!(
@@ -162,8 +169,29 @@ fn end_to_end_scripted_run_done() {
             .any(|s| matches!(s, CuaSignal::ActionDone(..)))
     );
 
+    let asked = report
+        .signals
+        .iter()
+        .position(|s| matches!(s, CuaSignal::AskUser(..)))
+        .expect("the sensitive window forced a question");
+    let clicked = report
+        .signals
+        .iter()
+        .position(|s| matches!(s, CuaSignal::ActionDone(..)))
+        .expect("the click ran");
+    assert!(asked < clicked, "the question comes before the click");
+
     let kinds: Vec<String> = world.events.records().iter().map(|r| r.kind()).collect();
-    assert_eq!(kinds, ["cua.run.started", "cua.step", "cua.run.finished"]);
+    assert_eq!(
+        kinds,
+        [
+            "cua.run.started",
+            "cua.asked",
+            "cua.confirmed",
+            "cua.step",
+            "cua.run.finished"
+        ]
+    );
 
     let performed = world
         .seat
@@ -182,11 +210,11 @@ fn end_to_end_scripted_run_done() {
     let sent = world.events.sent();
     assert_eq!(
         sent.len(),
-        1,
-        "one report, no progress: the run never waited for the person"
+        2,
+        "a progress report for the question, then the final one"
     );
     assert_eq!(
-        sent[0].1.kind,
+        sent[1].1.kind,
         MessageKind::Report {
             status: ReportStatus::Done
         }
