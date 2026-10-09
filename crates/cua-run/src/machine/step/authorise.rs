@@ -158,12 +158,7 @@ fn sensitive_head(run: &Run) -> Option<WindowSensitivity> {
         head.action.class(),
         ActionClass::Pointer | ActionClass::Keyboard
     );
-    let sensitivity = window_sensitivity(
-        &obs.window.app,
-        &obs.window.title.value,
-        obs.window.trust,
-        nodes_of(obs),
-    );
+    let sensitivity = window_sensitivity(&obs.window.app, &obs.window.title.value, nodes_of(obs));
     (drives && sensitivity.asks()).then_some(sensitivity)
 }
 

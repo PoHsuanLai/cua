@@ -4,11 +4,12 @@
 //! answered "run" (see `machine::step::authorise`). This only adds questions: a window this
 //! table does not know is `Ordinary` and the router's ruling stands alone. The derivation is
 //! one pure function, [`window_sensitivity`]: the accessibility tree (a password entry), the
-//! window class the app and title name, the title, and the window's trust.
+//! window class the app and title name, and the title. The window's trust is not a signal: the
+//! shell's own windows are not administration by default, and the router rules on them itself.
 
 use crate::window_class::window_class_in;
 use a11y_tree::{A11yNode, Role, Sensitivity};
-use docket_core::{WindowClass, WindowTrust};
+use docket_core::WindowClass;
 use porter_core::AppName;
 use serde::{Deserialize, Serialize};
 
@@ -77,17 +78,11 @@ fn title_has(title: &str, fragments: &[&str]) -> bool {
     fragments.iter().any(|f| title.contains(f))
 }
 
-/// The sensitivity of the window of `app` titled `title`, of the given `trust`, whose
+/// The sensitivity of the window of `app` titled `title`, whose
 /// accessibility tree is `nodes`. A password entry on screen makes it `Credentials` first; then
 /// the class the app and title name (a password manager is `Credentials`, an admin tool is
-/// `Admin`, payments and banking are `Payment`); then the title's own words; then the trust (the
-/// shell's own windows are `Admin`). Pure.
-pub fn window_sensitivity(
-    app: &AppName,
-    title: &str,
-    trust: WindowTrust,
-    nodes: &[A11yNode],
-) -> WindowSensitivity {
+/// `Admin`, payments and banking are `Payment`); then the title's own words. Pure.
+pub fn window_sensitivity(app: &AppName, title: &str, nodes: &[A11yNode]) -> WindowSensitivity {
     if nodes.iter().any(holds_secret) {
         return WindowSensitivity::Credentials;
     }
@@ -99,7 +94,7 @@ pub fn window_sensitivity(
     }
     if title_has(title, CREDENTIAL_TITLES) {
         WindowSensitivity::Credentials
-    } else if title_has(title, ADMIN_TITLES) || trust == WindowTrust::Shell {
+    } else if title_has(title, ADMIN_TITLES) {
         WindowSensitivity::Admin
     } else {
         WindowSensitivity::Ordinary
@@ -133,19 +128,17 @@ mod tests {
     }
 
     #[test]
-    fn the_tree_the_app_the_title_and_the_trust_pick_the_sensitivity() {
+    fn the_tree_the_app_and_the_title_pick_the_sensitivity() {
         use WindowSensitivity::{Admin, Credentials, Ordinary, Payment};
         struct Row {
             app: &'static str,
             title: &'static str,
-            trust: WindowTrust,
             nodes: Vec<A11yNode>,
             want: WindowSensitivity,
         }
         let row = |app, title, want| Row {
             app,
             title,
-            trust: WindowTrust::Native,
             nodes: vec![],
             want,
         };
@@ -163,10 +156,7 @@ mod tests {
             row("org.example.Bank", "Account", Payment),
             row("org.mozilla.firefox", "Shop - Checkout", Payment),
             row("org.mozilla.firefox", "Bank transfer", Payment),
-            Row {
-                trust: WindowTrust::Shell,
-                ..row("org.quire.Shell", "Panel", Admin)
-            },
+            row("org.quire.Shell", "Panel", Ordinary),
             Row {
                 nodes: vec![node(Role::PasswordText, "", Sensitivity::Secret)],
                 ..row("org.mozilla.firefox", "Account", Credentials)
@@ -183,7 +173,7 @@ mod tests {
         for r in rows {
             let app = AppName::parse(r.app).unwrap();
             assert_eq!(
-                window_sensitivity(&app, r.title, r.trust, &r.nodes),
+                window_sensitivity(&app, r.title, &r.nodes),
                 r.want,
                 "{} {}",
                 r.app,
