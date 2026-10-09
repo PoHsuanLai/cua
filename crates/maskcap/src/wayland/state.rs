@@ -4,13 +4,13 @@
 use crate::CaptureError;
 use cua_action::{Coord, PixelFormat, Point, Rect, Size, WindowSpace};
 use std::collections::BTreeMap;
-use std::sync::atomic::{AtomicU64, Ordering};
+use cua_desktop::{ObjectKey as Key, Rounds, SyncTag};
 use wayland_client::protocol::wl_buffer::{self, WlBuffer};
 use wayland_client::protocol::wl_callback::{self, WlCallback};
 use wayland_client::protocol::wl_registry::{self, WlRegistry};
 use wayland_client::protocol::wl_shm::{self, Format, WlShm};
 use wayland_client::protocol::wl_shm_pool::{self, WlShmPool};
-use wayland_client::{Connection, Dispatch, Proxy, QueueHandle, WEnum, event_created_child};
+use wayland_client::{Connection, Dispatch, QueueHandle, WEnum, event_created_child};
 use wayland_protocols::ext::foreign_toplevel_list::v1::client::ext_foreign_toplevel_handle_v1::{
     self, ExtForeignToplevelHandleV1,
 };
@@ -32,22 +32,6 @@ use wayland_protocols::ext::image_copy_capture::v1::client::ext_image_copy_captu
 use wayland_protocols::ext::image_copy_capture::v1::client::ext_image_copy_capture_session_v1::{
     self, ExtImageCopyCaptureSessionV1,
 };
-
-static NEXT_KEY: AtomicU64 = AtomicU64::new(1);
-
-/// Names one toplevel or one capture session across its objects.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub(crate) struct Key(u64);
-
-impl Key {
-    pub(crate) fn fresh() -> Self {
-        Key(NEXT_KEY.fetch_add(1, Ordering::Relaxed))
-    }
-}
-
-/// Tags a `wl_display.sync` callback.
-#[derive(Debug)]
-pub(crate) struct SyncTag;
 
 #[derive(Debug)]
 struct Top {
@@ -116,8 +100,7 @@ pub(crate) struct CapState {
     shm: Option<WlShm>,
     toplevels: BTreeMap<Key, Top>,
     pub sessions: BTreeMap<Key, SessionRec>,
-    issued: u64,
-    done: u64,
+    rounds: Rounds,
 }
 
 impl CapState {
@@ -132,8 +115,7 @@ impl CapState {
             shm: None,
             toplevels: BTreeMap::new(),
             sessions: BTreeMap::new(),
-            issued: 0,
-            done: 0,
+            rounds: Rounds::default(),
         }
     }
 
@@ -148,13 +130,11 @@ impl CapState {
     }
 
     pub(crate) fn sync(&mut self) -> u64 {
-        self.issued += 1;
-        self.connection.display().sync(&self.qh, SyncTag);
-        self.issued
+        self.rounds.ask(&self.connection, &self.qh)
     }
 
     pub(crate) fn synced(&self, n: u64) -> bool {
-        self.done >= n
+        self.rounds.reached(n)
     }
 
     /// Opens a capture session over the toplevel named `ident`.
@@ -170,8 +150,8 @@ impl CapState {
             .find(|top| top.ident.as_deref() == Some(ident))
             .ok_or(CaptureError::SourceGone)?;
         let source = sources.create_source(&top.handle, &self.qh, ());
-        let key = Key::fresh();
-        let proxy = copy.create_session(&source, Options::empty(), &self.qh, key);
+        let proxy = copy.create_session(&source, Options::empty(), &self.qh, ());
+        let key = Key::of(&proxy);
         source.destroy();
         self.sessions.insert(
             key,
@@ -268,7 +248,7 @@ impl Dispatch<WlCallback, SyncTag> for CapState {
         let wl_callback::Event::Done { .. } = event else {
             return;
         };
-        state.done += 1;
+        state.rounds.answered();
     }
 }
 
@@ -284,32 +264,31 @@ impl Dispatch<ExtForeignToplevelListV1, ()> for CapState {
         let ext_foreign_toplevel_list_v1::Event::Toplevel { toplevel } = event else {
             return;
         };
-        if let Some(key) = toplevel.data::<Key>().copied() {
-            state.toplevels.insert(
-                key,
-                Top {
-                    handle: toplevel,
-                    ident: None,
-                },
-            );
-        }
+        state.toplevels.insert(
+            Key::of(&toplevel),
+            Top {
+                handle: toplevel,
+                ident: None,
+            },
+        );
     }
 
     event_created_child!(CapState, ExtForeignToplevelListV1, [
-        ext_foreign_toplevel_list_v1::EVT_TOPLEVEL_OPCODE => (ExtForeignToplevelHandleV1, Key::fresh()),
+        ext_foreign_toplevel_list_v1::EVT_TOPLEVEL_OPCODE => (ExtForeignToplevelHandleV1, ()),
     ]);
 }
 
-impl Dispatch<ExtForeignToplevelHandleV1, Key> for CapState {
+impl Dispatch<ExtForeignToplevelHandleV1, ()> for CapState {
     fn event(
         state: &mut Self,
         handle: &ExtForeignToplevelHandleV1,
         event: ext_foreign_toplevel_handle_v1::Event,
-        key: &Key,
+        _: &(),
         _: &Connection,
         _: &QueueHandle<Self>,
     ) {
         use ext_foreign_toplevel_handle_v1::Event;
+        let key = &Key::of(handle);
         match event {
             Event::Identifier { identifier } => {
                 if let Some(top) = state.toplevels.get_mut(key) {
@@ -342,17 +321,17 @@ ignore_events! {
     ExtImageCopyCaptureManagerV1, ext_image_copy_capture_manager_v1::Event, ();
 }
 
-impl Dispatch<ExtImageCopyCaptureSessionV1, Key> for CapState {
+impl Dispatch<ExtImageCopyCaptureSessionV1, ()> for CapState {
     fn event(
         state: &mut Self,
-        _: &ExtImageCopyCaptureSessionV1,
+        session: &ExtImageCopyCaptureSessionV1,
         event: ext_image_copy_capture_session_v1::Event,
-        key: &Key,
+        _: &(),
         _: &Connection,
         _: &QueueHandle<Self>,
     ) {
         use ext_image_copy_capture_session_v1::Event;
-        let Some(rec) = state.sessions.get_mut(key) else {
+        let Some(rec) = state.sessions.get_mut(&Key::of(session)) else {
             return;
         };
         match event {

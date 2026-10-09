@@ -1,6 +1,6 @@
 //! From what the handlers recorded to [`ToplevelInfo`].
 
-use super::state::{Toplevel, WlState};
+use super::state::{Announcement, Toplevel, WlState, WorkspaceState};
 use crate::{
     DesktopError, GlobalCoord, GlobalRect, Pid, ToplevelIdent, ToplevelInfo, WindowTitle,
     WindowTrust, WorkspaceRef, WorkspaceShown,
@@ -17,7 +17,7 @@ pub(crate) fn infos(state: &WlState) -> Result<Vec<ToplevelInfo>, DesktopError> 
     Ok(state
         .toplevels
         .values()
-        .filter(|top| top.announced)
+        .filter(|top| top.announcement == Announcement::Announced)
         .filter_map(|top| info_of(state, top))
         .collect())
 }
@@ -35,7 +35,7 @@ fn info_of(state: &WlState, top: &Toplevel) -> Option<ToplevelInfo> {
             },
             |ws| WorkspaceRef {
                 id: ws.id.clone(),
-                shown: if ws.active {
+                shown: if ws.state == WorkspaceState::Active {
                     WorkspaceShown::Shown
                 } else {
                     WorkspaceShown::Hidden

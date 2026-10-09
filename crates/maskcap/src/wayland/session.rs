@@ -1,12 +1,13 @@
 //! One open capture of one window.
 
 use super::shm::Shared;
-use super::state::{CapState, Constraints, Failure, FrameSlot, Key, pick_format};
+use super::state::{CapState, Constraints, Failure, FrameSlot, pick_format};
 use crate::{
     CaptureError, CaptureSession, DamageAt, DamageSource, Frame, FrameSeq, FrameWant, MaskRegion,
     MaskReport, PixelBuf, WholeMask, apply_masks, pixel_diff,
 };
 use cua_action::{Coord, Point, Rect, Scale120, Size, WindowSpace};
+use cua_desktop::ObjectKey as Key;
 use cua_desktop::{MaskWhere, Pump, Stamp};
 use std::fmt;
 use std::sync::Arc;

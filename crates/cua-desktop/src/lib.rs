@@ -35,7 +35,10 @@ pub use lease::{
 pub use traits::{Desktop, LeaseControl};
 pub use units::{Digest32, DigestError, GlobalCoord, GlobalRect, Ms, Pid, Stamp};
 #[cfg(feature = "wayland")]
-pub use wayland::{CosmicDesktop, DeviceTypes, Pump, PumpError, SenderSocket, SocketFuture};
+pub use wayland::{
+    CosmicDesktop, DeviceTypes, ObjectKey, Pump, PumpError, Rounds, SenderSocket, SocketFuture,
+    SyncTag,
+};
 pub use window::{
     IdentError, ToplevelIdent, ToplevelInfo, ToplevelState, WindowTitle, WorkspaceRef,
     WorkspaceShown,

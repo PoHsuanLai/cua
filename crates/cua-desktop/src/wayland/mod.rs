@@ -8,6 +8,7 @@
 //! yet, so nothing here branches on one. On stock, suspend, resume and glow are cuad's seat and
 //! the shell's orb: nothing to say to the compositor.
 
+mod key;
 mod lease;
 mod proto;
 mod pump;
@@ -15,6 +16,7 @@ mod socket;
 mod state;
 mod toplevels;
 
+pub use key::{ObjectKey, Rounds, SyncTag};
 pub use pump::{Pump, PumpError};
 pub use socket::{DeviceTypes, SenderSocket, SocketFuture};
 
