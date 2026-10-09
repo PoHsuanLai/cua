@@ -91,3 +91,5 @@ The trial entries are in `eval/cloud-catalog/` and are not committed to stoker. 
 `ui-tars-1.5-7b` and `claude-sonnet-5.5` do not exist there; `kimi-k3` (and every hosted entry) has no
 `actions_out`, so inferd claims no computer-use capability for it and cua's `Need::ComputerUse` could not
 select it even if inferd allowed hosted computer use (it refuses today).
+
+See `ladder.md` for these rows next to Holo 3.1 9B and Holo4 35B-A3B (2026-10-10) and which of the harness problems above they hit.

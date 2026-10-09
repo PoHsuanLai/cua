@@ -5,6 +5,7 @@
 //! cua-eval --dir eval --engine cassette --cassette eval/reports/x.cassette.toml
 //! cua-eval --dir eval --screens /tmp/screens                        (what each task starts on)
 //! cua-eval --dir eval --engine local --entry catalog/holo-3.1-4b.toml --port 8000 --repeat 3
+//! cua-eval ... --api-key-file <file>        (an engine that wants a bearer key; read from the file, never printed)
 //! ```
 //!
 //! The local engine is an OpenAI-compatible server on this machine's loopback address that the
@@ -18,8 +19,8 @@ use cua_eval::live::{Plan, Thinking};
 use cua_eval::report::{Check, Report, render};
 use cua_eval::run::RunRecord;
 use model_http::{
-    AuthHeader, HostName, HttpClient, HttpEndpoint, HttpTarget, Port, Proxy, Timeouts, UrlPath,
-    WaitMs,
+    AuthHeader, HostName, HttpClient, HttpEndpoint, HttpTarget, Port, Proxy, Secret, Timeouts,
+    UrlPath, WaitMs,
 };
 use model_openai_compat::{Flavor, OpenAiCodec};
 use std::path::PathBuf;
@@ -43,6 +44,7 @@ struct Args {
     entry: Option<PathBuf>,
     cassette: Option<PathBuf>,
     port: u16,
+    api_key_file: Option<PathBuf>,
     model: String,
     thinking: Thinking,
     repeat: u32,
@@ -58,6 +60,7 @@ fn parse(mut argv: impl Iterator<Item = String>) -> Result<Args, String> {
         entry: None,
         cassette: None,
         port: 8000,
+        api_key_file: None,
         model: "holo-3.1-4b".to_owned(),
         thinking: Thinking::Off,
         repeat: 1,
@@ -72,6 +75,7 @@ fn parse(mut argv: impl Iterator<Item = String>) -> Result<Args, String> {
             "--screens" => args.screens = Some(PathBuf::from(value()?)),
             "--entry" => args.entry = Some(PathBuf::from(value()?)),
             "--cassette" => args.cassette = Some(PathBuf::from(value()?)),
+            "--api-key-file" => args.api_key_file = Some(PathBuf::from(value()?)),
             "--model" => args.model = value()?,
             "--port" => args.port = value()?.parse().map_err(|_| "--port is a number")?,
             "--repeat" => args.repeat = value()?.parse().map_err(|_| "--repeat is a number")?,
@@ -100,7 +104,7 @@ fn parse(mut argv: impl Iterator<Item = String>) -> Result<Args, String> {
     Ok(args)
 }
 
-fn endpoint(port: u16) -> HttpEndpoint {
+fn endpoint(port: u16, auth: AuthHeader) -> HttpEndpoint {
     HttpEndpoint {
         target: HttpTarget::Tcp {
             host: HostName("127.0.0.1".to_owned()),
@@ -108,7 +112,7 @@ fn endpoint(port: u16) -> HttpEndpoint {
         },
         proxy: Proxy::Direct,
         base: UrlPath("/v1".to_owned()),
-        auth: AuthHeader::None,
+        auth,
         headers: Vec::new(),
         timeouts: Timeouts {
             connect: WaitMs(5_000),
@@ -157,8 +161,15 @@ async fn play(args: &Args, corpus: &Corpus) -> Result<Played, String> {
                 .ok_or("--engine local needs --entry <catalogue entry>")?;
             let text = std::fs::read_to_string(entry).map_err(|e| fail(&e))?;
             let plan = Plan::of(&text, &args.model, args.thinking).map_err(|e| fail(&e))?;
+            let auth = match &args.api_key_file {
+                None => AuthHeader::None,
+                Some(path) => {
+                    let key = std::fs::read_to_string(path).map_err(|e| fail(&e))?;
+                    AuthHeader::Bearer(Secret(key.trim().to_owned()))
+                }
+            };
             let provider = Arc::new(
-                OpenAiCodec::new(Flavor::Vllm).provider(HttpClient::new(endpoint(args.port))),
+                OpenAiCodec::new(Flavor::Vllm).provider(HttpClient::new(endpoint(args.port, auth))),
             );
             let player = format!("local:{}", args.model);
             let runs = run_live(corpus, provider, &plan, &player, args.repeat, &args.only)
