@@ -28,6 +28,7 @@ fn turn(arguments: &str) -> Script {
             stop: StopReason::ToolUse,
             usage: TurnUsage::default(),
             served: ModelName("holo".into()),
+            first_token: None,
         }),
     }
 }

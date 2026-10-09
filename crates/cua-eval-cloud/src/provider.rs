@@ -62,6 +62,7 @@ fn transport_fault(error: TransportError) -> ProviderError {
             ProviderError::Unreadable("inferd closed or garbled the session".to_owned())
         }
         TransportError::Denied(why) => ProviderError::Refused(format!("inferd denied: {why}")),
+        other => ProviderError::Unreadable(other.to_string()),
     }
 }
 
@@ -193,6 +194,7 @@ impl<T> InferdProvider<T> {
                         images: sp::ImageCount(0),
                     },
                     served: sp::ModelName(chat.served.model.to_string()),
+                    first_token: None,
                 })
             }
             InferReply::Refused(InferRefusal::OverBudget) => {

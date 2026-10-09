@@ -6,8 +6,8 @@ use cua_action::{
 use cua_fake::{ScriptError, ScriptedModel};
 use cua_run::{CuaModel, CuaModelError, FrameAttachment, StepEvent, StepSink};
 use model_provider::{
-    EngineExtras, JsonText, Knob, Limits, Message, Milli, ModelName, OutputShape, Part,
-    ProviderError, Reasoning, Role, SafetySignal, Sampling, StopReason, Tokens, ToolCall,
+    ChoiceScores, EngineExtras, JsonText, Knob, Limits, Message, Milli, ModelName, OutputShape,
+    Part, ProviderError, Reasoning, Role, SafetySignal, Sampling, StopReason, Tokens, ToolCall,
     ToolCallId, ToolChoice, ToolName, ToolParallelism, TurnEnd, TurnEvent, TurnRequest, TurnUsage,
 };
 use model_replay::{
@@ -41,6 +41,7 @@ fn request() -> TurnRequest {
             seed: Knob::Off,
         },
         reasoning: Reasoning::Off,
+        choice_scores: ChoiceScores::Off,
         engine: EngineExtras::None,
     }
 }
@@ -56,6 +57,7 @@ fn interaction(id: u32, events: Vec<TurnEvent>, end: Result<(), ProviderError>) 
             stop: StopReason::EndTurn,
             usage: TurnUsage::default(),
             served: ModelName("holo".into()),
+            first_token: None,
         }),
     }
 }

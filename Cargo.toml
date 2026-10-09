@@ -40,41 +40,41 @@ casement-protocols    = { git = "https://github.com/PoHsuanLai/casement-protocol
 
 # stoker's frozen interfaces, by git at a pinned rev (quire
 # CONSUMING.md section 1). stoker has no cua dependency, so there is no cycle.
-cua-action      = { git = "https://github.com/PoHsuanLai/stoker", rev = "b24f6d456e7915f1052c722f5aebabf1ee0f0e74" }
-model-provider  = { git = "https://github.com/PoHsuanLai/stoker", rev = "b24f6d456e7915f1052c722f5aebabf1ee0f0e74" }
-model-replay    = { git = "https://github.com/PoHsuanLai/stoker", rev = "b24f6d456e7915f1052c722f5aebabf1ee0f0e74" }
-cua-parse       = { git = "https://github.com/PoHsuanLai/stoker", rev = "b24f6d456e7915f1052c722f5aebabf1ee0f0e74" }
+cua-action      = { git = "https://github.com/PoHsuanLai/stoker", rev = "916da297d564e35cee9302d2d1e6607ae45962a7" }
+model-provider  = { git = "https://github.com/PoHsuanLai/stoker", rev = "916da297d564e35cee9302d2d1e6607ae45962a7" }
+model-replay    = { git = "https://github.com/PoHsuanLai/stoker", rev = "916da297d564e35cee9302d2d1e6607ae45962a7" }
+cua-parse       = { git = "https://github.com/PoHsuanLai/stoker", rev = "916da297d564e35cee9302d2d1e6607ae45962a7" }
 # cua-eval only: the live model path (the session that builds a step's prompt, the catalogue entry it reads, the HTTP client and the chat codec, the image preparation).
-cua-vendors     = { git = "https://github.com/PoHsuanLai/stoker", rev = "b24f6d456e7915f1052c722f5aebabf1ee0f0e74" }
-cua-session     = { git = "https://github.com/PoHsuanLai/stoker", rev = "b24f6d456e7915f1052c722f5aebabf1ee0f0e74" }
-model-catalog   = { git = "https://github.com/PoHsuanLai/stoker", rev = "b24f6d456e7915f1052c722f5aebabf1ee0f0e74" }
-model-http      = { git = "https://github.com/PoHsuanLai/stoker", rev = "b24f6d456e7915f1052c722f5aebabf1ee0f0e74" }
-model-openai-compat = { git = "https://github.com/PoHsuanLai/stoker", rev = "b24f6d456e7915f1052c722f5aebabf1ee0f0e74" }
-vision-prep     = { git = "https://github.com/PoHsuanLai/stoker", rev = "b24f6d456e7915f1052c722f5aebabf1ee0f0e74" }
+cua-vendors     = { git = "https://github.com/PoHsuanLai/stoker", rev = "916da297d564e35cee9302d2d1e6607ae45962a7" }
+cua-session     = { git = "https://github.com/PoHsuanLai/stoker", rev = "916da297d564e35cee9302d2d1e6607ae45962a7" }
+model-catalog   = { git = "https://github.com/PoHsuanLai/stoker", rev = "916da297d564e35cee9302d2d1e6607ae45962a7" }
+model-http      = { git = "https://github.com/PoHsuanLai/stoker", rev = "916da297d564e35cee9302d2d1e6607ae45962a7" }
+model-openai-compat = { git = "https://github.com/PoHsuanLai/stoker", rev = "916da297d564e35cee9302d2d1e6607ae45962a7" }
+vision-prep     = { git = "https://github.com/PoHsuanLai/stoker", rev = "916da297d564e35cee9302d2d1e6607ae45962a7" }
 
 # porter's frozen interfaces.
-porter-core     = { git = "https://github.com/PoHsuanLai/porter", rev = "13fdda866dcfa6fc338a994a866e5e10f2ffe0f6" }
-prov            = { git = "https://github.com/PoHsuanLai/porter", rev = "13fdda866dcfa6fc338a994a866e5e10f2ffe0f6" }
-porter-infer    = { git = "https://github.com/PoHsuanLai/porter", rev = "13fdda866dcfa6fc338a994a866e5e10f2ffe0f6" }
-porter-client   = { git = "https://github.com/PoHsuanLai/porter", rev = "13fdda866dcfa6fc338a994a866e5e10f2ffe0f6" }
+porter-core     = { git = "https://github.com/PoHsuanLai/porter", rev = "ba687f1613b6b518128cb33f292cc674ecb1a696" }
+prov            = { git = "https://github.com/PoHsuanLai/porter", rev = "ba687f1613b6b518128cb33f292cc674ecb1a696" }
+porter-infer    = { git = "https://github.com/PoHsuanLai/porter", rev = "ba687f1613b6b518128cb33f292cc674ecb1a696" }
+porter-client   = { git = "https://github.com/PoHsuanLai/porter", rev = "ba687f1613b6b518128cb33f292cc674ecb1a696" }
 
 # almanac's frozen interfaces: cuad records `CuaRecord`s as `EventBody::Area` through memoryd.
-almanac-core    = { git = "https://github.com/PoHsuanLai/almanac", rev = "132a66e7884ca02b61dbaeab38aa1a461b9c61e5" }
-almanac-client  = { git = "https://github.com/PoHsuanLai/almanac", rev = "132a66e7884ca02b61dbaeab38aa1a461b9c61e5" }
+almanac-core    = { git = "https://github.com/PoHsuanLai/almanac", rev = "ec1130203773edf07d2065e34db3056bedc60d07" }
+almanac-client  = { git = "https://github.com/PoHsuanLai/almanac", rev = "ec1130203773edf07d2065e34db3056bedc60d07" }
 
 # docket's frozen interfaces: the gate contract (`CuaAsk`, `GateAnswer`, `RunMode`,
 # `WindowTrust`), the message draft and the provider trait. docket sits below cua and has no cua
 # dependency.
-docket-core     = { git = "https://github.com/PoHsuanLai/docket", rev = "557d95de8bf714efb33a31b50c714c726776c392" }
-docket-client   = { git = "https://github.com/PoHsuanLai/docket", rev = "557d95de8bf714efb33a31b50c714c726776c392" }
+docket-core     = { git = "https://github.com/PoHsuanLai/docket", rev = "58a936686a075493a21a306d54bf1d7897f5b887" }
+docket-client   = { git = "https://github.com/PoHsuanLai/docket", rev = "58a936686a075493a21a306d54bf1d7897f5b887" }
 
 # Dev-dependencies of cuad's tests only: a real intentd on a private bus over docket's fakes, and
 # a real memory service over almanac's fakes. Nothing outside `[dev-dependencies]` names them.
-intentd         = { git = "https://github.com/PoHsuanLai/docket", rev = "557d95de8bf714efb33a31b50c714c726776c392" }
-docket-fake     = { git = "https://github.com/PoHsuanLai/docket", rev = "557d95de8bf714efb33a31b50c714c726776c392" }
-docket-router   = { git = "https://github.com/PoHsuanLai/docket", rev = "557d95de8bf714efb33a31b50c714c726776c392" }
-almanac-fake    = { git = "https://github.com/PoHsuanLai/almanac", rev = "132a66e7884ca02b61dbaeab38aa1a461b9c61e5" }
-almanac-service = { git = "https://github.com/PoHsuanLai/almanac", rev = "132a66e7884ca02b61dbaeab38aa1a461b9c61e5" }
+intentd         = { git = "https://github.com/PoHsuanLai/docket", rev = "58a936686a075493a21a306d54bf1d7897f5b887" }
+docket-fake     = { git = "https://github.com/PoHsuanLai/docket", rev = "58a936686a075493a21a306d54bf1d7897f5b887" }
+docket-router   = { git = "https://github.com/PoHsuanLai/docket", rev = "58a936686a075493a21a306d54bf1d7897f5b887" }
+almanac-fake    = { git = "https://github.com/PoHsuanLai/almanac", rev = "ec1130203773edf07d2065e34db3056bedc60d07" }
+almanac-service = { git = "https://github.com/PoHsuanLai/almanac", rev = "ec1130203773edf07d2065e34db3056bedc60d07" }
 
 # From quire's pinned block (`docs/workspace-deps.toml`), copied verbatim: only the lines cua
 # names itself.

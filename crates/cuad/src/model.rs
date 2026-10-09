@@ -62,9 +62,7 @@ fn need_for(env: CuaEnv) -> Need {
 fn transport_failure(error: TransportError) -> CuaModelError {
     match error {
         TransportError::Unreachable => CuaModelError::Transient,
-        TransportError::Closed | TransportError::Denied(_) | TransportError::Malformed(_) => {
-            CuaModelError::Fatal
-        }
+        _ => CuaModelError::Fatal,
     }
 }
 

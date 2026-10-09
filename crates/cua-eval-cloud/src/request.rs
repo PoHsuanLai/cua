@@ -198,6 +198,7 @@ pub fn chat(
                 SamplingFrom::Provider => pi::Knob::Off,
             },
             stop: turn.limits.stop.clone(),
+            scores: pi::Knob::Off,
         },
     })
 }
@@ -223,6 +224,7 @@ mod tests {
             tools: vec![],
             tool_choice: sp::ToolChoice::Auto,
             tool_calls: sp::ToolParallelism::One,
+            choice_scores: sp::ChoiceScores::Off,
             output,
             limits: sp::Limits {
                 max_output: sp::Tokens(512),
