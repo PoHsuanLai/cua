@@ -21,6 +21,7 @@
 //! the messages that reached the run as notes), [`mode_support`], [`CuaConfig`], [`LeaseBook`] and
 //! [`stalled`].
 
+mod commit;
 mod config;
 mod effect_class;
 mod exec;
@@ -34,6 +35,7 @@ mod stall;
 mod turn;
 mod window_class;
 
+pub use commit::{Commit, commit_of};
 pub use config::{
     Autopause, CuaConfig, Days, DefaultMode, Enabled, KeepScreens, SETTING_ROWS, SettingRow,
     SettingValue, SettleLimits,
@@ -56,4 +58,4 @@ pub use seams::{
 };
 pub use stall::{Repeats, Stall};
 pub use turn::{FrameAttachment, note_of, turn};
-pub use window_class::window_class_of;
+pub use window_class::{window_class_in, window_class_of};

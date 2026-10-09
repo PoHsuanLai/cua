@@ -168,6 +168,15 @@ fn classify_effect_table() {
             want: (Effect::Outbound, EffectBasis::WindowClass(Payments)),
         },
         Row {
+            name: "type in a bank",
+            action: typing(),
+            class: WindowClass::Banking,
+            want: (
+                Effect::Outbound,
+                EffectBasis::WindowClass(WindowClass::Banking),
+            ),
+        },
+        Row {
             name: "click in a terminal is not typing",
             action: click(),
             class: Terminal,
@@ -189,6 +198,17 @@ fn classify_effect_table() {
         EffectBasis::NodeTypedAction(ActionName::parse("mail.thread.archive").unwrap()),
         "a typed node wins over the window class"
     );
+}
+
+#[test]
+fn a_pay_button_on_screen_makes_an_untitled_window_a_payment_form() {
+    let app = AppName::parse("org.mozilla.firefox").unwrap();
+    let pay = secret_node(1, Role::Button, "Pay now", Sensitivity::Normal, "");
+    let back = secret_node(2, Role::Button, "Back", Sensitivity::Normal, "");
+    let class = |nodes: &[A11yNode]| cua_run::window_class_in(&app, "Shop", nodes);
+    assert_eq!(class(&[back.clone(), pay]), WindowClass::Payments);
+    assert_eq!(class(&[back]), WindowClass::Ordinary);
+    assert_eq!(class(&[]), WindowClass::Ordinary);
 }
 
 fn digest(byte: u8) -> FrameDigest {

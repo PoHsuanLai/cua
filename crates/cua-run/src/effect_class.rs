@@ -9,7 +9,7 @@ use prov::Effect;
 /// The effect of `action`, and why: a node that maps to a typed action wins (the basis names the
 /// action and the router replaces the effect with the one the action declares; the effect
 /// returned is the default table's); otherwise a window class makes typing and Enter `Outbound`
-/// in a mail compose window, a terminal or a payments window; otherwise the default table
+/// in a mail compose window, a terminal, a payments window or a bank window; otherwise the default table
 /// (observing is `Read`, pointer actions and keys `UndoableWrite`). The router makes the ruling;
 /// this only names the effect it is asked about. Pure.
 pub fn classify_effect(
@@ -42,10 +42,13 @@ fn sends_something(action: &CuaAction<WindowSpace>) -> bool {
 }
 
 /// The windows where typing and Enter leave the machine: a mail compose window, a terminal, a
-/// payment form.
+/// payment form, a bank.
 fn sends_in(class: WindowClass) -> bool {
     matches!(
         class,
-        WindowClass::MailCompose | WindowClass::Terminal | WindowClass::Payments
+        WindowClass::MailCompose
+            | WindowClass::Terminal
+            | WindowClass::Payments
+            | WindowClass::Banking
     )
 }

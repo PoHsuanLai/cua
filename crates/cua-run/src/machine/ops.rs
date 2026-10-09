@@ -6,7 +6,7 @@ use crate::machine::effect::{CuaSignal, HintSource, RunEffect};
 use crate::machine::phase::RunPhase;
 use crate::machine::run::Run;
 use crate::observation::{Observation, TreeObs};
-use crate::window_class::window_class_of;
+use crate::window_class::window_class_in;
 use a11y_tree::{A11yNode, role_word};
 use cua_action::{Coord, CuaAction, Point, Rect, Size, Target, WindowSpace};
 use cua_bus::{ActionOutcome, ActionResult, CuaRecord, FrameNote, TargetedAction, ThoughtDigest};
@@ -253,7 +253,7 @@ pub(crate) fn glow_for(planned: &PlannedAction) -> GlowState {
 /// The question to the router about the head action.
 pub(crate) fn ask_for(run: &Run, obs: &Observation, action: &CuaAction<WindowSpace>) -> CuaAsk {
     let node = first_target(action).and_then(|t| node_at(obs, &t));
-    let class = window_class_of(&obs.window.app, &obs.window.title.value);
+    let class = window_class_in(&obs.window.app, &obs.window.title.value, nodes_of(obs));
     let (effect, basis) = classify_effect(action, node, class);
     CuaAsk {
         run: run.id.clone(),
@@ -282,7 +282,7 @@ pub(crate) fn step_record(
     let (effect, basis) = match &run.working {
         Some(obs) => {
             let node = first_target(&outcome.action.action).and_then(|t| node_at(obs, &t));
-            let class = window_class_of(&obs.window.app, &obs.window.title.value);
+            let class = window_class_in(&obs.window.app, &obs.window.title.value, nodes_of(obs));
             classify_effect(&outcome.action.action, node, class)
         }
         None => classify_effect(
