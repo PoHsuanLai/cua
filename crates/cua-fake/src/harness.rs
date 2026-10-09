@@ -113,7 +113,9 @@ pub async fn run_harness_answering(
             exec.carry_out(effect, Some(&mut *model), &mut out).await;
         }
         for signal in &out.signals {
-            if let (CuaSignal::AskUser(id, _), Some(answer)) = (signal, answers.pop_front()) {
+            if let CuaSignal::AskUser(id, _) = signal
+                && let Some(answer) = answers.pop_front()
+            {
                 out.inputs.push_back(RunInput::UserAnswer(
                     *id,
                     prov::Labelled::new(answer, prov::Label::trusted_user()),
