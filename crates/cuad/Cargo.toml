@@ -31,7 +31,6 @@ prov = { workspace = true }
 porter-core = { workspace = true }
 porter-infer = { workspace = true }
 porter-client = { workspace = true, features = ["dbus"] }
-almanac-core = { workspace = true }
 almanac-client = { workspace = true, features = ["dbus"] }
 wayland-client = { workspace = true }
 serde = { workspace = true }
@@ -45,6 +44,7 @@ zbus = { workspace = true }
 futures-util = { workspace = true }
 
 [dev-dependencies]
+almanac-core = { workspace = true }
 cua-action = { workspace = true }
 cua-fake = { workspace = true }
 tokio = { workspace = true, features = ["test-util"] }
