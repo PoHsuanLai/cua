@@ -10,7 +10,6 @@ publish.workspace = true
 
 [dependencies]
 cua-action = { workspace = true }
-docket-core = { workspace = true }
 prov = { workspace = true }
 porter-core = { workspace = true }
 serde = { workspace = true }

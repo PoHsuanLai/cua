@@ -1,7 +1,7 @@
 //! A window as the compositor reports it.
 
 use crate::units::{GlobalRect, Pid};
-use docket_core::WindowTrust;
+use cua_action::WindowTrust;
 use porter_core::AppName;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;

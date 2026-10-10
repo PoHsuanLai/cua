@@ -4,10 +4,11 @@
 use cua_action::{
     Button, ClickCount, Coord, CuaAction, DeviceSize, Point, Summary, Target, WindowSpace,
 };
+use cua_action::{RunMode, WindowClass};
 use cua_bus::*;
 use cua_desktop::{BackendKind, Digest32, Ms, Stamp, ToplevelIdent, WindowTitle};
 use cua_types::{FrameDigest, InputOrigin, InputReceipt, SeatError, TextPath};
-use docket_core::{CallRefusal, EffectBasis, RunMode, WindowClass};
+use docket_core::{CallRefusal, EffectBasis};
 use porter_core::{AccountId, AppName, Count, DataClass, Locality, MicroUsd, ModelId, UnixSeconds};
 use porter_infer::{ServedBy, StepIndex};
 use prov::{

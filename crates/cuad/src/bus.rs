@@ -6,6 +6,7 @@
 //! is derived from the connection: the well-known names the sender owns (`CallerNames`), never
 //! anything in a body.
 
+use cua_action::RunMode;
 use cua_bus::{
     CuaCaller, CuaEnvelope, CuaMember, CuaTask, CuaVocab, QuestionId, WindowBody, backend_wire,
     modes_wire, slug_of,
@@ -16,7 +17,6 @@ use cua_host::CallerNames;
 use cua_host::Drivable;
 use cua_host::Supervisor;
 use cua_run::mode_support;
-use docket_core::RunMode;
 use prov::{Label, Labelled, RunId};
 use serde::Serialize;
 use std::collections::HashMap;

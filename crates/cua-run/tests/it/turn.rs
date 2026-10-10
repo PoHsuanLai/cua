@@ -2,6 +2,7 @@
 //! reached the run, and what is never said.
 
 use a11y_tree::TreeSource;
+use cua_action::WindowTrust;
 use cua_action::{
     Button, ClickCount, Coord, CuaAction, DeviceSize, PixelFormat, Point, Scale120, Size, Target,
     WindowSpace,
@@ -12,7 +13,7 @@ use cua_run::{
     ContextObs, CursorObs, Focus, Observation, TreeAbsence, TreeObs, Visibility, WindowInfo,
     note_of, turn,
 };
-use docket_core::{CallRefusal, DenyCode, InboundLine, InboundPart, Reveal, WindowTrust};
+use docket_core::{CallRefusal, DenyCode, InboundLine, InboundPart, Reveal};
 use maskcap::{Frame, FrameSeq, MaskReason, MaskReport, PixelBuf, WholeMask};
 use porter_core::{AppName, DataClass};
 use porter_infer::{MaskedRegions, NoteFrom, PrevResult, StepIndex, StepNote};

@@ -41,7 +41,7 @@ dev-dependencies are outside it):
 
 | Crate | May depend on |
 | --- | --- |
-| `cua-desktop` | `cua-action`, `docket-core`, `prov`, `porter-core`; `casement-protocols` with feature `wayland` |
+| `cua-desktop` | `cua-action`, `prov`, `porter-core`; `casement-protocols` with feature `wayland` |
 | `cua-types` | `cua-desktop`, `porter-core` |
 | `maskcap` | `cua-action`, `cua-desktop`, `cua-types`; `casement-protocols` with feature `wayland` |
 | `seat-input` | `cua-action`, `cua-desktop`, `cua-types`, `porter-core` |
@@ -64,7 +64,7 @@ conflicts".
 The repo order is stoker, porter, almanac, docket, cua, sill. cua reaches stoker's
 `cua-action` and `model-replay`, porter's `prov`, `porter-core`, `porter-infer` and
 `porter-client`, almanac's `almanac-core` and `almanac-client`, and docket's `docket-core`
-(`CuaAsk`, `GateAnswer`, `RunMode`, `WindowTrust`, `MessageDraft`) and `docket-client`
+(`CuaAsk`, `GateAnswer`, `MessageDraft`) and `docket-client`
 (`IntentProvider`, `Intents`), all by sibling path until pinned git revs replace them. Nothing of
 sill may enter any tree here. cua never reaches `policy-point`: the router is the one decision
 point and cuad asks it through `Intents1.Gate`.
@@ -98,7 +98,8 @@ only; the pure set never reaches an effect crate; `wayland-client` is behind the
 | **a run's progress and result** | `prov::Message` of kind `Report`; `cua_bus::report_draft` builds the draft, `CuaOutcome::status` picks the status. There is no result type |
 | coordinate spaces, `CuaAction`, `Point<S>`, `Chord`, `NodeId` | stoker `cua-action` (`WindowSpace`, never a bare pixel pair) |
 | the model step (`CuaBegin`, `CuaStepRequest`, `CuaStepReply`, `TreeText`, `StepIndex`, `ServedBy`) | porter `porter-infer`; `cua_run::turn` builds the request |
-| the gate contract (`CuaAsk`, `GateAnswer`, `EffectBasis`, `WindowClass`, `RunMode`, `WindowTrust`, `GrantAsk`, `MessageDraft`) | docket `docket-core`; `cua-desktop` re-exports `RunMode` and `WindowTrust` |
+| the gate vocabulary `RunMode`, `WindowTrust`, `WindowClass` | stoker `cua-action`; `cua-desktop` re-exports `RunMode` and `WindowTrust` |
+| the gate contract (`CuaAsk`, `GateAnswer`, `EffectBasis`, `GrantAsk`, `MessageDraft`) | docket `docket-core` |
 | the confirmation | the router's, through `Confirm1`; cua only stops its input (`RunEffect::SuspendLease(Consent)`, then `Proceed`) |
 | the per-app consent | docket's `ActionGrant` with caller Cua, asked through `Gate.Grant` |
 | desktop vocabulary, units (`Stamp`, `Ms`, `Digest32`), leases, backend capabilities | `cua-desktop` |

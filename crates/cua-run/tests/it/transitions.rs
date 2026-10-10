@@ -105,7 +105,7 @@ fn the_consent_row_leases_the_window_on_yes_and_blocks_on_no() {
     });
     let lease = lease.expect("a lease request");
     assert_eq!(lease.window, ToplevelIdent::parse("w1").unwrap());
-    assert_eq!(lease.mode, docket_core::RunMode::InPlace);
+    assert_eq!(lease.mode, cua_action::RunMode::InPlace);
     assert_eq!(states(&d.effects), vec![cua_bus::RunStateSlug::Leasing]);
 
     for (name, input) in [
@@ -267,7 +267,7 @@ fn a_click_is_authorised_with_the_facts_the_router_needs() {
     assert_eq!(ask.run, run_id());
     assert_eq!(ask.step, 1);
     assert_eq!(ask.app, app());
-    assert_eq!(ask.trust, docket_core::WindowTrust::Native);
+    assert_eq!(ask.trust, cua_action::WindowTrust::Native);
     assert_eq!(ask.effect, prov::Effect::UndoableWrite);
     assert_eq!(ask.basis, docket_core::EffectBasis::DefaultTable);
     assert_eq!(ask.screen.integrity, prov::Integrity::Untrusted);

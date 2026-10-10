@@ -8,13 +8,14 @@ use cua_action::{
     Button, Chord, ClickCount, Coord, CuaAction, DeviceSize, FinishOutcome, PixelFormat, Point,
     Rect, Repeat, Scale120, Size, Summary, Target, TypedText, WaitMs, WindowSpace,
 };
+use cua_action::{WindowClass, WindowTrust};
 use cua_bus::WindowRef;
 use cua_desktop::{Digest32, Stamp, ToplevelIdent};
 use cua_run::{
     ContextObs, CursorObs, Focus, LeaseBook, Observation, Repeats, Stall, TreeObs, Visibility,
     WindowInfo, classify_effect, turn,
 };
-use docket_core::{EffectBasis, WindowClass, WindowTrust};
+use docket_core::EffectBasis;
 use maskcap::{Frame, FrameDigest, FrameSeq, MaskReport, PixelBuf, WholeMask};
 use porter_core::{AppName, Count, DataClass};
 use porter_infer::{MaskedRegions, StepIndex, TreeText};

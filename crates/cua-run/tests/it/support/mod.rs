@@ -10,6 +10,7 @@ use cua_action::{
     Button, ClickCount, Coord, CuaAction, DeviceSize, FinishOutcome, PixelFormat, Point, Rect,
     Scale120, Size, Summary, Target, WaitMs, WindowSpace,
 };
+use cua_action::{RunMode, WindowTrust};
 use cua_bus::{
     CuaTask, ProcedureUse, ReportRoute, RunBudget, RunOrigin, SuccessCheck, TaskTarget, WindowRef,
 };
@@ -21,7 +22,6 @@ use cua_run::{
     ContextObs, CuaConfig, CursorObs, Focus, ModelReply, Observation, Run, RunEffect, RunEnv,
     RunInput, RunPhase, TreeObs, Visibility, WindowInfo,
 };
-use docket_core::{RunMode, WindowTrust};
 use maskcap::{Frame, FrameSeq, MaskReport, PixelBuf, WholeMask};
 use porter_core::{AppName, Count, DataClass, MicroUsd, Px, Tokens};
 use porter_infer::{CuaStepReply, StepIndex, TokenUsage};

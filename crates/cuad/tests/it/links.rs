@@ -9,6 +9,7 @@ use almanac_core::{
     ActorFilter, Caller, Count, SpaceId as MemSpace, TimelineFilter, TimelineQuery, TrustFilter,
 };
 use cua_action::{CuaAction, WindowSpace};
+use cua_action::{RunMode, WindowTrust};
 use cua_bus::{
     ActionResult, AuthorisedBy, CuaOutcome, CuaRecord, FrameNote, TargetedAction, ThoughtDigest,
     WindowRef,
@@ -20,7 +21,7 @@ use docket_client::{DbusTransport, Intents};
 use docket_core::{
     CallRefusal, CallerRole, ConfirmAnswer, ConfirmEnd, CuaAsk, DraftPart, EffectBasis, GateAnswer,
     GrantAnswer, GrantAsk, GrantScope, InboundPart, InboxAsk, IntentsRequest, MessageDraft,
-    RunMode, SessionOpen, WindowTrust,
+    SessionOpen,
 };
 use docket_fake::{ScriptedConfirmer, fake_router};
 use docket_router::Router;

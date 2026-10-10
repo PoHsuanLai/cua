@@ -341,12 +341,12 @@ fn the_mode_and_the_target_decide_at_the_start_what_a_run_may_do() {
         Some(CuaOutcome::Blocked(BlockedOn::NeedsCapability))
     );
     let mut hidden = task(model_says());
-    hidden.mode = docket_core::RunMode::AgentWorkspace;
+    hidden.mode = cua_action::RunMode::AgentWorkspace;
     let d = Drive::start(STOCK, hidden);
     assert_eq!(
         finished_with(&d),
         Some(CuaOutcome::Blocked(BlockedOn::ModeUnsupported(
-            docket_core::RunMode::AgentWorkspace
+            cua_action::RunMode::AgentWorkspace
         ))),
         "stock cannot run the agent workspace"
     );

@@ -1,9 +1,10 @@
 //! What a run sees at the start of a step.
 
 use a11y_tree::A11ySnapshot;
+use cua_action::WindowTrust;
 use cua_action::{Point, Scale120, Size, WindowSpace};
 use cua_bus::{ActionOutcome, WindowRef};
-use docket_core::{ContextSnapshot, WindowTrust};
+use docket_core::ContextSnapshot;
 use maskcap::Frame;
 use porter_core::AppName;
 use porter_infer::{StepIndex, StepNote};

@@ -5,7 +5,7 @@
 
 use crate::commit::{Commit, commit_of};
 use a11y_tree::A11yNode;
-use docket_core::WindowClass;
+use cua_action::WindowClass;
 use porter_core::AppName;
 
 /// Fragments of an app id that name a kind of window, first match wins. Lower case.

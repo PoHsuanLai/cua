@@ -177,11 +177,10 @@ impl GateCheck for IntentsCheck {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cua_action::{CuaAction, WindowSpace};
+    use cua_action::{CuaAction, RunMode, WindowSpace, WindowTrust};
     use docket_client::{Boxed, Events, Said, Steering, Watched};
     use docket_core::{
-        CallProgress, CallRefusal, ConfirmEnd, EffectBasis, GateAnswer, RunMode, WindowTrust,
-        WireRefusal,
+        CallProgress, CallRefusal, ConfirmEnd, EffectBasis, GateAnswer, WireRefusal,
     };
     use prov::ConfirmId;
     use prov::{Effect, Label, RunId, SpaceId};

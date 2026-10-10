@@ -2,7 +2,7 @@
 
 use crate::error::DesktopError;
 use crate::window::{ToplevelIdent, ToplevelInfo};
-use docket_core::{RunMode, WindowTrust};
+use cua_action::{RunMode, WindowTrust};
 use prov::SpaceId;
 use serde::{Deserialize, Serialize};
 use std::os::fd::OwnedFd;

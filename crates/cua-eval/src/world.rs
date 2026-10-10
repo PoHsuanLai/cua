@@ -268,7 +268,7 @@ fn window_of(stage: &Stage, ident: &ToplevelIdent) -> Result<ToplevelInfo, Deskt
             shown: cua_desktop::WorkspaceShown::Shown,
         },
         state: std::collections::BTreeSet::new(),
-        trust: docket_core::WindowTrust::Native,
+        trust: cua_action::WindowTrust::Native,
     })
 }
 

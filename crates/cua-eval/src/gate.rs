@@ -5,10 +5,10 @@
 //! class. What the eval measures is the model against this gate and cua's own classification
 //! in front of it.
 
-use cua_action::ActionClass;
+use cua_action::{ActionClass, WindowClass};
 use cua_run::{GateCheck, GateEvent, GateLink, LinkError};
 use docket_core::{
-    CallRefusal, ConfirmEnd, CuaAsk, EffectBasis, GateAnswer, GrantAnswer, GrantAsk, WindowClass,
+    CallRefusal, ConfirmEnd, CuaAsk, EffectBasis, GateAnswer, GrantAnswer, GrantAsk,
 };
 use porter_core::AppName;
 use prov::{ConfirmId, Effect, RunId, SessionId, SpaceId};

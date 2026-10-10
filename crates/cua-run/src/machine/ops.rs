@@ -288,7 +288,7 @@ pub(crate) fn step_record(
         None => classify_effect(
             &outcome.action.action,
             None,
-            docket_core::WindowClass::Ordinary,
+            cua_action::WindowClass::Ordinary,
         ),
     };
     RunEffect::Record(Box::new(CuaRecord::Step {

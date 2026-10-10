@@ -3,8 +3,8 @@
 //! `cosmic` feature compares them with the generated bindings.
 
 use crate::lease::{RevokeReason, Suspend};
+use cua_action::RunMode;
 use cua_action::{Rect, WindowSpace};
-use docket_core::RunMode;
 use serde::{Deserialize, Serialize};
 
 /// What the run looks like from outside: the compositor (fork) or the shell (stock) draws it.

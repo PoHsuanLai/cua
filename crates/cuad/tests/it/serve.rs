@@ -346,7 +346,7 @@ async fn the_router_starts_a_run_through_the_provider_and_gets_its_id() {
     assert_eq!(value, docket_core::Value::Text("r-1".to_owned()));
     // `auto` on stock is the person's own seat.
     let view = fx.supervisor.view(&"r-1".parse_run()).expect("a live run");
-    assert_eq!(view.task.mode, docket_core::RunMode::InPlace);
+    assert_eq!(view.task.mode, cua_action::RunMode::InPlace);
     assert_eq!(view.task.goal.value, "sign in");
     assert_eq!(
         view.task.report.to,

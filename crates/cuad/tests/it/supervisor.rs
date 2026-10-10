@@ -128,7 +128,7 @@ async fn start_refused_for_non_planner_caller_and_while_disabled_or_unaimed() {
         Err(ControlRefusal::WindowUnknown)
     );
     let mut hidden = task();
-    hidden.mode = docket_core::RunMode::AgentWorkspace;
+    hidden.mode = cua_action::RunMode::AgentWorkspace;
     assert_eq!(
         sup.start(CuaCaller::Router, hidden).await,
         Err(ControlRefusal::ModeUnsupported),

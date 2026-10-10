@@ -1,6 +1,6 @@
 //! Why a desktop call failed.
 
-use docket_core::{RunMode, WindowTrust};
+use cua_action::{RunMode, WindowTrust};
 use serde::{Deserialize, Serialize};
 
 /// Why a desktop or lease call failed.

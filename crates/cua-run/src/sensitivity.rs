@@ -9,7 +9,7 @@
 
 use crate::window_class::window_class_in;
 use a11y_tree::{A11yNode, Role, Sensitivity};
-use docket_core::WindowClass;
+use cua_action::WindowClass;
 use porter_core::AppName;
 use serde::{Deserialize, Serialize};
 
