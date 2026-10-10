@@ -7,14 +7,13 @@ use cua_action::{
 use cua_bus::*;
 use cua_desktop::{BackendKind, Digest32, Ms, Stamp, ToplevelIdent, WindowTitle};
 use docket_core::{CallRefusal, EffectBasis, RunMode, WindowClass};
-use maskcap::FrameDigest;
 use porter_core::{AccountId, AppName, Count, DataClass, Locality, MicroUsd, ModelId, UnixSeconds};
 use porter_infer::{ServedBy, StepIndex};
 use prov::{
     Address, AgentRef, Confidentiality, Effect, Integrity, Label, Labelled, MessageId, RunId,
     SessionId, Source, SpaceId, ThreadId,
 };
-use seat_input::{InputOrigin, InputReceipt, SeatError, TextPath};
+use cua_types::{FrameDigest, InputOrigin, InputReceipt, SeatError, TextPath};
 use serde::{Serialize, de::DeserializeOwned};
 use std::collections::BTreeSet;
 
