@@ -58,7 +58,8 @@ fn link_error(error: ClientError) -> LinkError {
         ClientError::Transport(TransportError::Closed) => LinkError::Unavailable,
         ClientError::Transport(other) => LinkError::Protocol(other.to_string()),
         ClientError::Refused(refusal) => LinkError::Refused(refusal),
-        ClientError::Unexpected => LinkError::Protocol("unexpected reply".to_owned()),
+        // Unexpected, or a failure a later docket adds: the run stops, never proceeds.
+        _ => LinkError::Protocol("unexpected reply".to_owned()),
     }
 }
 
