@@ -74,12 +74,7 @@ fn window() -> cua_desktop::ToplevelInfo {
 }
 
 fn reply(action: CuaAction<WindowSpace>) -> CuaStepReply {
-    CuaStepReply {
-        thought: None,
-        actions: vec![action],
-        dropped: vec![],
-        safety: vec![],
-    }
+    CuaStepReply::new(vec![action])
 }
 
 fn user_goal() -> Labelled<String> {

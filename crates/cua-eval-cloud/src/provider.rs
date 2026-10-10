@@ -49,10 +49,7 @@ fn need(has_tools: bool) -> Need {
     if has_tools {
         features.insert(LlmFeature::Tools);
     }
-    Need::Llm(LlmNeed {
-        features,
-        context: Tokens(16_000),
-    })
+    Need::Llm(LlmNeed::new(features, Tokens(16_000)))
 }
 
 fn transport_fault(error: TransportError) -> ProviderError {
@@ -96,6 +93,8 @@ fn stop_of(stop: StopReason) -> sp::StopReason {
         StopReason::MaxTokens => sp::StopReason::MaxTokens,
         StopReason::StopSequence => sp::StopReason::StopSequence,
         StopReason::ContentFilter => sp::StopReason::ContentFilter,
+        // A stop this build does not know is read as the provider withholding the reply.
+        _ => sp::StopReason::ContentFilter,
     }
 }
 

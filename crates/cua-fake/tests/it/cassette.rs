@@ -100,13 +100,13 @@ fn attachment() -> FrameAttachment {
 }
 
 fn blank_request() -> porter_infer::CuaStepRequest {
-    porter_infer::CuaStepRequest {
-        step: StepIndex(1),
-        window: porter_infer::WindowGeometry {
+    porter_infer::CuaStepRequest::new(
+        StepIndex(1),
+        porter_infer::WindowGeometry {
             logical: Size::new(Coord(1), Coord(1)),
             scale: Scale120(120),
         },
-        frame: porter_infer::FrameImage {
+        porter_infer::FrameImage {
             source: porter_infer::ImageSource::Attached(porter_infer::AttachIndex(0)),
             layout: porter_infer::FrameLayout::Raw {
                 format: PixelFormat::Xbgr8888,
@@ -114,12 +114,8 @@ fn blank_request() -> porter_infer::CuaStepRequest {
                 stride: 4,
             },
         },
-        cursor: None,
-        prev: vec![],
-        masked: porter_infer::MaskedRegions(0),
-        tree: porter_infer::TreeText::Absent,
-        notes: vec![],
-    }
+        porter_infer::TreeText::Absent,
+    )
 }
 
 fn left_click(x: u32, y: u32) -> CuaAction<cua_action::WindowSpace> {

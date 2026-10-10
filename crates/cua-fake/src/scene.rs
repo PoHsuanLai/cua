@@ -73,12 +73,7 @@ pub fn window() -> ToplevelInfo {
 }
 
 pub fn reply(action: CuaAction<WindowSpace>) -> Result<CuaStepReply, CuaModelError> {
-    Ok(CuaStepReply {
-        thought: None,
-        actions: vec![action],
-        dropped: vec![],
-        safety: vec![],
-    })
+    Ok(CuaStepReply::new(vec![action]))
 }
 
 pub fn click() -> CuaAction<WindowSpace> {

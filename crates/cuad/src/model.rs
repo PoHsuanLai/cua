@@ -52,9 +52,7 @@ impl<T: Transport> InferdCuaModel<T> {
 
 /// The need a run of `env` opens its session with.
 fn need_for(env: CuaEnv) -> Need {
-    Need::ComputerUse(CuaNeed {
-        environments: BTreeSet::from([env]),
-    })
+    Need::ComputerUse(CuaNeed::new(BTreeSet::from([env])))
 }
 
 /// An unreachable inferd is worth retrying; a hung-up, confused or refusing one is not (a refused
@@ -79,6 +77,8 @@ fn failed_turn(reply: InferReply) -> CuaModelError {
         | InferReply::Embed(_)
         | InferReply::Transcribed(_)
         | InferReply::Spoke(_) => CuaModelError::Fatal,
+        // A reply this build does not know is never read as an answer.
+        _ => CuaModelError::Fatal,
     }
 }
 

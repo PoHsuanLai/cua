@@ -170,12 +170,7 @@ fn served() -> ServedBy {
 }
 
 fn empty_reply() -> CuaStepReply {
-    CuaStepReply {
-        thought: None,
-        actions: vec![],
-        dropped: vec![],
-        safety: vec![],
-    }
+    CuaStepReply::new(vec![])
 }
 
 fn click() -> CuaAction<WindowSpace> {
@@ -188,11 +183,7 @@ fn click() -> CuaAction<WindowSpace> {
 }
 
 fn begin() -> CuaBegin {
-    CuaBegin {
-        goal: "archive the thread".into(),
-        hints: vec!["mail".into()],
-        env: CuaEnv::Desktop,
-    }
+    CuaBegin::new("archive the thread".into(), CuaEnv::Desktop).with_hints(vec!["mail".into()])
 }
 
 fn ack() -> Vec<InferEvent> {
@@ -224,14 +215,14 @@ fn attachment() -> FrameAttachment {
 }
 
 fn request(note: &str) -> CuaStepRequest {
-    CuaStepRequest {
-        step: StepIndex(1),
-        window: WindowGeometry {
+    CuaStepRequest::new(
+        StepIndex(1),
+        WindowGeometry {
             logical: Size::new(Coord(2), Coord(2)),
             scale: Scale120(120),
         },
         // Deliberately wrong: the model attaches the buffer it is given, whatever turn said.
-        frame: FrameImage {
+        FrameImage {
             source: ImageSource::Attached(AttachIndex(7)),
             layout: FrameLayout::Raw {
                 format: PixelFormat::Abgr8888,
@@ -239,15 +230,13 @@ fn request(note: &str) -> CuaStepRequest {
                 stride: 36,
             },
         },
-        cursor: None,
-        prev: vec![],
-        masked: MaskedRegions(0),
-        tree: TreeText::Absent,
-        notes: vec![StepNote {
-            from: NoteFrom::Person,
-            text: note.into(),
-        }],
-    }
+        TreeText::Absent,
+    )
+    .with_masked(MaskedRegions(0))
+    .with_notes(vec![StepNote {
+        from: NoteFrom::Person,
+        text: note.into(),
+    }])
 }
 
 #[tokio::test]
@@ -277,11 +266,7 @@ async fn begin_opens_a_computer_use_screen_session_and_reads_to_the_acknowledgem
 
 #[tokio::test]
 async fn a_step_sends_the_frame_as_a_sealed_memfd_and_forwards_what_streams() {
-    let reply = CuaStepReply {
-        thought: Some("the button is at 3,4".into()),
-        actions: vec![click()],
-        ..empty_reply()
-    };
+    let reply = CuaStepReply::new(vec![click()]).with_thought("the button is at 3,4".into());
     let (transport, log) = Scripted::new(vec![
         ack(),
         vec![
@@ -400,11 +385,7 @@ async fn every_way_a_turn_can_end_is_sorted_for_the_run_machine() {
         (
             "another kind of reply",
             vec![InferEvent::Finished(InferReply::Embed(
-                porter_infer::EmbedReply {
-                    vectors: vec![],
-                    usage: usage(1),
-                    served: served(),
-                },
+                porter_infer::EmbedReply::new(vec![], usage(1), served()),
             ))],
             CuaModelError::Fatal,
         ),
@@ -474,10 +455,7 @@ async fn faults_before_and_around_the_session() {
         Err(CuaModelError::Fatal)
     );
     // A begin answered with a step (actions in the acknowledgement) is a protocol fault.
-    let acting = CuaStepReply {
-        actions: vec![click()],
-        ..empty_reply()
-    };
+    let acting = CuaStepReply::new(vec![click()]);
     let (transport, _) = Scripted::new(vec![vec![InferEvent::Finished(InferReply::CuaStep(
         acting,
     ))]]);

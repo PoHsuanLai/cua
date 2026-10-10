@@ -166,10 +166,10 @@ fn write_out(
 }
 
 async fn warm(transport: &DbusTransport, tier: Tier) -> Result<(), String> {
-    let need = Need::Llm(LlmNeed {
-        features: BTreeSet::from([LlmFeature::Chat, LlmFeature::Vision, LlmFeature::Tools]),
-        context: Tokens(16_000),
-    });
+    let need = Need::Llm(LlmNeed::new(
+        BTreeSet::from([LlmFeature::Chat, LlmFeature::Vision, LlmFeature::Tools]),
+        Tokens(16_000),
+    ));
     let options = OpenOptions::default().with_usage(Usage::Interactive);
     let ready = transport
         .prepare(&need, DataClass::Screen, tier, &options)

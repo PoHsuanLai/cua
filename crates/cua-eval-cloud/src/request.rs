@@ -179,42 +179,44 @@ pub fn chat(
         sp::OutputShape::Free => pi::ReplyShape::Text,
         _ => return Err(RequestFault::Shape),
     };
-    Ok(pi::ChatRequest {
-        messages: turn
-            .messages
-            .iter()
-            .map(|message| {
-                Ok(pi::ChatMessage {
-                    role: role(message.role),
-                    parts: message
-                        .parts
-                        .iter()
-                        .map(part)
-                        .collect::<Result<_, RequestFault>>()?,
-                })
+    let messages: Vec<pi::ChatMessage> = turn
+        .messages
+        .iter()
+        .map(|message| {
+            Ok(pi::ChatMessage {
+                role: role(message.role),
+                parts: message
+                    .parts
+                    .iter()
+                    .map(part)
+                    .collect::<Result<_, RequestFault>>()?,
             })
-            .collect::<Result<_, RequestFault>>()?,
-        shape,
-        tier,
-        class: DataClass::Screen,
-        usage: Usage::Interactive,
-        tools: turn.tools.iter().map(tool).collect::<Result<_, _>>()?,
-        control: pi::ChatControl {
-            tool_choice: choice(&turn.tool_choice)?,
-            tool_calls: match turn.tool_calls {
-                sp::ToolParallelism::One => pi::ToolParallelism::One,
-                sp::ToolParallelism::Many => pi::ToolParallelism::Many,
-            },
-            max_output: pi::Knob::Set(Tokens(turn.limits.max_output.0)),
-            reasoning: reasoning(turn.reasoning),
-            sampling: match from {
-                SamplingFrom::Entry => pi::Knob::Set(sampling(&turn.sampling)),
-                SamplingFrom::Provider => pi::Knob::Off,
-            },
-            stop: turn.limits.stop.clone(),
-            scores: pi::Knob::Off,
-        },
-    })
+        })
+        .collect::<Result<_, RequestFault>>()?;
+    let tools: Vec<pi::ToolDecl> = turn
+        .tools
+        .iter()
+        .map(tool)
+        .collect::<Result<_, RequestFault>>()?;
+    let control = pi::ChatControl::new()
+        .with_tool_choice(choice(&turn.tool_choice)?)
+        .with_tool_calls(match turn.tool_calls {
+            sp::ToolParallelism::One => pi::ToolParallelism::One,
+            sp::ToolParallelism::Many => pi::ToolParallelism::Many,
+        })
+        .with_max_output(pi::Knob::Set(Tokens(turn.limits.max_output.0)))
+        .with_reasoning(reasoning(turn.reasoning))
+        .with_sampling(match from {
+            SamplingFrom::Entry => pi::Knob::Set(sampling(&turn.sampling)),
+            SamplingFrom::Provider => pi::Knob::Off,
+        })
+        .with_stop(turn.limits.stop.clone());
+    Ok(
+        pi::ChatRequest::new(messages, tier, DataClass::Screen, Usage::Interactive)
+            .with_shape(shape)
+            .with_tools(tools)
+            .with_control(control),
+    )
 }
 
 #[cfg(test)]

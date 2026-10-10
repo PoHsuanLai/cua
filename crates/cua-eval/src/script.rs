@@ -305,12 +305,7 @@ impl CuaModel for ScriptModel {
         let action = next
             .resolve(&self.stage)
             .map_err(|_| CuaModelError::Fatal)?;
-        Ok(CuaStepReply {
-            thought: None,
-            actions: vec![action],
-            dropped: vec![],
-            safety: vec![],
-        })
+        Ok(CuaStepReply::new(vec![action]))
     }
 
     fn usage(&self) -> TokenUsage {

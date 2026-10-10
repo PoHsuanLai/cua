@@ -202,19 +202,20 @@ fn reply_of(it: &Interaction) -> Result<CuaStepReply, ScriptError> {
     let thought = Some(turn.thought)
         .filter(|t| !t.is_empty())
         .or(parsed.thought.clone());
-    Ok(CuaStepReply {
-        thought,
-        actions: actions_of(&parsed.actions),
-        dropped: parsed
-            .dropped
-            .iter()
-            .map(|d| DroppedAction {
-                verb: d.verb.as_str().to_owned(),
-                reason: drop_reason(d.reason),
-            })
-            .collect(),
-        safety: turn.safety,
-    })
+    let mut reply = CuaStepReply::new(actions_of(&parsed.actions))
+        .with_dropped(
+            parsed
+                .dropped
+                .iter()
+                .map(|d| DroppedAction {
+                    verb: d.verb.as_str().to_owned(),
+                    reason: drop_reason(d.reason),
+                })
+                .collect(),
+        )
+        .with_safety(turn.safety);
+    reply.thought = thought;
+    Ok(reply)
 }
 
 fn drop_reason(reason: cua_parse::DropReason) -> DropReason {

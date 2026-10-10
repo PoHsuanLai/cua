@@ -302,13 +302,13 @@ impl StepSink for Sink {
 }
 
 fn blank_request() -> porter_infer::CuaStepRequest {
-    porter_infer::CuaStepRequest {
-        step: StepIndex(1),
-        window: porter_infer::WindowGeometry {
+    porter_infer::CuaStepRequest::new(
+        StepIndex(1),
+        porter_infer::WindowGeometry {
             logical: Size::new(Coord(1), Coord(1)),
             scale: Scale120(120),
         },
-        frame: porter_infer::FrameImage {
+        porter_infer::FrameImage {
             source: porter_infer::ImageSource::Attached(porter_infer::AttachIndex(0)),
             layout: porter_infer::FrameLayout::Raw {
                 format: PixelFormat::Xbgr8888,
@@ -316,28 +316,18 @@ fn blank_request() -> porter_infer::CuaStepRequest {
                 stride: 4,
             },
         },
-        cursor: None,
-        prev: vec![],
-        masked: porter_infer::MaskedRegions(0),
-        tree: porter_infer::TreeText::Absent,
-        notes: vec![],
-    }
+        porter_infer::TreeText::Absent,
+    )
 }
 
 #[test]
 fn the_scripted_model_plays_its_script_then_fails_fatally_and_remembers_the_goal() {
-    let reply = CuaStepReply {
-        thought: None,
-        actions: vec![],
-        dropped: vec![],
-        safety: vec![],
-    };
+    let reply = CuaStepReply::new(vec![]);
     let mut model = ScriptedModel::new(vec![Ok(reply.clone()), Err(CuaModelError::Transient)]);
-    let begin = CuaBegin {
-        goal: "download the invoice".into(),
-        hints: vec![],
-        env: porter_core::capability::CuaEnv::Desktop,
-    };
+    let begin = CuaBegin::new(
+        "download the invoice".into(),
+        porter_core::capability::CuaEnv::Desktop,
+    );
     ready(model.begin(begin.clone())).unwrap();
     assert_eq!(model.begun(), &[begin]);
     let attachment = || FrameAttachment(frame(1).pixels);

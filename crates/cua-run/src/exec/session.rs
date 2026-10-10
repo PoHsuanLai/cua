@@ -120,11 +120,11 @@ impl<S: Seams> Exec<'_, S> {
         out: &mut impl Outlet,
     ) {
         if self.model == ModelSession::NotYet {
-            let begin = CuaBegin {
-                goal: self.task.goal.value.clone(),
-                hints: self.hints.clone(),
-                env: porter_core::capability::CuaEnv::Desktop,
-            };
+            let begin = CuaBegin::new(
+                self.task.goal.value.clone(),
+                porter_core::capability::CuaEnv::Desktop,
+            )
+            .with_hints(self.hints.clone());
             if let Err(error) = model.begin(begin).await {
                 return out.input(RunInput::ModelFailed(error));
             }

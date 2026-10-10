@@ -282,18 +282,17 @@ impl<P: Provider + 'static> CuaModel for ProviderModel<P> {
                     actions,
                     dropped,
                 } => {
-                    return Ok(CuaStepReply {
-                        thought,
-                        actions,
-                        dropped: dropped
+                    let mut reply = CuaStepReply::new(actions).with_dropped(
+                        dropped
                             .iter()
                             .map(|d| DroppedAction {
                                 verb: d.verb.as_str().to_owned(),
                                 reason: dropped_reason(d.reason),
                             })
                             .collect(),
-                        safety: Vec::new(),
-                    });
+                    );
+                    reply.thought = thought;
+                    return Ok(reply);
                 }
                 StepOutcome::Repair(next) => sent = next,
                 StepOutcome::Unparseable(_) => return Err(CuaModelError::Parse),

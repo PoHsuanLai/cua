@@ -100,13 +100,17 @@ fn masked_regions(obs: &Observation) -> MaskedRegions {
 /// model's own questions. Pure.
 pub fn turn(obs: &Observation) -> (CuaStepRequest, FrameAttachment) {
     let pixels = obs.frame.pixels.clone();
-    let request = CuaStepRequest {
-        step: obs.step,
-        window: WindowGeometry {
+    let tree = match &obs.tree {
+        TreeObs::Absent(_) => TreeText::Absent,
+        TreeObs::Present(snapshot) => TreeText::Present(render(snapshot)),
+    };
+    let mut request = CuaStepRequest::new(
+        obs.step,
+        WindowGeometry {
             logical: obs.window.size,
             scale: obs.window.scale,
         },
-        frame: FrameImage {
+        FrameImage {
             source: ImageSource::Attached(AttachIndex(0)),
             layout: FrameLayout::Raw {
                 format: pixels.format,
@@ -114,22 +118,20 @@ pub fn turn(obs: &Observation) -> (CuaStepRequest, FrameAttachment) {
                 stride: pixels.stride,
             },
         },
-        cursor: match obs.cursor {
-            CursorObs::Unknown => None,
-            CursorObs::At(point) => Some(point),
-        },
-        prev: obs.prev.iter().map(prev_result).collect(),
-        masked: masked_regions(obs),
-        tree: match &obs.tree {
-            TreeObs::Absent(_) => TreeText::Absent,
-            TreeObs::Present(snapshot) => TreeText::Present(render(snapshot)),
-        },
-        notes: obs
-            .notes
+        tree,
+    )
+    .with_prev(obs.prev.iter().map(prev_result).collect())
+    .with_masked(masked_regions(obs))
+    .with_notes(
+        obs.notes
             .iter()
             .cloned()
             .chain(obs.prev.iter().filter_map(answer_note))
             .collect(),
+    );
+    request.cursor = match obs.cursor {
+        CursorObs::Unknown => None,
+        CursorObs::At(point) => Some(point),
     };
     (request, FrameAttachment(pixels))
 }

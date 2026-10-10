@@ -230,12 +230,7 @@ pub fn finish(outcome: FinishOutcome, text: &str) -> CuaAction<WindowSpace> {
 
 pub fn reply(actions: Vec<CuaAction<WindowSpace>>) -> Box<ModelReply> {
     Box::new(ModelReply {
-        reply: CuaStepReply {
-            thought: Some("think".to_owned()),
-            actions,
-            dropped: vec![],
-            safety: vec![],
-        },
+        reply: CuaStepReply::new(actions).with_thought("think".to_owned()),
         usage: TokenUsage {
             input: Tokens(0),
             output: Tokens(0),
