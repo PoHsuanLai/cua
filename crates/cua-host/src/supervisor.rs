@@ -96,8 +96,15 @@ fn input_of(member: CuaMember) -> Option<RunInput> {
 impl<S: Seams> Supervisor<S> {
     /// A supervisor over `parts` under `config`.
     pub fn new(parts: Parts<S>, config: CuadConfig) -> Self {
+        Self::with_hints(parts, config, Vec::new())
+    }
+
+    /// A supervisor whose runs tell their model `hints` about the desktop when the session opens
+    /// (the shortcut line, `cua_run::shortcut_hint`, for one). The caller builds them once at
+    /// start; nothing here reads an environment.
+    pub fn with_hints(parts: Parts<S>, config: CuadConfig, hints: Vec<String>) -> Self {
         Self {
-            shared: Arc::new(Shared::of(parts, config)),
+            shared: Arc::new(Shared::of(parts, config, hints)),
         }
     }
 

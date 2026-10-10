@@ -122,7 +122,7 @@ impl<S: Seams> Exec<'_, S> {
         if self.model == ModelSession::NotYet {
             let begin = CuaBegin {
                 goal: self.task.goal.value.clone(),
-                hints: Vec::new(),
+                hints: self.hints.clone(),
                 env: porter_core::capability::CuaEnv::Desktop,
             };
             if let Err(error) = model.begin(begin).await {

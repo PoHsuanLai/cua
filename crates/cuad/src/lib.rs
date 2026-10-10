@@ -28,6 +28,7 @@ mod connect;
 mod desktop;
 mod ei_socket;
 mod frame_fd;
+mod keymap;
 mod model;
 mod provider;
 mod serve;
@@ -45,6 +46,7 @@ pub use cua_host::{
 pub use desktop::{SystemA11y, SystemDesktop};
 pub use ei_socket::{CosmicEiSockets, EI_BUS_NAME, EI_INTERFACE, EI_PATH, OSK_NAME};
 pub use frame_fd::{FrameFdError, frame_fd};
+pub use keymap::desktop_keymap;
 pub use model::InferdCuaModel;
 pub use provider::{CuaProvider, ModeChoice, ProviderError, StartRequest, manifest_for};
 pub use serve::{ServeError, Serving, serve, serve_on};

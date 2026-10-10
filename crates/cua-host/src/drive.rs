@@ -64,6 +64,8 @@ pub(crate) struct Shared<S: Seams> {
     pub events: S::Events,
     pub clock: S::Time,
     pub config: CuadConfig,
+    /// What every run's model is told about the desktop when its session opens.
+    pub hints: Vec<String>,
     /// The person's settings in force: the config's own until the settings file says otherwise.
     pub settings: RwLock<CuaSettings>,
     pub bus: broadcast::Sender<SupervisorEvent>,
@@ -71,7 +73,7 @@ pub(crate) struct Shared<S: Seams> {
 }
 
 impl<S: Seams> Shared<S> {
-    pub(crate) fn of(parts: Parts<S>, config: CuadConfig) -> Self {
+    pub(crate) fn of(parts: Parts<S>, config: CuadConfig, hints: Vec<String>) -> Self {
         let Parts {
             desktop,
             seat,
@@ -93,6 +95,7 @@ impl<S: Seams> Shared<S> {
             clock,
             settings: RwLock::new(CuaSettings::over(config.settings)),
             config,
+            hints,
             bus: broadcast::channel(1024).0,
             state: Mutex::new(State {
                 next: 0,
@@ -259,7 +262,8 @@ pub(crate) async fn drive<S: Drivable>(
         shared: shared.clone(),
         run: id.clone(),
     };
-    let mut exec = Exec::<S>::new(shared.seam(), id.clone(), run.task.clone());
+    let mut exec = Exec::<S>::new(shared.seam(), id.clone(), run.task.clone())
+        .with_hints(shared.hints.clone());
     let (tx, mut wire) = mpsc::unbounded_channel::<Wire>();
     let mut outlet = Channel(tx);
     let mut guard: Option<OwnedMutexGuard<S::Model>> = None;

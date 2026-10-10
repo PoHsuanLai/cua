@@ -129,6 +129,7 @@ pub struct Exec<'a, S: Seams> {
     announced: Option<porter_infer::ServedBy>,
     reported: Reported,
     opened: Opened,
+    hints: Vec<String>,
 }
 
 impl<S: Seams> std::fmt::Debug for Exec<'_, S> {
@@ -155,7 +156,15 @@ impl<'a, S: Seams> Exec<'a, S> {
             announced: None,
             reported: Reported::Nothing,
             opened: Opened::No,
+            hints: Vec::new(),
         }
+    }
+
+    /// The same executor telling the model these short hints about the desktop when its session
+    /// opens (the shortcut line of [`crate::shortcut_hint`], for one). The caller builds them
+    /// once from what it knows of the desktop; nothing here reads an environment.
+    pub fn with_hints(self, hints: Vec<String>) -> Self {
+        Self { hints, ..self }
     }
 
     /// Whether `effect` talks to the model, and so needs it handed in.

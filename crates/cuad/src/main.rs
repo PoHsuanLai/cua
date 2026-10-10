@@ -75,6 +75,14 @@ async fn run() -> Result<(), Fatal> {
         return write_schema(&dir);
     }
     let config = load_config()?;
+    // The desktop's shortcut conventions, read once and told to every run's model.
+    let env = |key: &str| std::env::var(key).ok();
+    let platform = chordkit::detect(chordkit::HostOs::compiled(), env);
+    let (keymap, problems) = cuad::desktop_keymap(platform, env);
+    for problem in problems {
+        eprintln!("cuad: {problem}");
+    }
+    let hints: Vec<String> = cua_run::shortcut_hint(&keymap).into_iter().collect();
     let connection = zbus::Connection::session()
         .await
         .map_err(|e| Fatal::Bus(e.to_string()))?;
@@ -88,10 +96,9 @@ async fn run() -> Result<(), Fatal> {
     let links = Links::over(&connection, config.tier);
     let sockets = CosmicEiSockets::over(connection.clone());
     let parts = SystemSeams::parts(&config, links, wayland, sockets, SystemClock::start());
-    let supervisor = Arc::new(Supervisor::new(parts, config));
+    let supervisor = Arc::new(Supervisor::with_hints(parts, config, hints));
     // The person's settings (`cua/settings.toml`) over the configuration's values, now and
     // whenever the file changes. Until the file lists an app, none is on.
-    let env = |key: &str| std::env::var(key).ok();
     let base = CuaSettings {
         config: supervisor.settings(),
         apps: Apps::Listed(Vec::new()),

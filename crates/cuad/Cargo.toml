@@ -16,6 +16,12 @@ path = "src/lib.rs"
 name = "cuad"
 path = "src/main.rs"
 
+[features]
+# The person's own keymap (and this desktop's bindings) from keycap, for the shortcut line the
+# model is told. On for the daemon; off, only the platform's conventions apply.
+default = ["keycap"]
+keycap = ["dep:keycap-client"]
+
 [dependencies]
 cua-desktop = { workspace = true, features = ["wayland"] }
 maskcap = { workspace = true, features = ["wayland"] }
@@ -23,6 +29,8 @@ seat-input = { workspace = true, features = ["ei"] }
 a11y-tree = { workspace = true, features = ["atspi"] }
 cua-bus = { workspace = true }
 cua-run = { workspace = true }
+chordkit = { workspace = true }
+keycap-client = { workspace = true, optional = true }
 cua-host = { workspace = true }
 cua-dbus = { workspace = true }
 docket-core = { workspace = true }

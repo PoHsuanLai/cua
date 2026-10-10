@@ -62,6 +62,7 @@ mod model;
 mod observation;
 mod seams;
 mod sensitivity;
+mod shortcuts;
 mod stall;
 mod turn;
 mod window_class;
@@ -88,6 +89,7 @@ pub use seams::{
     Clock, GateCheck, GateEvent, GateLink, LinkError, MessageLink, Parts, RecordSink, Seams,
 };
 pub use sensitivity::{FORCED_NO, FORCED_YES, WindowSensitivity, window_sensitivity};
+pub use shortcuts::shortcut_hint;
 pub use stall::{Repeats, Stall};
 pub use turn::{FrameAttachment, note_of, turn};
 pub use window_class::{window_class_in, window_class_of};
