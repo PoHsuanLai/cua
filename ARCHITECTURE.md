@@ -53,7 +53,7 @@ dev-dependencies are outside it):
 | `cua-eval` | `a11y-tree`, `cua-action`, `cua-bus`, `cua-desktop`, `cua-fake`, `cua-parse`, `cua-run`, `cua-session`, `cua-vendors`, `docket-core`, `maskcap`, `model-catalog`, `model-http`, `model-openai-compat`, `model-provider`, `porter-core`, `porter-infer`, `prov`, `seat-input`, `vision-prep` |
 | `cua-eval-cloud` | `cua-eval`, `model-catalog`, `model-provider`, `porter-client`, `porter-core`, `porter-infer`, `vision-prep` |
 | `cua-host` | `cua-bus`, `cua-desktop`, `cua-run`, `docket-core`, `docket-client`, `prov`, `porter-core`, `almanac-core`, `almanac-client` |
-| `cuad` | `a11y-tree`, `cua-bus`, `cua-dbus`, `cua-host`, `cua-desktop`, `cua-run`, `maskcap`, `seat-input`, `docket-core`, `docket-client`, `prov`, `porter-core`, `porter-infer`, `porter-client`, `almanac-core`, `almanac-client` |
+| `cuad` | `a11y-tree`, `cua-bus`, `cua-dbus`, `cua-host`, `cua-desktop`, `cua-run`, `maskcap`, `seat-input`, `docket-core`, `docket-client`, `prov`, `porter-core`, `porter-infer`, `porter-client`, `almanac-client` |
 
 The edges differ from SPEC 1.3 in one way, forced by its own types: `seat-input`, `maskcap` and
 `a11y-tree` take `cua-desktop` as their base (a lease, a stamp, a seat's isolation and who masks
@@ -85,7 +85,7 @@ only; the pure set never reaches an effect crate; `wayland-client` is behind the
 | `cua-run` | `config`, `observation`, `effect_class`, `window_class`, `mode`, `turn`, `lease_book`, `stall`, `model`, `seams`, `machine/{phase, input, effect, run, track, step, control, finish, ops}`, `exec/{observe, session}` |
 | `cua-dbus` | `names`, `error`, `manager`, `run`, `introspect` |
 | `cua-fake` | `clock`, `seat`, `eis`, `capture`, `desktop`, `a11y`, `model`, `gate`, `events`, `harness`, `scene` |
-| `cua-eval` | `surface/{def, state, render}`, `keys`, `stage`, `world`, `gate`, `script`, `task`, `corpus`, `verdict`, `run`, `eval`, `metrics`, `report`, `live`, `main` |
+| `cua-eval` | `surface/{def, state, render, access}`, `keys`, `stage`, `world`, `gate`, `script`, `task`, `corpus`, `verdict`, `run/{arena, timed, record}`, `eval`, `metrics`, `report`, `live`, `main` |
 | `cua-eval-cloud` | `watch`, `request`, `entry`, `isolation`, `provider`, `main` |
 | `cua-host` | `lock`, `clock`, `config`, `callers`, `guard`, `gate`, `links`, `settings` (`keys`, `apps`, `read`, `locate`) < `supervisor`, `drive`, `events` |
 | `cuad` | `backend`, `model`, `connect`, `provider`, `watch` < `bus`, `desktop`, `ei_socket`, `system`, `serve` |
@@ -238,8 +238,12 @@ application: screens, and on them labels, buttons, rows, fields and check boxes.
 wheel notch changes variables and fields and moves between screens (`goto`, `set`, `copy`, `clear`,
 `when`). It is drawn as pixels (a bitmap font, flat rectangles, 960x600) for a vision model and its
 window title and app id follow the screen, which is what makes a compose screen a `MailCompose`
-window and a terminal a `Terminal`. There is no accessibility tree (`FakeA11y::failing`), so a model
-works from pixels. Nothing here is a real app, account or desktop.
+window and a terminal a `Terminal`. The run also gets an accessibility tree built from what the
+screen shows (`surface::snapshot`: the role, name and sensitivity of each visible item; an item
+declares `role` and `sensitivity` in its TOML, and a kind's own role otherwise). Its bounds are empty,
+so clicks are still classed by pixels, and the eval's models never see it (`run::Timed` drops it from
+their request): they work from pixels. The tree is for the run's own rules, such as the forced ask
+for a window with a password entry. Nothing here is a real app, account or desktop.
 
 **Tasks** (`eval/tasks/*.toml`). Each task names a surface and a start screen, the goal in the
 person's words, `success` (conditions that all hold at the end, plus `answer`: words the model's
