@@ -65,9 +65,12 @@ impl From<CuaStepFailure> for CuaModelError {
                 ModelError::Unparseable
                 | ModelError::Unreadable
                 | ModelError::OnlyThought { .. } => CuaModelError::Parse,
-                ModelError::Unauthorized | ModelError::Refused | ModelError::ContextOverflow => {
-                    CuaModelError::Fatal
-                }
+                // Out of credit, or a sign-in the provider refused: no retry gets past either.
+                ModelError::Unauthorized
+                | ModelError::PaymentRequired
+                | ModelError::SignInRefused
+                | ModelError::Refused
+                | ModelError::ContextOverflow => CuaModelError::Fatal,
             },
         }
     }
