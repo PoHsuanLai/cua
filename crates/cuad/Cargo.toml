@@ -29,6 +29,7 @@ docket-core = { workspace = true }
 docket-client = { workspace = true, features = ["dbus"] }
 prov = { workspace = true }
 porter-core = { workspace = true }
+porter-daemon = { workspace = true }
 porter-infer = { workspace = true }
 porter-client = { workspace = true, features = ["dbus"] }
 almanac-client = { workspace = true, features = ["dbus"] }
@@ -36,7 +37,6 @@ wayland-client = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 toml = { workspace = true }
-notify = { workspace = true }
 rustix = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["signal"] }

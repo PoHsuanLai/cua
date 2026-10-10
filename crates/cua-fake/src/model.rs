@@ -118,6 +118,8 @@ fn model_error(error: &ProviderError) -> CuaModelError {
         | ProviderError::Server(_) => CuaModelError::Transient,
         ProviderError::Unreadable(_) => CuaModelError::Parse,
         ProviderError::Unauthorized
+        | ProviderError::AuthRejected(_)
+        | ProviderError::PaymentRequired(_)
         | ProviderError::ContextOverflow { .. }
         | ProviderError::BadRequest(_)
         | ProviderError::Refused(_) => CuaModelError::Fatal,

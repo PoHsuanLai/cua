@@ -44,23 +44,24 @@ casement-protocols    = { git = "https://github.com/PoHsuanLai/casement-protocol
 
 # stoker's frozen interfaces, by git at a pinned rev (quire
 # CONSUMING.md section 1). stoker has no cua dependency, so there is no cycle.
-cua-action      = { git = "https://github.com/PoHsuanLai/stoker", rev = "916da297d564e35cee9302d2d1e6607ae45962a7" }
-model-provider  = { git = "https://github.com/PoHsuanLai/stoker", rev = "916da297d564e35cee9302d2d1e6607ae45962a7" }
-model-replay    = { git = "https://github.com/PoHsuanLai/stoker", rev = "916da297d564e35cee9302d2d1e6607ae45962a7" }
-cua-parse       = { git = "https://github.com/PoHsuanLai/stoker", rev = "916da297d564e35cee9302d2d1e6607ae45962a7" }
+cua-action      = { git = "https://github.com/PoHsuanLai/stoker", rev = "9e4ba527e368a57c40b73c59da2de0cd867e5e03" }
+model-provider  = { git = "https://github.com/PoHsuanLai/stoker", rev = "9e4ba527e368a57c40b73c59da2de0cd867e5e03" }
+model-replay    = { git = "https://github.com/PoHsuanLai/stoker", rev = "9e4ba527e368a57c40b73c59da2de0cd867e5e03" }
+cua-parse       = { git = "https://github.com/PoHsuanLai/stoker", rev = "9e4ba527e368a57c40b73c59da2de0cd867e5e03" }
 # cua-eval only: the live model path (the session that builds a step's prompt, the catalogue entry it reads, the HTTP client and the chat codec, the image preparation).
-cua-vendors     = { git = "https://github.com/PoHsuanLai/stoker", rev = "916da297d564e35cee9302d2d1e6607ae45962a7" }
-cua-session     = { git = "https://github.com/PoHsuanLai/stoker", rev = "916da297d564e35cee9302d2d1e6607ae45962a7" }
-model-catalog   = { git = "https://github.com/PoHsuanLai/stoker", rev = "916da297d564e35cee9302d2d1e6607ae45962a7" }
-model-http      = { git = "https://github.com/PoHsuanLai/stoker", rev = "916da297d564e35cee9302d2d1e6607ae45962a7" }
-model-openai-compat = { git = "https://github.com/PoHsuanLai/stoker", rev = "916da297d564e35cee9302d2d1e6607ae45962a7" }
-vision-prep     = { git = "https://github.com/PoHsuanLai/stoker", rev = "916da297d564e35cee9302d2d1e6607ae45962a7" }
+cua-vendors     = { git = "https://github.com/PoHsuanLai/stoker", rev = "9e4ba527e368a57c40b73c59da2de0cd867e5e03" }
+cua-session     = { git = "https://github.com/PoHsuanLai/stoker", rev = "9e4ba527e368a57c40b73c59da2de0cd867e5e03" }
+model-catalog   = { git = "https://github.com/PoHsuanLai/stoker", rev = "9e4ba527e368a57c40b73c59da2de0cd867e5e03" }
+model-http      = { git = "https://github.com/PoHsuanLai/stoker", rev = "9e4ba527e368a57c40b73c59da2de0cd867e5e03" }
+model-openai-compat = { git = "https://github.com/PoHsuanLai/stoker", rev = "9e4ba527e368a57c40b73c59da2de0cd867e5e03" }
+vision-prep     = { git = "https://github.com/PoHsuanLai/stoker", rev = "9e4ba527e368a57c40b73c59da2de0cd867e5e03" }
 
 # porter's frozen interfaces.
-porter-core     = { git = "https://github.com/PoHsuanLai/porter", rev = "43f9c7e99fe528806eb5c4cbda261a6be79e0f1f" }
-prov            = { git = "https://github.com/PoHsuanLai/porter", rev = "43f9c7e99fe528806eb5c4cbda261a6be79e0f1f" }
-porter-infer    = { git = "https://github.com/PoHsuanLai/porter", rev = "43f9c7e99fe528806eb5c4cbda261a6be79e0f1f" }
-porter-client   = { git = "https://github.com/PoHsuanLai/porter", rev = "43f9c7e99fe528806eb5c4cbda261a6be79e0f1f" }
+porter-core     = { git = "https://github.com/PoHsuanLai/porter", rev = "6b1adee23a4bb515e63ccc1bcc89b6eee3aef802" }
+prov            = { git = "https://github.com/PoHsuanLai/porter", rev = "6b1adee23a4bb515e63ccc1bcc89b6eee3aef802" }
+porter-infer    = { git = "https://github.com/PoHsuanLai/porter", rev = "6b1adee23a4bb515e63ccc1bcc89b6eee3aef802" }
+porter-client   = { git = "https://github.com/PoHsuanLai/porter", rev = "6b1adee23a4bb515e63ccc1bcc89b6eee3aef802" }
+porter-daemon   = { git = "https://github.com/PoHsuanLai/porter", rev = "6b1adee23a4bb515e63ccc1bcc89b6eee3aef802" }
 
 # almanac's frozen interfaces: cuad records `CuaRecord`s as `EventBody::Area` through memoryd.
 almanac-core    = { git = "https://github.com/PoHsuanLai/almanac", rev = "a3a8a105c808ac54eb037083fb1a0217e9d6fbb1" }

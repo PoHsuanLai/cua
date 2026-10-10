@@ -71,6 +71,12 @@ fn model_fault(error: ModelError) -> ProviderError {
         ModelError::Unreachable => ProviderError::Unreachable,
         ModelError::RateLimited(seconds) => ProviderError::RateLimited(sp::RetrySeconds(seconds)),
         ModelError::Unauthorized => ProviderError::Unauthorized,
+        // Retrying cannot help either: the person tops up or picks another model, or the
+        // provider has to accept the sign-in. The reason stays in inferd's logs, never here.
+        ModelError::PaymentRequired => {
+            ProviderError::PaymentRequired(sp::ProviderDetail::new(402, ""))
+        }
+        ModelError::SignInRefused => ProviderError::AuthRejected(sp::ProviderDetail::new(403, "")),
         ModelError::Refused => ProviderError::Refused(
             "the provider refused the request (OpenRouter answers 402 when max_tokens times the price exceeds the credit)"
                 .to_owned(),

@@ -114,7 +114,7 @@ EDGES=(
   "cua-fake: a11y-tree cua-action cua-bus cua-desktop cua-parse cua-run docket-core maskcap model-provider model-replay porter-core porter-infer prov seat-input"
   "cua-eval: a11y-tree cua-action cua-bus cua-desktop cua-fake cua-parse cua-run cua-session cua-vendors docket-core maskcap model-catalog model-http model-openai-compat model-provider porter-core porter-infer prov seat-input vision-prep"
   "cua-eval-cloud: cua-eval model-catalog model-provider porter-client porter-core porter-infer vision-prep"
-  "cuad: a11y-tree almanac-client cua-bus cua-dbus cua-desktop cua-host cua-run docket-client docket-core maskcap porter-client porter-core porter-infer prov seat-input"
+  "cuad: a11y-tree almanac-client cua-bus cua-dbus cua-desktop cua-host cua-run docket-client docket-core maskcap porter-client porter-core porter-daemon porter-infer prov seat-input"
 )
 for edge in "${EDGES[@]}"; do
   crate="${edge%%:*}"
