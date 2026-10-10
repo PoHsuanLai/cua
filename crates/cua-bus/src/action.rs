@@ -2,9 +2,9 @@
 
 use crate::ids::WindowRef;
 use cua_action::{CuaAction, WindowSpace};
+use cua_types::SeatError;
 use docket_core::CallRefusal;
 use prov::Labelled;
-use seat_input::SeatError;
 use serde::{Deserialize, Serialize};
 
 /// An action and the window it is aimed at. Points are in `WindowSpace`.

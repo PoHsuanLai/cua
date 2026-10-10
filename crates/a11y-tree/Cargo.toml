@@ -11,6 +11,7 @@ publish.workspace = true
 [dependencies]
 cua-action = { workspace = true }
 cua-desktop = { workspace = true }
+cua-types = { workspace = true }
 prov = { workspace = true }
 porter-core = { workspace = true }
 serde = { workspace = true }

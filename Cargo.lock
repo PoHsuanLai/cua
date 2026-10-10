@@ -9,6 +9,7 @@ dependencies = [
  "atspi",
  "cua-action",
  "cua-desktop",
+ "cua-types",
  "porter-core",
  "prov",
  "serde",
@@ -743,16 +744,14 @@ dependencies = [
 name = "cua-bus"
 version = "0.1.0"
 dependencies = [
- "a11y-tree",
  "almanac-core",
  "cua-action",
  "cua-desktop",
+ "cua-types",
  "docket-core",
- "maskcap",
  "porter-core",
  "porter-infer",
  "prov",
- "seat-input",
  "serde",
  "serde_json",
 ]
@@ -932,6 +931,17 @@ dependencies = [
  "cua-vendors",
  "model-provider",
  "vision-prep",
+]
+
+[[package]]
+name = "cua-types"
+version = "0.1.0"
+dependencies = [
+ "cua-desktop",
+ "porter-core",
+ "serde",
+ "serde_json",
+ "thiserror",
 ]
 
 [[package]]
@@ -2112,6 +2122,7 @@ dependencies = [
  "casement-protocols",
  "cua-action",
  "cua-desktop",
+ "cua-types",
  "porter-core",
  "rustix",
  "serde",
@@ -2933,6 +2944,7 @@ version = "0.1.0"
 dependencies = [
  "cua-action",
  "cua-desktop",
+ "cua-types",
  "futures-util",
  "keyboard-types",
  "porter-core",

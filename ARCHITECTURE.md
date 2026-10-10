@@ -23,10 +23,11 @@ picture), section 6 (copy the recipe).
 | Crate | Purpose | I/O |
 | --- | --- | --- |
 | `cua-desktop` | the base: windows (`ToplevelInfo`), leases (`LeaseRequest`, `LeaseGrant`, `Leased`, `EiSocket`), `BackendKind` and `BackendCaps::of`, `GlowState` and the protocol codes, `DesktopEvent`, the `Desktop` and `LeaseControl` seams, and the units every crate shares (`Stamp`, `Ms`, `Digest32`, `GlobalRect`). Re-exports `RunMode` and `WindowTrust` from docket. Feature `wayland`: `CosmicDesktop`, `Pump`, `SenderSocket` | none (`wayland`: wayland-client, tokio) |
+| `cua-types` | the leaf types the bus bodies carry and the capability crates produce: `Role`, `NodeSelector` (with `NameMatch`, `SelectorStep`, `SlotName`), `InputReceipt`, `InputOrigin`, `TextPath`, `SeatError`, `FrameDigest`. The capability crates re-export them, so every old path works | none |
 | `maskcap` | `Frame`, `PixelBuf`, `MaskReport`, `apply_masks`, `FrameDigest`, `settle`, `pixel_diff`, the `WindowCapture` and `CaptureSession` seams. Feature `wayland`: `StockToplevelCapture`, `QuireMaskedCapture`, `StampClock` | none (`wayland`: wayland-client) |
 | `seat-input` | `InputOp`, `Keymap`, `SeatCaps`, `plan`, `InputReceipt`, `region`, the `AgentSeat` seam. Feature `ei`: `EiSeat` | none (`ei`: reis, tokio, futures-util) |
 | `a11y-tree` | `A11ySnapshot`, `A11yNode`, `prune`, `render`, `diff`, `secret_rects`, selectors, the `A11ySource` seam. Feature `atspi`: `AtspiSource` | none (`atspi`: atspi) |
-| `cua-bus` | what crosses the bus and the log, serde only: the `Start` body (`CuaTask`), `RunStateSlug`, `CuaOutcome`, `ModeSupport`, `CuaRecord`, `ActionResult`, `RunBudget`, `ControlRefusal`, `permits`, `report_draft` | none |
+| `cua-bus` | what crosses the bus and the log, serde only (no capability crate is linked; the leaf types come from `cua-types`): the `Start` body (`CuaTask`), `RunStateSlug`, `CuaOutcome`, `ModeSupport`, `CuaRecord`, `ActionResult`, `RunBudget`, `ControlRefusal`, `permits`, `report_draft` | none |
 | `cua-run` | the pure run machine (`Run`, `RunTrack`, `RunPhase`, `RunInput`, `RunEffect`), `Observation`, `classify_effect`, `window_class_of`, `window_sensitivity` (a sensitive window makes the run ask before input even when the router says run), `mode_support`, `choose_mode`, `LeaseBook`, `stalled`, `turn` and `note_of`, `CuaConfig` and `SETTING_ROWS`, `CuaModel`, the seams a run is carried out against (`Seams`, `Clock`, `GateLink`, `RecordSink`, `MessageLink`), and `Exec`, which carries a run's effects out against them (it awaits nothing but seam futures, so it needs no runtime) | none |
 | `cua-dbus` | `org.quire.Cua1` (`Manager`, `Run`) as zbus proxies and skeletons, `introspection`, `CuaError`, bus names and paths | zbus |
 | `cua-fake` | test only: `FakeSeat`, `FakeEis`, `FakeCapture`, `FakeDesktop`, `FakeA11y`, `ScriptedModel`, `FakePdp`, `MemoryEvents`, `FixedClock`, `FakeSeams`, `run_harness`, and `scene` (a window, frames, a world, a task) | none (`FakeEis`: reis, tokio) |
@@ -41,10 +42,11 @@ dev-dependencies are outside it):
 | Crate | May depend on |
 | --- | --- |
 | `cua-desktop` | `cua-action`, `docket-core`, `prov`, `porter-core`; `casement-protocols` with feature `wayland` |
-| `maskcap` | `cua-action`, `cua-desktop`; `casement-protocols` with feature `wayland` |
-| `seat-input` | `cua-action`, `cua-desktop`, `porter-core` |
-| `a11y-tree` | `cua-action`, `cua-desktop`, `prov`, `porter-core` |
-| `cua-bus` | `a11y-tree`, `almanac-core`, `cua-action`, `cua-desktop`, `maskcap`, `seat-input`, `docket-core`, `prov`, `porter-core`, `porter-infer` |
+| `cua-types` | `cua-desktop`, `porter-core` |
+| `maskcap` | `cua-action`, `cua-desktop`, `cua-types`; `casement-protocols` with feature `wayland` |
+| `seat-input` | `cua-action`, `cua-desktop`, `cua-types`, `porter-core` |
+| `a11y-tree` | `cua-action`, `cua-desktop`, `cua-types`, `prov`, `porter-core` |
+| `cua-bus` | `almanac-core`, `cua-action`, `cua-desktop`, `cua-types`, `docket-core`, `prov`, `porter-core`, `porter-infer` |
 | `cua-run` | `a11y-tree`, `cua-action`, `cua-bus`, `cua-desktop`, `maskcap`, `seat-input`, `docket-core`, `prov`, `porter-core`, `porter-infer` |
 | `cua-dbus` | `cua-bus`, `prov` |
 | `cua-fake` | `a11y-tree`, `cua-action`, `cua-bus`, `cua-desktop`, `cua-run`, `maskcap`, `seat-input`, `docket-core`, `prov`, `porter-core`, `porter-infer`, `model-replay`, `model-provider`, `cua-parse` |
@@ -55,8 +57,8 @@ dev-dependencies are outside it):
 
 The edges differ from SPEC 1.3 in one way, forced by its own types: `seat-input`, `maskcap` and
 `a11y-tree` take `cua-desktop` as their base (a lease, a stamp, a seat's isolation and who masks
-are named by both the desktop and the crates that serve it), and `cua-bus` takes the four leaf
-crates, because the records and the `Start` body name their types. See FINDINGS, "Spec
+are named by both the desktop and the crates that serve it), and `cua-bus` takes `cua-types`,
+where the leaf types its records and the `Start` body name now live (it links none of the capability crates). See FINDINGS, "Spec
 conflicts".
 
 The repo order is stoker, porter, almanac, docket, cua, sill. cua reaches stoker's
@@ -75,6 +77,7 @@ only; the pure set never reaches an effect crate; `wayland-client` is behind the
 | Crate | Modules |
 | --- | --- |
 | `cua-desktop` | `units`, `window`, `lease`, `caps`, `glow`, `event`, `error`, `traits`, `wayland/{pump, state, proto, toplevels, lease, socket}` |
+| `cua-types` | `role`, `selector`, `seat`, `digest` |
 | `maskcap` | `pixels`, `mask`, `digest`, `settle`, `frame`, `capture`, `wayland/{state, shm, session}` |
 | `seat-input` | `op`, `keymap`, `caps`, `plan`, `receipt`, `seat`, `region`, `ei/` (`conn`: the reis connection, `actor`: the thread that owns it) |
 | `a11y-tree` | `model`, `selector`, `ops`, `source`, `atspi/` |

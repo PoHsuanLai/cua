@@ -2,6 +2,7 @@
 resolver = "3"
 members = [
   "crates/cua-desktop",
+  "crates/cua-types",
   "crates/maskcap",
   "crates/seat-input",
   "crates/a11y-tree",
@@ -29,6 +30,7 @@ a11y-tree             = { path = "crates/a11y-tree" }
 seat-input            = { path = "crates/seat-input" }
 maskcap               = { path = "crates/maskcap" }
 cua-desktop           = { path = "crates/cua-desktop" }
+cua-types             = { path = "crates/cua-types" }
 cua-bus               = { path = "crates/cua-bus" }
 cua-run               = { path = "crates/cua-run" }
 cua-host              = { path = "crates/cua-host" }

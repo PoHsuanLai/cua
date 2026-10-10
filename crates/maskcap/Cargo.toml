@@ -11,6 +11,7 @@ publish.workspace = true
 [dependencies]
 cua-action = { workspace = true }
 cua-desktop = { workspace = true }
+cua-types = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
 base64 = { workspace = true }

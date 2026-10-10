@@ -21,7 +21,11 @@ RULES=(
   "maskcap: $EFFECTS"
   "seat-input: $EFFECTS"
   "a11y-tree: $EFFECTS"
-  "cua-bus: $EFFECTS"
+  # The bus bodies: serde only. The capability crates (accessibility, input, capture) are not
+  # reachable, so a consumer that reads the bodies (sill, the D-Bus codec) links none of them;
+  # the leaf types they share live in cua-types.
+  "cua-types: $EFFECTS a11y-tree seat-input maskcap"
+  "cua-bus: $EFFECTS a11y-tree seat-input maskcap"
   "cua-run: $EFFECTS"
   # The run executor as a library: a runtime and the docket/almanac client traits, but no bus
   # (their `dbus` features are the daemon's), no backend and no file watcher.
@@ -99,10 +103,11 @@ fi
 # the crate no longer has, so the table stays exact. Dev dependencies are outside it.
 EDGES=(
   "cua-desktop: casement-protocols cua-action docket-core porter-core prov"
-  "maskcap: casement-protocols cua-action cua-desktop"
-  "seat-input: cua-action cua-desktop porter-core"
-  "a11y-tree: cua-action cua-desktop porter-core prov"
-  "cua-bus: a11y-tree almanac-core cua-action cua-desktop docket-core maskcap porter-core porter-infer prov seat-input"
+  "maskcap: casement-protocols cua-action cua-desktop cua-types"
+  "seat-input: cua-action cua-desktop cua-types porter-core"
+  "a11y-tree: cua-action cua-desktop cua-types porter-core prov"
+  "cua-types: cua-desktop porter-core"
+  "cua-bus: almanac-core cua-action cua-desktop cua-types docket-core porter-core porter-infer prov"
   "cua-run: a11y-tree cua-action cua-bus cua-desktop docket-core maskcap porter-core porter-infer prov seat-input"
   "cua-host: a11y-tree almanac-client almanac-core cua-bus cua-desktop cua-run docket-client docket-core maskcap porter-core prov"
   "cua-dbus: cua-bus prov"

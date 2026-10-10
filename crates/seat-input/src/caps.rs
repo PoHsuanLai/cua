@@ -1,22 +1,8 @@
 //! What a seat can do, which differs by backend.
 
 use cua_desktop::SeatIsolation;
+pub use cua_types::TextPath;
 use serde::{Deserialize, Serialize};
-
-/// How text reaches the focused field.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum TextPath {
-    /// Key codes in the EIS keymap: ASCII on a US layout.
-    EiKeymap,
-    /// `ei_text.utf8`: any Unicode, committed through the focused text-input. Stock cosmic-comp
-    /// has it; it targets the person's focus, so it is not offered there (decision S10).
-    EiText,
-    /// A temporary keymap through `zwp_virtual_keyboard_v1`. Same reservation as `EiText`.
-    VirtualKeyboard,
-    /// The fork's agent text input: Unicode, delivered only to the leased window.
-    AgentTextInput,
-}
 
 /// How the wheel is delivered.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]

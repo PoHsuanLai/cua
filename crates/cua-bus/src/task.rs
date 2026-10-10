@@ -2,8 +2,8 @@
 
 use crate::budget::RunBudget;
 use crate::ids::ProcedureId;
-use a11y_tree::NodeSelector;
 use cua_desktop::{Stamp, ToplevelIdent};
+use cua_types::NodeSelector;
 use docket_core::{RunMode, Value};
 use porter_core::AppName;
 use prov::{Address, Labelled, MessageId, SessionId, SpaceId, ThreadId};

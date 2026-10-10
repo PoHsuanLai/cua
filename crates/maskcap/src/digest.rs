@@ -2,12 +2,7 @@
 
 use crate::pixels::{BYTES_PER_PIXEL, PixelBuf};
 use cua_desktop::Digest32;
-use serde::{Deserialize, Serialize};
-
-/// The digest of one masked frame.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct FrameDigest(pub Digest32);
+pub use cua_types::FrameDigest;
 
 /// The digest of `buf`: equal buffers (same format, size and bytes, stride padding ignored)
 /// give equal digests and one changed pixel gives another. A buffer whose data is shorter than

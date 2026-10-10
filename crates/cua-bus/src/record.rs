@@ -14,12 +14,12 @@ use crate::state::CuaOutcome;
 use almanac_core::EventRef;
 use cua_action::DeviceSize;
 use cua_desktop::{BackendKind, Digest32};
+use cua_types::FrameDigest;
+use cua_types::InputReceipt;
 use docket_core::{EffectBasis, RunMode};
-use maskcap::FrameDigest;
 use porter_core::{AppName, Count, MicroUsd, UnixSeconds};
 use porter_infer::{ServedBy, StepIndex};
 use prov::{Actor, AgentRole, Effect, Labelled, MessageId, RunId, SessionId, SpaceId};
-use seat_input::InputReceipt;
 use serde::{Deserialize, Serialize};
 
 /// A digest of a model's thought: the text is never kept.

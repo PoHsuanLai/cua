@@ -1,6 +1,6 @@
 [package]
 name = "cua-bus"
-description = "What crosses cuad's bus and its event log: the Cua1 bodies, the Start task, run states and outcomes, CuaRecord, the control refusals and who may call which member. Serde only; results are prov Report messages."
+description = "What crosses cuad's bus and its event log: the Cua1 bodies, the Start task, run states and outcomes, CuaRecord, the control refusals and who may call which member. Serde only: no capability crate (accessibility, input, capture) is linked; results are prov Report messages."
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -11,9 +11,7 @@ publish.workspace = true
 [dependencies]
 cua-action = { workspace = true }
 cua-desktop = { workspace = true }
-a11y-tree = { workspace = true }
-seat-input = { workspace = true }
-maskcap = { workspace = true }
+cua-types = { workspace = true }
 docket-core = { workspace = true }
 almanac-core = { workspace = true }
 prov = { workspace = true }
