@@ -1,6 +1,7 @@
 //! The data a fake surface is made of: screens, the items on them, and what a click does. A
 //! surface is a small deterministic application, written as a TOML file under `eval/surfaces/`.
 
+use a11y_tree::Sensitivity;
 use serde::Deserialize;
 
 /// A whole fake application.
@@ -66,6 +67,31 @@ pub enum Kind {
     Check,
 }
 
+/// What an item is to an accessibility tree, when its kind does not say it well enough: a field
+/// that takes a password is a `password_text`, not an `entry`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AxRole {
+    /// Static text.
+    Text,
+    /// A label.
+    Label,
+    /// A heading.
+    Heading,
+    /// A push button.
+    Button,
+    /// A link.
+    Link,
+    /// A list item.
+    ListItem,
+    /// A check box.
+    CheckBox,
+    /// A text entry.
+    Entry,
+    /// A password entry.
+    PasswordText,
+}
+
 /// Whether an item stays where it is or moves with the pane.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -125,6 +151,13 @@ pub struct ItemDef {
     /// The item shows only while all of these hold.
     #[serde(default)]
     pub show: Vec<Cond>,
+    /// Its role in the accessibility tree; when none is declared, its kind's own (a field is an
+    /// entry, a row a list item).
+    #[serde(default)]
+    pub role: Option<AxRole>,
+    /// Whether the accessibility tree marks it secret; when none is declared, it is ordinary.
+    #[serde(default)]
+    pub sensitivity: Option<Sensitivity>,
 }
 
 /// What a click or a key does to the application.

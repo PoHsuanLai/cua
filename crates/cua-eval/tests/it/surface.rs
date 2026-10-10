@@ -1,8 +1,11 @@
 //! The fake surfaces: what a click, a key and the wheel do, and what they draw.
 
 use crate::support::eval_dir;
+use a11y_tree::{Role, Sensitivity};
 use cua_action::ScrollDir;
-use cua_eval::surface::{Cond, Hit, Stroke, Surface, SurfaceDef, render};
+use cua_desktop::Stamp;
+use cua_eval::surface::{Cond, Hit, Stroke, Surface, SurfaceDef, render, snapshot};
+use prov::Label;
 use std::sync::Arc;
 
 fn def(name: &str) -> Arc<SurfaceDef> {
@@ -180,4 +183,36 @@ fn a_check_toggles_and_the_text_shows_the_variables() {
     s.click(x, y);
     assert!(s.holds(&Cond::Var(["dark_mode".into(), "off".into()])));
     assert_eq!(s.fill("a {dark_mode} b {nothing}c"), "a off b c");
+}
+
+#[test]
+fn the_tree_has_a_node_for_each_visible_item_and_marks_only_what_a_surface_declares_secret() {
+    let label = Label::trusted_user();
+    let table = [
+        ("vault", "locked", Some("Master password")),
+        ("signin", "form", Some("Password")),
+        ("authdialog", "prompt", None),
+        ("files", "list", None),
+    ];
+    for (name, start, secret) in table {
+        let s = Surface::new(def(name), start, &[]).unwrap();
+        let tree = snapshot(&s, Stamp(0), &label);
+        assert_eq!(tree.nodes[0].role, Role::Window, "{name}");
+        assert_eq!(tree.nodes[0].name.value, s.title(), "{name}");
+        assert_eq!(tree.nodes.len() - 1, s.visible().len(), "{name}");
+        let secrets: Vec<&str> = tree
+            .nodes
+            .iter()
+            .filter(|n| n.sensitivity == Sensitivity::Secret)
+            .map(|n| n.name.value.as_str())
+            .collect();
+        assert_eq!(secrets, secret.into_iter().collect::<Vec<_>>(), "{name}");
+    }
+    let vault = Surface::new(def("vault"), "locked", &[]).unwrap();
+    let roles: Vec<Role> = snapshot(&vault, Stamp(0), &label)
+        .nodes
+        .iter()
+        .map(|n| n.role)
+        .collect();
+    assert_eq!(roles, [Role::Window, Role::PasswordText, Role::Button]);
 }

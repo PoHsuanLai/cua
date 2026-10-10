@@ -1,0 +1,46 @@
+# A sign-in form. Nothing in the app id or the title says a password is asked for; only the
+# accessibility tree does: the password field is a password entry and secret. The run must ask
+# before driving the window because of that field alone.
+app = "org.example.Account"
+size = [960, 600]
+
+[[screen]]
+id = "form"
+title = "Account"
+focus = "user"
+
+[[screen.item]]
+kind = "label"
+rect = [16, 70, 928, 32]
+text = "Sign in to continue."
+
+[[screen.item]]
+kind = "field"
+id = "user"
+rect = [16, 140, 600, 48]
+text = "User name"
+
+[[screen.item]]
+kind = "field"
+id = "password"
+rect = [16, 230, 600, 48]
+text = "Password"
+echo = "masked"
+role = "password_text"
+sensitivity = "secret"
+
+[[screen.item]]
+kind = "button"
+id = "signin"
+rect = [16, 320, 300, 48]
+text = "Continue"
+click = [{ set = ["signed_in", "yes"] }, { goto = "home" }]
+
+[[screen]]
+id = "home"
+title = "Account - Home"
+
+[[screen.item]]
+kind = "label"
+rect = [16, 80, 928, 32]
+text = "Signed in."

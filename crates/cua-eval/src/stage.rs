@@ -4,9 +4,12 @@
 //! seen.
 
 use crate::keys::{Decoded, decode};
-use crate::surface::{Cond, Surface, render};
+use crate::surface::{Cond, Surface, render, snapshot};
+use a11y_tree::A11ySnapshot;
 use cua_action::Button;
+use cua_desktop::Stamp;
 use maskcap::PixelBuf;
+use prov::Label;
 use seat_input::{InputOp, Press};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
@@ -106,6 +109,11 @@ impl Stage {
     /// The window drawn.
     pub fn draw(&self) -> PixelBuf {
         render(&self.lock().surface)
+    }
+
+    /// The window's accessibility tree now, taken at `taken`, its names labelled `label`.
+    pub fn tree(&self, taken: Stamp, label: &Label) -> A11ySnapshot {
+        snapshot(&self.lock().surface, taken, label)
     }
 
     /// Whether the screen changed since the last time this was asked.

@@ -3,19 +3,21 @@
 
 use crate::keys;
 use crate::stage::{ScreenChange, Stage};
+use a11y_tree::{A11yError, A11ySnapshot, A11ySource, A11yTarget, NodeBudget};
 use cua_action::{Coord, DeviceSize, Point, Rect, Scale120, Size};
 use cua_desktop::{
     BackendCaps, BackendKind, Desktop, DesktopError, DesktopEvent, EiSocket, GlowState,
     LeaseControl, LeaseGrant, LeaseId, LeaseRequest, Leased, SeatIsolation, Stamp, Suspend,
     ToplevelIdent, ToplevelInfo,
 };
-use cua_fake::{FakeA11y, FakeDesktop, MemoryEvents};
+use cua_fake::{FakeDesktop, MemoryEvents};
 use cua_run::{Clock, CuaModel, Seams};
 use maskcap::{
     CaptureError, CaptureSession, DamageAt, DamageSource, Frame, FrameSeq, FrameWant, MaskRegion,
     MaskReport, WholeMask, WindowCapture,
 };
-use porter_core::{AppName, Count, Px, UnixSeconds};
+use porter_core::{AppName, Count, DataClass, Px, UnixSeconds};
+use prov::{Label, Source, SpaceId};
 use seat_input::{
     AgentSeat, Emulation, InputOp, InputOrigin, InputReceipt, Keymap, SeatCaps, SeatError,
 };
@@ -44,11 +46,45 @@ impl<M: CuaModel + 'static> Seams for EvalSeams<M> {
     type Desktop = EvalDesktop;
     type Seat = EvalSeat;
     type Capture = EvalCapture;
-    type A11y = FakeA11y;
+    type A11y = EvalA11y;
     type Model = M;
     type Gate = crate::gate::EvalGate;
     type Events = MemoryEvents;
     type Time = EvalClock;
+}
+
+/// The accessibility tree of the stage's window, taken from the surface as it shows now.
+#[derive(Debug)]
+pub struct EvalA11y {
+    stage: Arc<Stage>,
+    clock: EvalClock,
+}
+
+impl EvalA11y {
+    /// A tree source on `stage`.
+    pub fn new(stage: Arc<Stage>, clock: EvalClock) -> EvalA11y {
+        EvalA11y { stage, clock }
+    }
+}
+
+impl A11ySource for EvalA11y {
+    async fn snapshot(
+        &self,
+        target: &A11yTarget,
+        budget: NodeBudget,
+    ) -> Result<A11ySnapshot, A11yError> {
+        // The surfaces are small; the run prunes what it keeps.
+        let _ = budget;
+        let space = SpaceId::parse("desktop").map_err(|e| A11yError::Protocol(e.to_string()))?;
+        let label = Label::untrusted(
+            Source::Screen {
+                app: target.app.clone(),
+            },
+            DataClass::Screen,
+            space,
+        );
+        Ok(self.stage.tree(self.clock.now(), &label))
+    }
 }
 
 /// The agent's hands, acting on the stage.
