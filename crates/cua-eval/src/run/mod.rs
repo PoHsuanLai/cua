@@ -81,7 +81,8 @@ async fn drive<M: CuaModel + 'static>(
     model: &mut Timed<M>,
     arena: &Arena,
 ) -> Ended {
-    let mut exec = Exec::<EvalSeams<Timed<M>>>::new(seam, run.id.clone(), run.task.clone());
+    let mut exec = Exec::<EvalSeams<Timed<M>>>::new(seam, run.id.clone(), run.task.clone())
+        .with_hints(arena.hints.clone());
     let mut effects: VecDeque<RunEffect> = VecDeque::from([RunEffect::Grant {
         app: run.task.app.clone(),
         space: run.task.space.clone(),

@@ -3,6 +3,7 @@
 //! ```text
 //! cua-eval --dir eval --label gate                                  (scripts: no model)
 //! cua-eval --dir eval --engine cassette --cassette eval/reports/x.cassette.toml
+//! cua-eval --dir eval --platform macos                              (the shortcuts of another platform)
 //! cua-eval --dir eval --screens /tmp/screens                        (what each task starts on)
 //! cua-eval --dir eval --engine local --entry catalog/holo-3.1-4b.toml --port 8000 --repeat 3
 //! cua-eval ... --api-key-file <file>        (an engine that wants a bearer key; read from the file, never printed)
@@ -13,6 +14,7 @@
 //! Exit status: 0 when every script met its expectation (or the live run finished), 1 when one
 //! did not, 2 when the run could not be set up.
 
+use chordkit::Platform;
 use cua_eval::corpus::Corpus;
 use cua_eval::eval::{Cassette, run_cassette, run_live, run_scripted};
 use cua_eval::live::{Plan, Thinking};
@@ -49,6 +51,7 @@ struct Args {
     thinking: Thinking,
     repeat: u32,
     screens: Option<PathBuf>,
+    platform: Platform,
 }
 
 fn parse(mut argv: impl Iterator<Item = String>) -> Result<Args, String> {
@@ -65,6 +68,7 @@ fn parse(mut argv: impl Iterator<Item = String>) -> Result<Args, String> {
         thinking: Thinking::Off,
         repeat: 1,
         screens: None,
+        platform: Corpus::PLATFORM,
     };
     while let Some(flag) = argv.next() {
         let mut value = || argv.next().ok_or_else(|| format!("{flag} needs a value"));
@@ -72,6 +76,7 @@ fn parse(mut argv: impl Iterator<Item = String>) -> Result<Args, String> {
             "--dir" => args.dir = PathBuf::from(value()?),
             "--label" => args.label = value()?,
             "--task" => args.only.push(value()?),
+            "--platform" => args.platform = value()?.parse().map_err(|e| format!("{e}"))?,
             "--screens" => args.screens = Some(PathBuf::from(value()?)),
             "--entry" => args.entry = Some(PathBuf::from(value()?)),
             "--cassette" => args.cassette = Some(PathBuf::from(value()?)),
@@ -219,7 +224,7 @@ async fn main() -> ExitCode {
         }
     };
     let corpus = match Corpus::load(&args.dir) {
-        Ok(corpus) => corpus,
+        Ok(corpus) => corpus.on(args.platform),
         Err(why) => {
             eprintln!("cua-eval: {why}");
             return ExitCode::from(2);

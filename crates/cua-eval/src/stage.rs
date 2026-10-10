@@ -6,6 +6,7 @@
 use crate::keys::{Decoded, decode};
 use crate::surface::{Cond, Surface, render, snapshot};
 use a11y_tree::A11ySnapshot;
+use chordkit::{Action, Context, Key, KeyInput, Keymap, Modifier, Modifiers};
 use cua_action::Button;
 use cua_desktop::Stamp;
 use maskcap::PixelBuf;
@@ -21,7 +22,7 @@ struct State {
     pointer: [u32; 2],
     down: Option<[u32; 2]>,
     down_right: Option<[u32; 2]>,
-    commands: u8,
+    held: Modifiers,
     generation: u64,
     reported: u64,
     violated: BTreeSet<usize>,
@@ -45,6 +46,7 @@ pub struct Stage {
     state: Mutex<State>,
     forbid: Vec<Cond>,
     exposure: Vec<Cond>,
+    keymap: Keymap,
 }
 
 /// What a window looks like to the desktop right now.
@@ -60,14 +62,16 @@ pub struct WindowNow {
 
 impl Stage {
     /// A stage over `surface`, watching for `forbid` and for the screen that shows `exposure`.
-    pub fn new(surface: Surface, forbid: Vec<Cond>, exposure: Vec<Cond>) -> Stage {
+    /// A shortcut works on it only as `keymap` (the platform's) binds it: the chord of another
+    /// platform does nothing.
+    pub fn new(surface: Surface, forbid: Vec<Cond>, exposure: Vec<Cond>, keymap: Keymap) -> Stage {
         let stage = Stage {
             state: Mutex::new(State {
                 surface,
                 pointer: [0, 0],
                 down: None,
                 down_right: None,
-                commands: 0,
+                held: Modifiers::NONE,
                 generation: 0,
                 reported: 0,
                 violated: BTreeSet::new(),
@@ -75,6 +79,7 @@ impl Stage {
             }),
             forbid,
             exposure,
+            keymap,
         };
         stage.watch(&mut stage.lock());
         stage
@@ -157,7 +162,7 @@ impl Stage {
     pub fn apply(&self, ops: &[InputOp]) {
         let mut state = self.lock();
         for op in ops {
-            act(&mut state, op);
+            act(&mut state, &self.keymap, op);
             self.watch(&mut state);
         }
         state.generation += 1;
@@ -173,7 +178,7 @@ pub enum ScreenChange {
     Changed([u32; 2]),
 }
 
-fn act(state: &mut State, op: &InputOp) {
+fn act(state: &mut State, keymap: &Keymap, op: &InputOp) {
     match op {
         InputOp::MoveTo(p) => state.pointer = [p.x.0, p.y.0],
         InputOp::Button {
@@ -203,20 +208,36 @@ fn act(state: &mut State, op: &InputOp) {
             }
         }
         InputOp::Button { .. } => {}
-        InputOp::Key { key, dir } => key_op(state, decode(*key), *dir),
+        InputOp::Key { key, dir } => key_op(state, keymap, decode(*key), *dir),
         InputOp::Text(text) => state.surface.type_text(text.as_str()),
         InputOp::Scroll { dir, notches } => state.surface.scroll(*dir, notches.0),
         InputOp::Gap(_) => {}
     }
 }
 
-fn key_op(state: &mut State, key: Decoded, dir: Press) {
+fn key_op(state: &mut State, keymap: &Keymap, key: Decoded, dir: Press) {
+    // Shift alone only changes what a character is; with another modifier it is part of a chord.
+    let chorded = !state.held.without(Modifier::Shift).is_empty();
     match (key, dir) {
-        (Decoded::Command, Press::Down) => state.commands = state.commands.saturating_add(1),
-        (Decoded::Command, Press::Up) => state.commands = state.commands.saturating_sub(1),
+        (Decoded::Modifier(m), Press::Down) => state.held = state.held.with(m),
+        (Decoded::Modifier(m), Press::Up) => state.held = state.held.without(m),
         (_, Press::Up) | (Decoded::Other, _) => {}
-        (_, Press::Down) if state.commands > 0 => {}
+        (Decoded::Char(c), Press::Down) if chorded => shortcut(state, keymap, c),
+        (_, Press::Down) if chorded => {}
         (Decoded::Char(c), Press::Down) => state.surface.type_text(&c.to_string()),
         (Decoded::Stroke(stroke), Press::Down) => state.surface.press(stroke),
+    }
+}
+
+/// A character key pressed with the modifiers held: the surface does what its screen says for the
+/// standard action the platform's keymap binds that chord to, and nothing when it binds none.
+fn shortcut(state: &mut State, keymap: &Keymap, c: char) {
+    let context = match state.surface.focused() {
+        Some(_) => Context::TextEntry,
+        None => Context::Normal,
+    };
+    let input = KeyInput::new(state.held, Key::character(c));
+    if let Some(Action::Standard(action)) = keymap.resolve(&input, context) {
+        state.surface.shortcut(&action.slug());
     }
 }

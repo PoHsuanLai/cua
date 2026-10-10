@@ -6,6 +6,7 @@ use crate::run::{Arena, SetupError};
 use crate::script::Move;
 use crate::surface::{Act, Cond, SurfaceDef};
 use crate::task::{TaskDef, TaskFile};
+use chordkit::{Desktop, Keymap, Platform, StandardAction};
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -40,6 +41,7 @@ pub struct Corpus {
     surfaces: BTreeMap<String, Arc<SurfaceDef>>,
     /// The tasks, in file order.
     pub tasks: Vec<TaskDef>,
+    keymap: Keymap,
 }
 
 fn files(dir: &Path) -> Result<Vec<PathBuf>, CorpusError> {
@@ -73,9 +75,33 @@ impl Corpus {
         for path in files(&dir.join("tasks"))? {
             tasks.extend(parse::<TaskFile>(&path)?.tasks);
         }
-        let corpus = Corpus { surfaces, tasks };
+        let corpus = Corpus {
+            surfaces,
+            tasks,
+            keymap: Keymap::conventional(Corpus::PLATFORM),
+        };
         corpus.check()?;
         Ok(corpus)
+    }
+
+    /// The platform a set is played on unless it is told another: the desktop the agent is
+    /// built for.
+    pub const PLATFORM: Platform = Platform::Linux {
+        desktop: Desktop::Ours,
+    };
+
+    /// The same set played on `platform`: the surfaces take only that platform's chords, and the
+    /// model is told that platform's shortcuts.
+    pub fn on(self, platform: Platform) -> Corpus {
+        Corpus {
+            keymap: Keymap::conventional(platform),
+            ..self
+        }
+    }
+
+    /// The keymap the set is played on.
+    pub fn keymap(&self) -> &Keymap {
+        &self.keymap
     }
 
     /// The world of `task`.
@@ -84,7 +110,7 @@ impl Corpus {
             .surfaces
             .get(&task.surface)
             .ok_or_else(|| SetupError::Id(format!("no surface {}", task.surface)))?;
-        Arena::new(task, surface.clone())
+        Arena::new(task, surface.clone(), self.keymap.clone())
     }
 
     fn check(&self) -> Result<(), CorpusError> {
@@ -132,12 +158,25 @@ fn check_surface(name: &str, def: &SurfaceDef) -> Result<(), CorpusError> {
         why,
     };
     for screen in &def.screens {
-        let acts = screen.enter.iter().chain(&screen.escape).chain(
-            screen
-                .items
-                .iter()
-                .flat_map(|i| i.click.iter().chain(&i.enter).chain(&i.context)),
-        );
+        for shortcut in &screen.shortcuts {
+            if StandardAction::from_slug(&shortcut.action).is_none() {
+                return Err(bad(format!(
+                    "screen {}: shortcut {}: no such action",
+                    screen.id, shortcut.action
+                )));
+            }
+        }
+        let acts = screen
+            .enter
+            .iter()
+            .chain(&screen.escape)
+            .chain(screen.shortcuts.iter().flat_map(|s| s.then.iter()))
+            .chain(
+                screen
+                    .items
+                    .iter()
+                    .flat_map(|i| i.click.iter().chain(&i.enter).chain(&i.context)),
+            );
         for act in acts {
             check_act(def, act).map_err(|e| bad(e.to_string()))?;
         }

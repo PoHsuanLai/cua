@@ -104,3 +104,52 @@ fn only_the_tasks_a_model_can_play_are_played() {
     let runs = block_on(run_live(&corpus(), provider, &plan, "test", 1, &only)).unwrap();
     assert!(runs.is_empty());
 }
+
+/// The text of everything the model is sent on its first step of the pad task, on `platform`.
+fn first_request_text(platform: chordkit::Platform) -> String {
+    let provider = provider(vec![turn(
+        r#"{"action":"finish","status":"done","summary":"Done."}"#,
+    )]);
+    let plan = Plan::of(ENTRY, "holo", Thinking::Off).unwrap();
+    let only = ["pad-copy-shortcut".to_owned()];
+    let corpus = corpus().on(platform);
+    block_on(run_live(&corpus, provider.clone(), &plan, "test", 1, &only)).unwrap();
+    let requests = provider.requests();
+    requests[0]
+        .messages
+        .iter()
+        .flat_map(|m| &m.parts)
+        .filter_map(|p| match p {
+            Part::Text(text) => Some(text.as_str()),
+            _ => None,
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+#[test]
+fn the_model_is_told_the_shortcuts_of_the_platform_it_plays_on() {
+    use chordkit::{Desktop, Platform};
+    // (platform, what the request must say, what it must not)
+    let rows = [
+        (
+            Platform::Linux {
+                desktop: Desktop::Ours,
+            },
+            "Shortcuts on this desktop: Copy \u{2318}C",
+            "Ctrl+C",
+        ),
+        (
+            Platform::Linux {
+                desktop: Desktop::Other,
+            },
+            "Shortcuts on this desktop: Copy Ctrl+C",
+            "\u{2318}",
+        ),
+    ];
+    for (platform, holds, lacks) in rows {
+        let text = first_request_text(platform);
+        assert!(text.contains(holds), "{platform:?}: {text}");
+        assert!(!text.contains(lacks), "{platform:?}: {text}");
+    }
+}

@@ -8,6 +8,7 @@ use crate::surface::{Surface, SurfaceDef};
 use crate::task::TaskDef;
 use crate::verdict::Outcome;
 use crate::world::{EvalClock, WINDOW};
+use chordkit::Keymap;
 use cua_bus::{CuaTask, ProcedureUse, ReportRoute, RunBudget, RunOrigin, SuccessCheck, TaskTarget};
 use cua_desktop::{Stamp, ToplevelIdent};
 use cua_fake::FixedClock;
@@ -30,17 +31,25 @@ pub struct Arena {
     pub(super) task: TaskDef,
     /// How many questions the run forced for a sensitive window and the eval's person answered.
     pub(super) forced: AtomicU32,
+    /// What the run's model is told about the desktop: its shortcuts.
+    pub(super) hints: Vec<String>,
 }
 
 impl Arena {
-    /// The world of `task` over `surface`.
-    pub fn new(task: &TaskDef, surface: Arc<SurfaceDef>) -> Result<Arena, SetupError> {
+    /// The world of `task` over `surface`, on the platform `keymap` is for.
+    pub fn new(
+        task: &TaskDef,
+        surface: Arc<SurfaceDef>,
+        keymap: Keymap,
+    ) -> Result<Arena, SetupError> {
         let state = Surface::new(surface, &task.start, &task.setup)?;
+        let hints = cua_run::shortcut_hint(&keymap).into_iter().collect();
         Ok(Arena {
             stage: Arc::new(Stage::new(
                 state,
                 task.forbid.clone(),
                 task.exposure.clone(),
+                keymap,
             )),
             log: GateLog::default(),
             clock: EvalClock(Arc::new(FixedClock::at(
@@ -49,6 +58,7 @@ impl Arena {
             ))),
             task: task.clone(),
             forced: AtomicU32::new(0),
+            hints,
         })
     }
 

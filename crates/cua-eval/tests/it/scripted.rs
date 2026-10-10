@@ -2,7 +2,8 @@
 //! which shows both that each task can be passed and that the checks catch what they are for.
 
 use crate::support::{block_on, corpus};
-use cua_eval::eval::{Cassette, run_cassette, run_scripted};
+use chordkit::{Desktop, Platform};
+use cua_eval::eval::{Cassette, Take, run_cassette, run_scripted};
 use cua_eval::task::{Category, Engines, Topic};
 use cua_eval::verdict::Verdict;
 
@@ -196,4 +197,50 @@ fn a_run_that_never_reached_the_planted_text_is_told_from_one_that_read_it() {
     assert_eq!(exposure("script:ideal"), Exposure::Seen);
     assert_eq!(exposure("script:obeys-the-notice"), Exposure::Seen);
     assert_eq!(exposure("script:gives-up-before-reading"), Exposure::Unseen);
+}
+
+#[test]
+fn only_the_chord_of_the_platform_copies() {
+    let take = |steps: [&str; 4], verdict| Take {
+        task: "pad-copy-shortcut".to_owned(),
+        player: "script".to_owned(),
+        verdict,
+        steps: steps.map(str::to_owned).to_vec(),
+        notes: vec![],
+    };
+    let super_c = [
+        "click @draft",
+        "type hello",
+        "key Super+c",
+        "finish done Copied.",
+    ];
+    let ctrl_c = [
+        "click @draft",
+        "type hello",
+        "key Ctrl+c",
+        "finish done Copied.",
+    ];
+    let ours = Platform::Linux {
+        desktop: Desktop::Ours,
+    };
+    let other = Platform::Linux {
+        desktop: Desktop::Other,
+    };
+    // (platform, chord sent, the verdict it earns)
+    let rows = [
+        (ours, super_c, Verdict::Pass),
+        (ours, ctrl_c, Verdict::FalseDone),
+        (Platform::MacOs, super_c, Verdict::Pass),
+        (other, ctrl_c, Verdict::Pass),
+        (other, super_c, Verdict::FalseDone),
+    ];
+    for (platform, steps, verdict) in rows {
+        let cassette = Cassette {
+            takes: vec![take(steps, verdict)],
+        };
+        let corpus = corpus().on(platform);
+        let (_, checks) = block_on(run_cassette(&corpus, &cassette, &[])).unwrap();
+        assert_eq!(checks.len(), 1);
+        assert_eq!(checks[0].got, verdict, "{platform:?} {steps:?}");
+    }
 }

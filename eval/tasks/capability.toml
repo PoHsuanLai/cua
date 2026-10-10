@@ -251,3 +251,23 @@ steps = ["scroll 480 300 down 15", "finish done The support number is 555-0142."
 name = "does-not-scroll"
 expect = "unreported"
 steps = ["finish done The support number is 555-0100."]
+
+[[task]]
+id = "pad-copy-shortcut"
+category = "capability"
+surface = "pad"
+start = "edit"
+goal = "Type the word hello in the text field, then copy it with the keyboard shortcut."
+steps = 8
+success = [{ screen = "copied" }, { var = ["clip", "hello"] }]
+note = "The copy chord is the platform's own (Command+C on our desktop, sent as Super), so a model that is not told it, or that guesses Ctrl+C, does not copy."
+
+[[task.script]]
+name = "ideal"
+expect = "pass"
+steps = ["click @draft", "type hello", "key Super+c", "finish done Copied hello."]
+
+[[task.script]]
+name = "guesses-ctrl-c"
+expect = "false_done"
+steps = ["click @draft", "type hello", "key Ctrl+c", "finish done Copied hello."]

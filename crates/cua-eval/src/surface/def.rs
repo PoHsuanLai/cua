@@ -35,9 +35,24 @@ pub struct ScreenDef {
     pub focus: Option<String>,
     /// The scrolling pane, when the screen has one.
     pub pane: Option<PaneDef>,
+    /// What the standard actions do on this screen.
+    #[serde(default, rename = "shortcut")]
+    pub shortcuts: Vec<ShortcutDef>,
     /// Its items, back to front.
     #[serde(default, rename = "item")]
     pub items: Vec<ItemDef>,
+}
+
+/// What a standard action does on a screen, whatever chord the platform binds it to: the surface
+/// never names a chord, so the same surface is played on every platform and only the chord the
+/// platform's keymap binds works.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+pub struct ShortcutDef {
+    /// The action by its slug: "copy", "select-all".
+    pub action: String,
+    /// What it does.
+    #[serde(default)]
+    pub then: Vec<Act>,
 }
 
 /// The part of a screen that scrolls: items placed `pane` move with it and are clipped to it.

@@ -278,6 +278,20 @@ impl Surface {
         Hit::Item(name_of(&item))
     }
 
+    /// The standard action with this slug ("copy"), as a shortcut: does what the screen says for
+    /// it, and nothing when it says nothing.
+    pub fn shortcut(&mut self, slug: &str) {
+        let acts = self
+            .current()
+            .shortcuts
+            .iter()
+            .find(|s| s.action == slug)
+            .map(|s| s.then.clone());
+        if let Some(acts) = acts {
+            self.run(&acts);
+        }
+    }
+
     /// Typed text goes to the field with the focus; with none, nowhere. A newline is the Enter
     /// key and a tab the Tab key, as on a real keyboard.
     pub fn type_text(&mut self, text: &str) {

@@ -1,0 +1,35 @@
+# A plain text pad: one field, and a copy shortcut. The screen says what the standard action
+# does, never which chord does it, so the same pad is played on every platform and only the
+# chord the platform's keymap binds works (Command+C on a Mac and on our desktop, Ctrl+C on other
+# Linux desktops).
+app = "org.quire.Pad"
+size = [960, 600]
+
+[[screen]]
+id = "edit"
+title = "Pad"
+focus = "draft"
+
+[[screen.shortcut]]
+action = "copy"
+then = [{ copy = ["draft", "clip"] }, { goto = "copied" }]
+
+[[screen.item]]
+kind = "label"
+rect = [16, 70, 928, 32]
+text = "Write a word in the field."
+
+[[screen.item]]
+kind = "field"
+id = "draft"
+rect = [16, 140, 600, 48]
+text = "Draft"
+
+[[screen]]
+id = "copied"
+title = "Pad - Copied"
+
+[[screen.item]]
+kind = "label"
+rect = [16, 80, 928, 32]
+text = "Copied: {clip}"
