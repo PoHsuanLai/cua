@@ -193,12 +193,13 @@ fn chord_of(text: &str) -> Result<Chord, MoveError> {
     let key = parts.pop().unwrap_or("");
     let mods = parts
         .into_iter()
-        .map(|m| match m {
-            "Control" | "Ctrl" => Ok(Modifier::Ctrl),
-            "Alt" => Ok(Modifier::Alt),
-            "Shift" => Ok(Modifier::Shift),
-            "Super" | "Meta" => Ok(Modifier::Super),
-            other => Err(MoveError::Argument("key", other.to_owned())),
+        .map(|m| match m.to_lowercase().as_str() {
+            "control" | "ctrl" => Ok(Modifier::Ctrl),
+            "alt" => Ok(Modifier::Alt),
+            "shift" => Ok(Modifier::Shift),
+            // The Command key reaches a window as Super, whatever a script calls it.
+            "super" | "meta" | "cmd" | "command" => Ok(Modifier::Super),
+            _ => Err(MoveError::Argument("key", m.to_owned())),
         })
         .collect::<Result<BTreeSet<_>, _>>()?;
     let key = Key::from_str(key).map_err(|_| MoveError::Argument("key", key.to_owned()))?;
@@ -321,5 +322,28 @@ impl CuaModel for ScriptModel {
 
     fn served(&self) -> Option<ServedBy> {
         self.served.clone()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn super_meta_and_cmd_are_one_modifier_and_ctrl_stays_ctrl() {
+        let command = BTreeSet::from([Modifier::Super]);
+        let ctrl = BTreeSet::from([Modifier::Ctrl]);
+        let cases = [
+            ("Super+c", &command),
+            ("cmd+c", &command),
+            ("Command+c", &command),
+            ("META+c", &command),
+            ("ctrl+c", &ctrl),
+            ("Control+c", &ctrl),
+        ];
+        for (text, mods) in cases {
+            let chord = chord_of(text).unwrap_or_else(|e| panic!("{text}: {e}"));
+            assert_eq!(&chord.mods, mods, "{text}");
+        }
     }
 }

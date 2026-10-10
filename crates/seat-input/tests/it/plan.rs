@@ -205,33 +205,38 @@ fn unmappable_char_errors_named_when_only_the_key_code_path_exists() {
 
 #[test]
 fn a_chord_presses_modifiers_then_the_key_and_releases_in_reverse() {
-    let chord = Chord::new(
-        BTreeSet::from([Modifier::Ctrl]),
-        keyboard_types::Key::Character("s".into()),
-    )
-    .unwrap();
-    let action = PlannedAction {
-        action: CuaAction::Key {
-            chord,
-            repeat: Repeat::ONCE,
-        },
-        at: ResolvedPoints::None,
-        window: window(),
-    };
-    let ops = without_gaps(plan(&action, &us_keymap(), &caps()).expect("a chord"));
-    let k = |code, dir| InputOp::Key {
-        key: Keycode(code),
-        dir,
-    };
-    assert_eq!(
-        ops,
-        vec![
-            k(29, Press::Down),
-            k(48, Press::Down),
-            k(48, Press::Up),
-            k(29, Press::Up)
-        ]
-    );
+    // (modifier, the code of the key that carries it): Super is the Meta key, never Control.
+    let rows = [(Modifier::Ctrl, 29), (Modifier::Super, 125)];
+    for (modifier, code) in rows {
+        let chord = Chord::new(
+            BTreeSet::from([modifier]),
+            keyboard_types::Key::Character("s".into()),
+        )
+        .unwrap();
+        let action = PlannedAction {
+            action: CuaAction::Key {
+                chord,
+                repeat: Repeat::ONCE,
+            },
+            at: ResolvedPoints::None,
+            window: window(),
+        };
+        let ops = without_gaps(plan(&action, &us_keymap(), &caps()).expect("a chord"));
+        let k = |code, dir| InputOp::Key {
+            key: Keycode(code),
+            dir,
+        };
+        assert_eq!(
+            ops,
+            vec![
+                k(code, Press::Down),
+                k(48, Press::Down),
+                k(48, Press::Up),
+                k(code, Press::Up)
+            ],
+            "{modifier:?}"
+        );
+    }
 }
 
 fn at_target(
