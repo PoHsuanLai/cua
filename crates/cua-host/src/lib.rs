@@ -18,6 +18,29 @@
 //!   [`SettingsFeed`] the caller supplies.
 //!
 //! `cuad` is the daemon over this crate: the system seams, the D-Bus service and the file watch.
+//!
+//! # A supervisor over the fakes
+//!
+//! ```
+//! use cua_desktop::BackendKind;
+//! use cua_fake::FakePdp;
+//! use cua_fake::scene::world;
+//! use cua_host::{CuadConfig, Supervisor};
+//! use cua_run::{CuaConfig, Enabled};
+//!
+//! let config = CuadConfig {
+//!     settings: CuaConfig {
+//!         enabled: Enabled::On,
+//!         ..CuaConfig::default()
+//!     },
+//!     ..CuadConfig::default()
+//! };
+//! let parts = world(BackendKind::CosmicStock, Vec::new(), FakePdp::allow_all());
+//! let supervisor = Supervisor::new(parts, config);
+//! assert_eq!(supervisor.settings().enabled, Enabled::On);
+//! assert_eq!(supervisor.started(), 0);
+//! assert!(supervisor.runs().is_empty());
+//! ```
 
 mod callers;
 mod clock;

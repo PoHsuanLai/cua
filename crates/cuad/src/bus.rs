@@ -6,13 +6,12 @@
 //! is derived from the connection: the well-known names the sender owns (`CallerNames`), never
 //! anything in a body.
 
-use cua_action::RunMode;
 use cua_bus::{
     CuaCaller, CuaEnvelope, CuaMember, CuaTask, CuaVocab, QuestionId, WindowBody, backend_wire,
     modes_wire, slug_of,
 };
 use cua_dbus::{CUA_PATH, CuaError, run_path};
-use cua_desktop::{Desktop, WindowTitle};
+use cua_desktop::{Desktop, RunMode, WindowTitle};
 use cua_host::CallerNames;
 use cua_host::Drivable;
 use cua_host::Supervisor;
