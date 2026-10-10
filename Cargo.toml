@@ -44,24 +44,24 @@ casement-protocols    = { git = "https://github.com/PoHsuanLai/casement-protocol
 
 # stoker's frozen interfaces, by git at a pinned rev (quire
 # CONSUMING.md section 1). stoker has no cua dependency, so there is no cycle.
-cua-action      = { git = "https://github.com/PoHsuanLai/stoker", rev = "5c24634c15448e077d3c8233fef4dffbc38ba6cb" }
-model-provider  = { git = "https://github.com/PoHsuanLai/stoker", rev = "5c24634c15448e077d3c8233fef4dffbc38ba6cb" }
-model-replay    = { git = "https://github.com/PoHsuanLai/stoker", rev = "5c24634c15448e077d3c8233fef4dffbc38ba6cb" }
-cua-parse       = { git = "https://github.com/PoHsuanLai/stoker", rev = "5c24634c15448e077d3c8233fef4dffbc38ba6cb" }
+cua-action      = { git = "https://github.com/PoHsuanLai/stoker", rev = "4a0bd9ec1f01a4c9398d106a92c2e4bdc0824815" }
+model-provider  = { git = "https://github.com/PoHsuanLai/stoker", rev = "4a0bd9ec1f01a4c9398d106a92c2e4bdc0824815" }
+model-replay    = { git = "https://github.com/PoHsuanLai/stoker", rev = "4a0bd9ec1f01a4c9398d106a92c2e4bdc0824815" }
+cua-parse       = { git = "https://github.com/PoHsuanLai/stoker", rev = "4a0bd9ec1f01a4c9398d106a92c2e4bdc0824815" }
 # cua-eval only: the live model path (the session that builds a step's prompt, the catalogue entry it reads, the HTTP client and the chat codec, the image preparation).
-cua-vendors     = { git = "https://github.com/PoHsuanLai/stoker", rev = "5c24634c15448e077d3c8233fef4dffbc38ba6cb" }
-cua-session     = { git = "https://github.com/PoHsuanLai/stoker", rev = "5c24634c15448e077d3c8233fef4dffbc38ba6cb" }
-model-catalog   = { git = "https://github.com/PoHsuanLai/stoker", rev = "5c24634c15448e077d3c8233fef4dffbc38ba6cb" }
-model-http      = { git = "https://github.com/PoHsuanLai/stoker", rev = "5c24634c15448e077d3c8233fef4dffbc38ba6cb" }
-model-openai-compat = { git = "https://github.com/PoHsuanLai/stoker", rev = "5c24634c15448e077d3c8233fef4dffbc38ba6cb" }
-vision-prep     = { git = "https://github.com/PoHsuanLai/stoker", rev = "5c24634c15448e077d3c8233fef4dffbc38ba6cb" }
+cua-vendors     = { git = "https://github.com/PoHsuanLai/stoker", rev = "4a0bd9ec1f01a4c9398d106a92c2e4bdc0824815" }
+cua-session     = { git = "https://github.com/PoHsuanLai/stoker", rev = "4a0bd9ec1f01a4c9398d106a92c2e4bdc0824815" }
+model-catalog   = { git = "https://github.com/PoHsuanLai/stoker", rev = "4a0bd9ec1f01a4c9398d106a92c2e4bdc0824815" }
+model-http      = { git = "https://github.com/PoHsuanLai/stoker", rev = "4a0bd9ec1f01a4c9398d106a92c2e4bdc0824815" }
+model-openai-compat = { git = "https://github.com/PoHsuanLai/stoker", rev = "4a0bd9ec1f01a4c9398d106a92c2e4bdc0824815" }
+vision-prep     = { git = "https://github.com/PoHsuanLai/stoker", rev = "4a0bd9ec1f01a4c9398d106a92c2e4bdc0824815" }
 
 # porter's frozen interfaces.
-porter-core     = { git = "https://github.com/PoHsuanLai/porter", rev = "3356848b51bc87d9d3ed05f84a49b99714f0971e" }
-prov            = { git = "https://github.com/PoHsuanLai/porter", rev = "3356848b51bc87d9d3ed05f84a49b99714f0971e" }
-porter-infer    = { git = "https://github.com/PoHsuanLai/porter", rev = "3356848b51bc87d9d3ed05f84a49b99714f0971e" }
-porter-client   = { git = "https://github.com/PoHsuanLai/porter", rev = "3356848b51bc87d9d3ed05f84a49b99714f0971e" }
-porter-daemon   = { git = "https://github.com/PoHsuanLai/porter", rev = "3356848b51bc87d9d3ed05f84a49b99714f0971e" }
+porter-core     = { git = "https://github.com/PoHsuanLai/porter", rev = "0e98f8d26952b6a18a3546f7618782c682d21b10" }
+prov            = { git = "https://github.com/PoHsuanLai/porter", rev = "0e98f8d26952b6a18a3546f7618782c682d21b10" }
+porter-infer    = { git = "https://github.com/PoHsuanLai/porter", rev = "0e98f8d26952b6a18a3546f7618782c682d21b10" }
+porter-client   = { git = "https://github.com/PoHsuanLai/porter", rev = "0e98f8d26952b6a18a3546f7618782c682d21b10" }
+porter-daemon   = { git = "https://github.com/PoHsuanLai/porter", rev = "0e98f8d26952b6a18a3546f7618782c682d21b10" }
 
 # chordkit: the portable keymap core. cua reads the desktop's shortcut conventions from it (a
 # Keymap and a Platform) and restates none of them.
