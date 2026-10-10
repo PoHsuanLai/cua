@@ -57,15 +57,15 @@ model-openai-compat = { git = "https://github.com/PoHsuanLai/stoker", rev = "9e4
 vision-prep     = { git = "https://github.com/PoHsuanLai/stoker", rev = "9e4ba527e368a57c40b73c59da2de0cd867e5e03" }
 
 # porter's frozen interfaces.
-porter-core     = { git = "https://github.com/PoHsuanLai/porter", rev = "6b1adee23a4bb515e63ccc1bcc89b6eee3aef802" }
-prov            = { git = "https://github.com/PoHsuanLai/porter", rev = "6b1adee23a4bb515e63ccc1bcc89b6eee3aef802" }
-porter-infer    = { git = "https://github.com/PoHsuanLai/porter", rev = "6b1adee23a4bb515e63ccc1bcc89b6eee3aef802" }
-porter-client   = { git = "https://github.com/PoHsuanLai/porter", rev = "6b1adee23a4bb515e63ccc1bcc89b6eee3aef802" }
-porter-daemon   = { git = "https://github.com/PoHsuanLai/porter", rev = "6b1adee23a4bb515e63ccc1bcc89b6eee3aef802" }
+porter-core     = { git = "https://github.com/PoHsuanLai/porter", rev = "3d05f0a185fdae1e2d10c47ddb48f1c1ff0c7f20" }
+prov            = { git = "https://github.com/PoHsuanLai/porter", rev = "3d05f0a185fdae1e2d10c47ddb48f1c1ff0c7f20" }
+porter-infer    = { git = "https://github.com/PoHsuanLai/porter", rev = "3d05f0a185fdae1e2d10c47ddb48f1c1ff0c7f20" }
+porter-client   = { git = "https://github.com/PoHsuanLai/porter", rev = "3d05f0a185fdae1e2d10c47ddb48f1c1ff0c7f20" }
+porter-daemon   = { git = "https://github.com/PoHsuanLai/porter", rev = "3d05f0a185fdae1e2d10c47ddb48f1c1ff0c7f20" }
 
 # chordkit: the portable keymap core. cua reads the desktop's shortcut conventions from it (a
 # Keymap and a Platform) and restates none of them.
-chordkit        = { git = "https://github.com/PoHsuanLai/chordkit", rev = "6bc8b634a057bb28591ee6fd6241e07d0beca03e" }
+chordkit        = { git = "https://github.com/PoHsuanLai/chordkit", rev = "ba094c62006c280ac53c4c5df5c0e639c1226c07" }
 # keycap's client: this desktop's chordkit source, with the person's own overrides. cuad only, behind its `keycap` feature.
 keycap-client   = { git = "https://github.com/PoHsuanLai/keycap", rev = "0df920785831253b1ab27e8cf3f2218e9edd94c2" }
 
