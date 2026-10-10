@@ -76,14 +76,14 @@ almanac-client  = { git = "https://github.com/PoHsuanLai/almanac", rev = "a1afc1
 # docket's frozen interfaces: the gate contract (`CuaAsk`, `GateAnswer`, `RunMode`,
 # `WindowTrust`), the message draft and the provider trait. docket sits below cua and has no cua
 # dependency.
-docket-core     = { git = "https://github.com/PoHsuanLai/docket", rev = "1ed3fc4627c9f4fc9148bac63800392add99afaa" }
-docket-client   = { git = "https://github.com/PoHsuanLai/docket", rev = "1ed3fc4627c9f4fc9148bac63800392add99afaa", default-features = false }
+docket-core     = { git = "https://github.com/PoHsuanLai/docket", rev = "76391a585bc0714f85304af4b56c3c9e107200a0" }
+docket-client   = { git = "https://github.com/PoHsuanLai/docket", rev = "76391a585bc0714f85304af4b56c3c9e107200a0", default-features = false }
 
 # Dev-dependencies of cuad's tests only: a real intentd on a private bus over docket's fakes, and
 # a real memory service over almanac's fakes. Nothing outside `[dev-dependencies]` names them.
-intentd         = { git = "https://github.com/PoHsuanLai/docket", rev = "1ed3fc4627c9f4fc9148bac63800392add99afaa" }
-docket-fake     = { git = "https://github.com/PoHsuanLai/docket", rev = "1ed3fc4627c9f4fc9148bac63800392add99afaa" }
-docket-router   = { git = "https://github.com/PoHsuanLai/docket", rev = "1ed3fc4627c9f4fc9148bac63800392add99afaa" }
+intentd         = { git = "https://github.com/PoHsuanLai/docket", rev = "76391a585bc0714f85304af4b56c3c9e107200a0" }
+docket-fake     = { git = "https://github.com/PoHsuanLai/docket", rev = "76391a585bc0714f85304af4b56c3c9e107200a0" }
+docket-router   = { git = "https://github.com/PoHsuanLai/docket", rev = "76391a585bc0714f85304af4b56c3c9e107200a0" }
 almanac-fake    = { git = "https://github.com/PoHsuanLai/almanac", rev = "a1afc1ac016f7053d4cae30b621276eee0c026fd" }
 almanac-service = { git = "https://github.com/PoHsuanLai/almanac", rev = "a1afc1ac016f7053d4cae30b621276eee0c026fd" }
 
