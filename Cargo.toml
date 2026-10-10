@@ -70,22 +70,22 @@ chordkit        = { git = "https://github.com/PoHsuanLai/chordkit.git", rev = "b
 keycap-client   = { git = "https://github.com/PoHsuanLai/keycap", rev = "95f41dc4b613e3557f3cabc1638e53da348a09ff" }
 
 # almanac's frozen interfaces: cuad records `CuaRecord`s as `EventBody::Area` through memoryd.
-almanac-core    = { git = "https://github.com/PoHsuanLai/almanac", rev = "5ac24f92022d308ea3a1746a7cf3ecfde70665a1" }
-almanac-client  = { git = "https://github.com/PoHsuanLai/almanac", rev = "5ac24f92022d308ea3a1746a7cf3ecfde70665a1", default-features = false }
+almanac-core    = { git = "https://github.com/PoHsuanLai/almanac", rev = "a1afc1ac016f7053d4cae30b621276eee0c026fd" }
+almanac-client  = { git = "https://github.com/PoHsuanLai/almanac", rev = "a1afc1ac016f7053d4cae30b621276eee0c026fd", default-features = false }
 
 # docket's frozen interfaces: the gate contract (`CuaAsk`, `GateAnswer`, `RunMode`,
 # `WindowTrust`), the message draft and the provider trait. docket sits below cua and has no cua
 # dependency.
-docket-core     = { git = "https://github.com/PoHsuanLai/docket", rev = "74573991e4138daae53305cd348f91909bf2a7f3" }
-docket-client   = { git = "https://github.com/PoHsuanLai/docket", rev = "74573991e4138daae53305cd348f91909bf2a7f3", default-features = false }
+docket-core     = { git = "https://github.com/PoHsuanLai/docket", rev = "1ed3fc4627c9f4fc9148bac63800392add99afaa" }
+docket-client   = { git = "https://github.com/PoHsuanLai/docket", rev = "1ed3fc4627c9f4fc9148bac63800392add99afaa", default-features = false }
 
 # Dev-dependencies of cuad's tests only: a real intentd on a private bus over docket's fakes, and
 # a real memory service over almanac's fakes. Nothing outside `[dev-dependencies]` names them.
-intentd         = { git = "https://github.com/PoHsuanLai/docket", rev = "74573991e4138daae53305cd348f91909bf2a7f3" }
-docket-fake     = { git = "https://github.com/PoHsuanLai/docket", rev = "74573991e4138daae53305cd348f91909bf2a7f3" }
-docket-router   = { git = "https://github.com/PoHsuanLai/docket", rev = "74573991e4138daae53305cd348f91909bf2a7f3" }
-almanac-fake    = { git = "https://github.com/PoHsuanLai/almanac", rev = "5ac24f92022d308ea3a1746a7cf3ecfde70665a1" }
-almanac-service = { git = "https://github.com/PoHsuanLai/almanac", rev = "5ac24f92022d308ea3a1746a7cf3ecfde70665a1" }
+intentd         = { git = "https://github.com/PoHsuanLai/docket", rev = "1ed3fc4627c9f4fc9148bac63800392add99afaa" }
+docket-fake     = { git = "https://github.com/PoHsuanLai/docket", rev = "1ed3fc4627c9f4fc9148bac63800392add99afaa" }
+docket-router   = { git = "https://github.com/PoHsuanLai/docket", rev = "1ed3fc4627c9f4fc9148bac63800392add99afaa" }
+almanac-fake    = { git = "https://github.com/PoHsuanLai/almanac", rev = "a1afc1ac016f7053d4cae30b621276eee0c026fd" }
+almanac-service = { git = "https://github.com/PoHsuanLai/almanac", rev = "a1afc1ac016f7053d4cae30b621276eee0c026fd" }
 
 # From quire's pinned block (`docs/workspace-deps.toml`), copied verbatim: only the lines cua
 # names itself.
