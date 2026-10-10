@@ -77,7 +77,8 @@ fn applies(member: CuaMember, phase: &RunPhase) -> bool {
             )
         }
         CuaMember::HandBack => matches!(phase, RunPhase::TakenOver(..)),
-        CuaMember::Start | CuaMember::Runs | CuaMember::StopAll | CuaMember::Answer => false,
+        // Not run controls, and any member this build does not know: nothing applies.
+        _ => false,
     }
 }
 
@@ -89,7 +90,8 @@ fn input_of(member: CuaMember) -> Option<RunInput> {
         CuaMember::Resume => Some(RunInput::UserResume),
         CuaMember::TakeOver => Some(RunInput::UserTakeOver),
         CuaMember::HandBack => Some(RunInput::UserHandBack),
-        CuaMember::Start | CuaMember::Runs | CuaMember::StopAll | CuaMember::Answer => None,
+        // Not run controls, and any member this build does not know: no input.
+        _ => None,
     }
 }
 

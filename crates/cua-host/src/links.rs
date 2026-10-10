@@ -31,6 +31,7 @@ pub struct RecordContext {
 
 /// Why a record could not become an event.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+#[non_exhaustive]
 pub enum RecordError {
     /// The record's slug is not a kind tag (a bug: the slugs are pinned by a test).
     #[error("not a kind tag: {0}")]

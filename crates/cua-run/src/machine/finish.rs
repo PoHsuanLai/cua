@@ -47,6 +47,11 @@ fn said_of(outcome: CuaOutcome) -> &'static str {
         CuaOutcome::BudgetOut(RunBudgetKind::Stall) => "The screen stopped changing.",
         CuaOutcome::BudgetOut(RunBudgetKind::Rate) => "Too many actions in a minute.",
         CuaOutcome::BudgetOut(RunBudgetKind::Spend) => "Ran out of budget.",
+        // Ends and reasons this build does not know are told in general words.
+        CuaOutcome::Failed(_) => "The run could not carry on.",
+        CuaOutcome::Blocked(_) => "The run was blocked.",
+        CuaOutcome::Cancelled(_) => "The run was stopped.",
+        _ => "The run ended.",
     }
 }
 

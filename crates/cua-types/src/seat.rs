@@ -47,6 +47,7 @@ pub struct InputReceipt {
 /// Why the seat could not deliver.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, thiserror::Error)]
 #[serde(tag = "kind", content = "v", rename_all = "snake_case")]
+#[non_exhaustive]
 pub enum SeatError {
     /// No EIS connection.
     #[error("not connected")]

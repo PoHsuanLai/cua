@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 /// Why a desktop or lease call failed.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, thiserror::Error)]
 #[serde(tag = "kind", content = "v", rename_all = "snake_case")]
+#[non_exhaustive]
 pub enum DesktopError {
     /// No such window (closed, or never leasable by that name).
     #[error("no such window")]

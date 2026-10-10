@@ -38,6 +38,7 @@ pub enum CheckResult {
 /// One input of the run machine.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", content = "v", rename_all = "snake_case")]
+#[non_exhaustive]
 pub enum RunInput {
     /// `Gate.Grant` ended.
     Granted(GrantAnswer),

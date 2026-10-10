@@ -136,5 +136,7 @@ fn finished(task: &TaskDef, end: CuaOutcome, e: Evidence, as_wanted: bool) -> Ve
                 _ => Verdict::GaveUp,
             }
         }
+        // An end this build does not know is not counted as a pass.
+        _ => Verdict::Broken,
     }
 }

@@ -43,6 +43,7 @@ pub enum RunStateSlug {
 /// Why a run failed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[non_exhaustive]
 pub enum FailReason {
     /// The window closed.
     WindowGone,
@@ -61,6 +62,7 @@ pub enum FailReason {
 /// What stopped a run before it began or kept it from going on.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(tag = "kind", content = "v", rename_all = "snake_case")]
+#[non_exhaustive]
 pub enum BlockedOn {
     /// The person refused the per-app consent.
     ConsentDenied,
@@ -77,6 +79,7 @@ pub enum BlockedOn {
 /// Who cancelled a run.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[non_exhaustive]
 pub enum CancelledBy {
     /// The person.
     User,
@@ -90,6 +93,7 @@ pub enum CancelledBy {
 /// [`CuaOutcome::status`]; this is the detail the event log and the run row keep.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(tag = "kind", content = "v", rename_all = "snake_case")]
+#[non_exhaustive]
 pub enum CuaOutcome {
     /// Finished what was asked.
     Done,

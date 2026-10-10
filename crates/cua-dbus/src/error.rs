@@ -56,6 +56,8 @@ impl From<ControlRefusal> for CuaError {
             ControlRefusal::LeaseHeld => CuaError::LeaseHeld(text),
             ControlRefusal::ModeUnsupported => CuaError::ModeUnsupported(text),
             ControlRefusal::BadTask => CuaError::BadTask(text),
+            // A refusal this build does not know stays a refusal, and the strictest one.
+            _ => CuaError::NotPermitted(text),
         }
     }
 }

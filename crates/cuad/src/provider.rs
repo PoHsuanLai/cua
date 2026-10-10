@@ -17,6 +17,7 @@ const MANIFEST: &str = include_str!("../../../manifests/org.quire.Cua.toml");
 
 /// Why the provider could not be built.
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
+#[non_exhaustive]
 pub enum ProviderError {
     /// The shipped file does not parse (a bug: a test reads it).
     #[error("manifest does not parse: {0}")]
@@ -200,6 +201,8 @@ fn refusal_of(why: ControlRefusal) -> AppRefusal {
         | ControlRefusal::UnknownQuestion
         | ControlRefusal::Disabled
         | ControlRefusal::ModeUnsupported => AppRefusal::Unsupported,
+        // A refusal this build does not know is still a refusal.
+        _ => AppRefusal::Unsupported,
     }
 }
 

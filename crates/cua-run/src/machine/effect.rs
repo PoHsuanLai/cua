@@ -28,6 +28,7 @@ pub enum HintSource {
 /// What the bus tells watchers (the `Cua1.Run` signals).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", content = "v", rename_all = "snake_case")]
+#[non_exhaustive]
 pub enum CuaSignal {
     /// The phase changed.
     StateChanged(RunStateSlug),
@@ -49,6 +50,7 @@ pub enum CuaSignal {
 /// One effect of the run machine.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", content = "v", rename_all = "snake_case")]
+#[non_exhaustive]
 pub enum RunEffect {
     /// `Gate.Grant`: the per-app consent for this app in this Space.
     Grant {

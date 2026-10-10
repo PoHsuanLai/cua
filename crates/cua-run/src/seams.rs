@@ -19,6 +19,7 @@ use std::future::Future;
 /// Why a call to a neighbour failed.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, thiserror::Error)]
 #[serde(tag = "kind", content = "v", rename_all = "snake_case")]
+#[non_exhaustive]
 pub enum LinkError {
     /// The neighbour is not there (the router, memoryd).
     #[error("unavailable")]

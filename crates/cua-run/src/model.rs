@@ -11,6 +11,7 @@ use std::future::Future;
 /// What a model says while a step is still being decided.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", content = "v", rename_all = "snake_case")]
+#[non_exhaustive]
 pub enum StepEvent {
     /// Some of the model's thought, as it streams (text of the model: `Debug` never prints it).
     ThoughtDelta(ThoughtText),
@@ -38,6 +39,7 @@ pub trait StepSink: Send {
 /// Why a model call failed, in the words the run machine counts.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, thiserror::Error)]
 #[serde(rename_all = "snake_case")]
+#[non_exhaustive]
 pub enum CuaModelError {
     /// Worth retrying: the engine is busy, loading or unreachable.
     #[error("transient")]

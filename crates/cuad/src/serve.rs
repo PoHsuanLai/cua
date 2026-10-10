@@ -30,6 +30,7 @@ use zbus::zvariant::OwnedObjectPath;
 
 /// Why the daemon stopped.
 #[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
 pub enum ServeError {
     /// The session bus could not be reached or the name could not be taken.
     #[error("bus: {0}")]
@@ -203,8 +204,9 @@ async fn say<S: Drivable>(
                         emit_run(connection, &path, "AskUser", &(question.0, body)).await;
                     }
                 }
-                // The run's end is told with its `RunEnd`, once the report is out.
-                CuaSignal::Finished(_) => {}
+                // The run's end is told with its `RunEnd`, once the report is out. A signal
+                // this build does not know has no bus member, so it is not relayed.
+                _ => {}
             }
         }
         SupervisorEvent::Ended(run, end) => {
@@ -229,6 +231,8 @@ async fn say<S: Drivable>(
                 .remove::<RunObject<S>, _>(run_path(&run))
                 .await;
         }
+        // An event this build does not know has nothing to say on the bus.
+        _ => {}
     }
 }
 
@@ -258,7 +262,8 @@ fn note_exported(exported: &mut BTreeSet<RunId>, event: &SupervisorEvent) {
         SupervisorEvent::Removed(run) => {
             exported.remove(run);
         }
-        SupervisorEvent::Signal(..) | SupervisorEvent::Ended(..) => {}
+        // Signals and ends leave the run objects as they are; so does an event not known yet.
+        _ => {}
     }
 }
 

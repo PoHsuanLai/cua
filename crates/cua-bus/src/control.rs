@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 /// `org.quire.Cua1.Error.<Variant>`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[non_exhaustive]
 pub enum ControlRefusal {
     /// The caller is not on the allow-list for this member.
     NotPermitted,
@@ -71,6 +72,7 @@ pub enum CuaCaller {
 /// member: properties and signals are open to any caller.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[non_exhaustive]
 pub enum CuaMember {
     /// `Manager.Start`.
     Start,
