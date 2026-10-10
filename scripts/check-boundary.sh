@@ -102,7 +102,7 @@ fi
 # dependencies (all features), and nothing else. A dependency not listed is a leak; so is one
 # the crate no longer has, so the table stays exact. Dev dependencies are outside it.
 EDGES=(
-  "cua-desktop: casement-protocols cua-action docket-core porter-core prov"
+  "cua-desktop: casement-protocols cua-action porter-core prov"
   "maskcap: casement-protocols cua-action cua-desktop cua-types"
   "seat-input: cua-action cua-desktop cua-types porter-core"
   "a11y-tree: cua-action cua-desktop cua-types porter-core prov"
