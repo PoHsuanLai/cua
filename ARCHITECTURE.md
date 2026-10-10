@@ -69,6 +69,12 @@ The repo order is stoker, porter, almanac, docket, cua, sill. cua reaches stoker
 sill may enter any tree here. cua never reaches `policy-point`: the router is the one decision
 point and cuad asks it through `Intents1.Gate`.
 
+cuad uses the standard shortcuts only (owner decision, 2026-10-10). Its sandbox does not read the
+person's own keycap remappings: the keymap file and the keycap socket stay closed. The shortcut
+hints it tells the model come from chordkit's conventional keymap (with the desktop's own
+bindings). `desktop_keymap` treats a source it cannot open as absent, with no error output; only a
+bad line in a keymap file that did open is reported.
+
 External boundaries: see `scripts/check-boundary.sh`. `zbus` is behind `cua-dbus` and `cuad`
 only; the pure set never reaches an effect crate; `wayland-client` is behind the `wayland` features (cua-desktop, maskcap), `reis` behind `ei` (and `cua-fake`'s `FakeEis`), `atspi` behind `atspi`.
 
