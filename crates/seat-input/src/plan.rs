@@ -310,5 +310,7 @@ pub fn plan(
         | CuaAction::Observe
         | CuaAction::Finish { .. }
         | CuaAction::Ask { .. } => Err(PlanError::NotAnInput),
+        // An action a later stoker adds is not performed until it is planned here.
+        _ => Err(PlanError::NotAnInput),
     }
 }

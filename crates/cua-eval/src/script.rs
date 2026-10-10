@@ -255,6 +255,7 @@ pub fn line_of(action: &CuaAction<WindowSpace>) -> String {
         | CuaAction::Drag { .. }
         | CuaAction::Zoom { .. }
         | CuaAction::Observe => "wait 0".to_owned(),
+        _ => "wait 0".to_owned(),
     }
 }
 

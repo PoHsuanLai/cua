@@ -85,6 +85,11 @@ fn part(one: &sp::Part) -> Result<pi::MessagePart, RequestFault> {
                 .map(part)
                 .collect::<Result<_, RequestFault>>()?,
         }),
+        _ => {
+            return Err(RequestFault::Wire(
+                "a part the engine can't carry".to_owned(),
+            ));
+        }
     })
 }
 
@@ -109,6 +114,9 @@ fn tool(spec: &sp::ToolSpec) -> Result<pi::ToolDecl, RequestFault> {
             params: pi::JsonSchemaText(json(&parameters.0)?),
         }),
         sp::ToolSpec::Native(_) => Err(RequestFault::Wire("a vendor's own tool".to_owned())),
+        _ => Err(RequestFault::Wire(
+            "a tool the engine can't carry".to_owned(),
+        )),
     }
 }
 
@@ -118,6 +126,11 @@ fn choice(choice: &sp::ToolChoice) -> Result<pi::ToolChoice, RequestFault> {
         sp::ToolChoice::Never => pi::ToolChoice::Never,
         sp::ToolChoice::Required => pi::ToolChoice::Required,
         sp::ToolChoice::Named(tool_name) => pi::ToolChoice::Named(name(tool_name)?),
+        _ => {
+            return Err(RequestFault::Wire(
+                "a tool choice the engine can't carry".to_owned(),
+            ));
+        }
     })
 }
 
@@ -152,6 +165,7 @@ fn reasoning(reasoning: sp::Reasoning) -> pi::Reasoning {
         sp::Reasoning::EngineDefault => pi::Reasoning::EngineDefault,
         sp::Reasoning::Off => pi::Reasoning::Off,
         sp::Reasoning::On(level) => pi::Reasoning::On(effort(level)),
+        _ => pi::Reasoning::EngineDefault,
     }
 }
 
