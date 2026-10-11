@@ -40,7 +40,7 @@ cua-eval              = { path = "crates/cua-eval" }
 cua-eval-cloud        = { path = "crates/cua-eval-cloud" }
 
 # The one home of every quire_*_v1 protocol: the XML, the vocabulary, the bindings (by git at a pinned rev; a local checkout overrides it through a [patch], FINDINGS.md).
-casement-protocols    = { git = "https://github.com/PoHsuanLai/casement-protocols", rev = "b59d1d7da33e0aa1f4460ea515e64d5e4f51f112" }
+casement-protocols    = { git = "https://github.com/PoHsuanLai/casement-protocols", rev = "747535b0776a7c1141b20a131b820a053687ffd0" }
 
 # stoker's frozen interfaces, by git at a pinned rev (quire
 # CONSUMING.md section 1). stoker has no cua dependency, so there is no cycle.
@@ -76,14 +76,14 @@ almanac-client  = { git = "https://github.com/PoHsuanLai/almanac", rev = "567834
 # docket's frozen interfaces: the gate contract (`CuaAsk`, `GateAnswer`, `RunMode`,
 # `WindowTrust`), the message draft and the provider trait. docket sits below cua and has no cua
 # dependency.
-docket-core     = { git = "https://github.com/PoHsuanLai/docket", rev = "1695cff0bae747e9e152c7bf927d34597c86cb29" }
-docket-client   = { git = "https://github.com/PoHsuanLai/docket", rev = "1695cff0bae747e9e152c7bf927d34597c86cb29", default-features = false }
+docket-core     = { git = "https://github.com/PoHsuanLai/docket", rev = "c9db2e0e48b0fedab7c15326cc30f9e653f2f1d9" }
+docket-client   = { git = "https://github.com/PoHsuanLai/docket", rev = "c9db2e0e48b0fedab7c15326cc30f9e653f2f1d9", default-features = false }
 
 # Dev-dependencies of cuad's tests only: a real intentd on a private bus over docket's fakes, and
 # a real memory service over almanac's fakes. Nothing outside `[dev-dependencies]` names them.
-intentd         = { git = "https://github.com/PoHsuanLai/docket", rev = "1695cff0bae747e9e152c7bf927d34597c86cb29" }
-docket-fake     = { git = "https://github.com/PoHsuanLai/docket", rev = "1695cff0bae747e9e152c7bf927d34597c86cb29" }
-docket-router   = { git = "https://github.com/PoHsuanLai/docket", rev = "1695cff0bae747e9e152c7bf927d34597c86cb29" }
+intentd         = { git = "https://github.com/PoHsuanLai/docket", rev = "c9db2e0e48b0fedab7c15326cc30f9e653f2f1d9" }
+docket-fake     = { git = "https://github.com/PoHsuanLai/docket", rev = "c9db2e0e48b0fedab7c15326cc30f9e653f2f1d9" }
+docket-router   = { git = "https://github.com/PoHsuanLai/docket", rev = "c9db2e0e48b0fedab7c15326cc30f9e653f2f1d9" }
 almanac-fake    = { git = "https://github.com/PoHsuanLai/almanac", rev = "5678345d4bd0ce3585b4205b35c88232d128252f" }
 almanac-service = { git = "https://github.com/PoHsuanLai/almanac", rev = "5678345d4bd0ce3585b4205b35c88232d128252f" }
 
