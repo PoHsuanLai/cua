@@ -92,19 +92,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn every_backend_is_a_shared_seat_masked_by_cuad_and_guarded_by_suspending_input() {
-        for kind in [BackendKind::KwinStock] {
-            let caps = BackendCaps::of(kind);
-            assert_eq!(caps.kind, kind);
-            assert_eq!(caps.seat, SeatIsolation::SharedSeat, "{kind:?} seat");
-            assert_eq!(caps.masking, MaskWhere::Cuad, "{kind:?} masking");
-            assert_eq!(
-                caps.consent,
-                ConsentGuard::CuadSuspendsInput,
-                "{kind:?} consent"
-            );
-            assert_eq!(caps.hidden, HiddenCapture::Renders, "{kind:?} hidden");
-            assert_eq!(caps.glow, GlowDraw::ShellOnly, "{kind:?} glow");
-        }
+    fn the_kwin_backend_is_a_shared_seat_masked_by_cuad_and_guarded_by_suspending_input() {
+        let kind = BackendKind::KwinStock;
+        let caps = BackendCaps::of(kind);
+        assert_eq!(caps.kind, kind);
+        assert_eq!(caps.seat, SeatIsolation::SharedSeat);
+        assert_eq!(caps.masking, MaskWhere::Cuad);
+        assert_eq!(caps.consent, ConsentGuard::CuadSuspendsInput);
+        assert_eq!(caps.hidden, HiddenCapture::Renders);
+        assert_eq!(caps.glow, GlowDraw::ShellOnly);
     }
 }
