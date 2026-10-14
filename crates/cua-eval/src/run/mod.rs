@@ -60,7 +60,7 @@ pub async fn play<M: CuaModel + 'static>(
     };
     let env = RunEnv::new(
         &CuaConfig::default(),
-        BackendCaps::of(BackendKind::CosmicStock),
+        BackendCaps::of(BackendKind::KwinStock),
     );
     let id = RunId::parse("r-1").map_err(|e| SetupError::Id(e.to_string()))?;
     let (run, _) = Run::start(id, arena.cua_task()?, env, arena.clock.now());

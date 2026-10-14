@@ -138,7 +138,7 @@ fn a_started_run_asks_for_the_consent_first() {
     let (run, effects) = Run::start(
         run_id(),
         task(window(), RunMode::InPlace),
-        env(BackendKind::CosmicStock),
+        env(BackendKind::KwinStock),
         Stamp(0),
     );
     assert_eq!(run.phase, RunPhase::Granting);
@@ -156,7 +156,7 @@ fn a_mode_the_backend_cannot_run_or_an_app_target_ends_the_run_at_once() {
     let (run, effects) = Run::start(
         run_id(),
         task(window(), RunMode::AgentWorkspace),
-        env(BackendKind::CosmicStock),
+        env(BackendKind::KwinStock),
         Stamp(0),
     );
     assert_eq!(
@@ -169,7 +169,7 @@ fn a_mode_the_backend_cannot_run_or_an_app_target_ends_the_run_at_once() {
     let (run, _) = Run::start(
         run_id(),
         task(TaskTarget::App(app()), RunMode::InPlace),
-        env(BackendKind::CosmicStock),
+        env(BackendKind::KwinStock),
         Stamp(0),
     );
     assert_eq!(
@@ -183,7 +183,7 @@ fn a_refused_consent_ends_the_run_blocked_and_reports_failed() {
     let (run, _) = Run::start(
         run_id(),
         task(window(), RunMode::InPlace),
-        env(BackendKind::CosmicStock),
+        env(BackendKind::KwinStock),
         Stamp(0),
     );
     let refused = GrantAnswer::Refused(docket_core::ConfirmEnd::Refused);
@@ -218,7 +218,7 @@ fn finished_ignores_every_input() {
         RunInput::Confirming(ConfirmId::parse("c-1").unwrap()),
     ];
     for input in inputs {
-        let before = in_phase(finished.clone(), BackendKind::CosmicStock);
+        let before = in_phase(finished.clone(), BackendKind::KwinStock);
         let (after, effects) = before.clone().step(input.clone(), Stamp(99));
         assert_eq!(after, before, "{input:?}");
         assert!(effects.is_empty(), "{input:?}");
@@ -230,7 +230,7 @@ fn a_confirmation_suspends_the_lease_on_stock() {
     let confirm = ConfirmId::parse("c-1").unwrap();
     let n = StepIndex(2);
     let cases = [(
-        BackendKind::CosmicStock,
+        BackendKind::KwinStock,
         ConsentGuard::CuadSuspendsInput,
         true,
     )];
@@ -258,7 +258,7 @@ fn a_confirmation_suspends_the_lease_on_stock() {
 #[test]
 fn pause_drops_the_queue_and_resume_observes_afresh() {
     let n = StepIndex(2);
-    let mut run = in_phase(RunPhase::Authorising(n), BackendKind::CosmicStock);
+    let mut run = in_phase(RunPhase::Authorising(n), BackendKind::KwinStock);
     run.pending = ActionQueue {
         actions: vec![click(), click(), click()].into(),
     };
@@ -287,7 +287,7 @@ fn pause_drops_the_queue_and_resume_observes_afresh() {
 #[test]
 fn a_message_changes_no_authority() {
     let n = StepIndex(2);
-    let before = in_phase(RunPhase::Observing(n), BackendKind::CosmicStock);
+    let before = in_phase(RunPhase::Observing(n), BackendKind::KwinStock);
     let message = docket_core::InboundLine {
         id: prov::MessageId::parse("m-1").unwrap(),
         thread: prov::ThreadId::parse("m-1").unwrap(),

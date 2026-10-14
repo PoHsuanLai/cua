@@ -8,8 +8,8 @@
 //! start.
 
 use cuad::{
-    Apps, CosmicEiSockets, CuaSettings, CuadConfig, Links, Locator, ServeError, SettingsWatch,
-    Supervisor, SystemClock, SystemSeams, WatchState, WaylandPair, serve_on,
+    Apps, CuaSettings, CuadConfig, Links, Locator, ServeError, SettingsWatch, Supervisor,
+    SystemClock, SystemSeams, WatchState, WaylandPair, serve_on,
 };
 use futures_util::StreamExt;
 use std::path::PathBuf;
@@ -94,8 +94,7 @@ async fn run() -> Result<(), Fatal> {
         }
     };
     let links = Links::over(&connection, config.tier);
-    let sockets = CosmicEiSockets::over(connection.clone());
-    let parts = SystemSeams::parts(&config, links, wayland, sockets, SystemClock::start());
+    let parts = SystemSeams::parts(&config, links, wayland, SystemClock::start());
     let supervisor = Arc::new(Supervisor::with_hints(parts, config, hints));
     // The person's settings (`cua/settings.toml`) over the configuration's values, now and
     // whenever the file changes. Until the file lists an app, none is on.

@@ -11,8 +11,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", content = "v", rename_all = "snake_case")]
 pub enum BackendChoice {
-    /// Detect: the fork when the compositor offers `quire_agent_manager_v1`, otherwise stock
-    /// cosmic-comp, otherwise none.
+    /// Detect: the fork when the compositor offers `quire_agent_manager_v1`, otherwise a stock
+    /// compositor, otherwise none.
     Detect,
     /// This one, whatever the compositor offers.
     Only(BackendKind),

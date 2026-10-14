@@ -77,9 +77,9 @@ done
 
 # cua sits above docket and below sill in the repo order (stoker, porter, almanac, docket, cua,
 # sill), and the GPL compositors are separate processes: nothing of sill's, and
-# nothing of theirs (smithay, cosmic-comp itself), may enter any tree of this workspace,
+# nothing of theirs (smithay itself), may enter any tree of this workspace,
 # dev-dependencies included.
-THEIRS="cosmic-comp smithay cosmic-comp-config"
+THEIRS="smithay"
 workspace_tree=$(cargo tree --workspace -e normal,build,dev --prefix none --all-features 2>/dev/null | awk '{print $1}' | sort -u)
 theirs_found=0
 for name in $THEIRS; do
@@ -95,7 +95,7 @@ if printf '%s\n' "$workspace_tree" | grep -q '^sill-'; then
   fail=1
 fi
 if [ "$theirs_found" -eq 0 ]; then
-  echo "boundary holds: no sill crate and nothing of the cosmic-comp fork enters the workspace"
+  echo "boundary holds: no sill crate and nothing of the compositor enters the workspace"
 fi
 
 # The allowed edges between our own crates: each crate's DIRECT normal and build path

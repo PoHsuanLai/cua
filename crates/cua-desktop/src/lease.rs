@@ -41,7 +41,7 @@ pub enum ReleasePlacement {
 pub enum EiOrigin {
     /// The fork: bound to this lease's agent seat; its absolute region is the window.
     LeaseSocket,
-    /// Stock: `com.system76.CosmicComp.Ei.GetSenderSocket`; the region is the output.
+    /// Stock: the compositor's own sender socket on the shared seat; the region is the output.
     SenderSocket,
 }
 

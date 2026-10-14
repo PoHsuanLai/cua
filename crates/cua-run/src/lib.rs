@@ -32,7 +32,7 @@
 //! use cua_run::{RunEffect, RunInput, RunPhase};
 //! use docket_core::GrantAnswer;
 //!
-//! let kind = BackendKind::CosmicStock;
+//! let kind = BackendKind::KwinStock;
 //! let run = scene::started(kind);
 //! assert_eq!(run.phase, RunPhase::Granting);
 //!

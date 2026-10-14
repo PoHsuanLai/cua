@@ -1,6 +1,6 @@
 //! What the glow shows, and the numbers `quire-agent-v1` carries for it. The protocol's enums
-//! (`protocols/quire-agent-v1.xml`) and these tables are the same values; a test under the
-//! `cosmic` feature compares them with the generated bindings.
+//! (`protocols/quire-agent-v1.xml`) and these tables are the same values; a test in `tests/it`
+//! compares them with the generated bindings.
 
 use crate::lease::{RevokeReason, Suspend};
 use cua_action::RunMode;

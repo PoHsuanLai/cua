@@ -102,7 +102,7 @@ wayland-client = "0.31"
 # libxkbcommon, narrowed: seat-input reads the keymap text only (no wayland keymap fds).
 xkbcommon = { version = "0.8", default-features = false }
 wayland-protocols = { version = "0.32.13", features = ["client", "staging", "unstable"] }
-# The minor cosmic-comp's lock resolves.
+# Pinned at this minor so the repos that share this crate stay on one version.
 reis = "0.7"
 base64 = "0.22"
 blake3 = "1"

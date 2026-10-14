@@ -29,7 +29,7 @@ async fn a_change_in_the_file_applies_to_the_next_start_without_a_restart() {
         _ => None,
     };
     let sup = supervisor(
-        BackendKind::CosmicStock,
+        BackendKind::KwinStock,
         vec![reply(click()), reply(finish())],
         FakePdp::allow_all(),
     );
@@ -82,7 +82,7 @@ async fn a_bad_value_in_the_file_leaves_the_running_value_and_is_reported() {
         "XDG_CONFIG_DIRS" => Some(nothing.path().display().to_string()),
         _ => None,
     };
-    let sup = supervisor(BackendKind::CosmicStock, vec![], FakePdp::allow_all());
+    let sup = supervisor(BackendKind::KwinStock, vec![], FakePdp::allow_all());
     let base = CuaSettings {
         config: sup.settings(),
         apps: Apps::Unrestricted,

@@ -9,11 +9,11 @@ it differs) with `cua.md`, `spike-a-result.md` and the user's answers (`QUESTION
 is the map of the code that freezes those interfaces. `CONVENTIONS.md` holds the rules;
 `FINDINGS.md` the open items and every `todo!()`.
 
-**It ships on stock cosmic-comp**, opt-in per app and off by default: the seat is shared (input
+**It ships on a stock compositor**, opt-in per app and off by default: the seat is shared (input
 moves the person's cursor and steals focus), masking is cuad's, and a confirmation shows only
-after cuad has stopped its own input. **The fork adds the agent seat later** (`~/cosmic-comp`,
-branch `quire`, GPL, not a dependency of anything here); the protocol it implements is this
-`casement-protocols` repo's `quire-agent-v1.xml`, which cua-desktop and maskcap name directly.
+after cuad has stopped its own input. **casement adds the agent seat later**; the protocol it
+implements is the `casement-protocols` repo's `quire-agent-v1.xml`, which cua-desktop and maskcap
+name directly.
 
 Reading order: section 1 (find the crate), section 3 (find the home), section 5 (a run in one
 picture), section 6 (copy the recipe).
@@ -22,7 +22,7 @@ picture), section 6 (copy the recipe).
 
 | Crate | Purpose | I/O |
 | --- | --- | --- |
-| `cua-desktop` | the base: windows (`ToplevelInfo`), leases (`LeaseRequest`, `LeaseGrant`, `Leased`, `EiSocket`), `BackendKind` and `BackendCaps::of`, `GlowState` and the protocol codes, `DesktopEvent`, the `Desktop` and `LeaseControl` seams, and the units every crate shares (`Stamp`, `Ms`, `Digest32`, `GlobalRect`). Re-exports `RunMode` and `WindowTrust` from docket. Feature `wayland`: `CosmicDesktop`, `Pump`, `SenderSocket` | none (`wayland`: wayland-client, tokio) |
+| `cua-desktop` | the base: windows (`ToplevelInfo`), leases (`LeaseRequest`, `LeaseGrant`, `Leased`, `EiSocket`), `BackendKind` and `BackendCaps::of`, `GlowState` and the protocol codes, `DesktopEvent`, the `Desktop` and `LeaseControl` seams, and the units every crate shares (`Stamp`, `Ms`, `Digest32`, `GlobalRect`). Re-exports `RunMode` and `WindowTrust` from docket. No backend lives here | none |
 | `cua-types` | the leaf types the bus bodies carry and the capability crates produce: `Role`, `NodeSelector` (with `NameMatch`, `SelectorStep`, `SlotName`), `InputReceipt`, `InputOrigin`, `TextPath`, `SeatError`, `FrameDigest`. The capability crates re-export them, so every old path works | none |
 | `maskcap` | `Frame`, `PixelBuf`, `MaskReport`, `apply_masks`, `FrameDigest`, `settle`, `pixel_diff`, the `WindowCapture` and `CaptureSession` seams. Feature `wayland`: `StockToplevelCapture`, `QuireMaskedCapture`, `StampClock` | none (`wayland`: wayland-client) |
 | `seat-input` | `InputOp`, `Keymap`, `SeatCaps`, `plan`, `InputReceipt`, `region`, the `AgentSeat` seam. Feature `ei`: `EiSeat` | none (`ei`: reis, tokio, futures-util) |
@@ -34,7 +34,7 @@ picture), section 6 (copy the recipe).
 | `cua-eval` | the computer-use model eval (section 8): fake `surface`s drawn as pixels, a `Stage` shared by an `EvalSeat`, an `EvalCapture` and an `EvalDesktop`, a reference gate, `ScriptModel` (lines of moves) and `ProviderModel` (a model on a local engine, over stoker's `CuaSession`), `Corpus` (`eval/surfaces`, `eval/tasks`), verdicts, rates with Wilson bounds, the markdown report, and the `cua-eval` binary | the binary: files; `live`: loopback HTTP to an engine the caller started |
 | `cua-eval-cloud` | the eval against a hosted model (section 8): `InferdProvider` (a stoker `Provider` whose turns are inferd chat turns, `Need::Llm` with images on class `screen`), `request` (a stoker turn as an inferd `ChatRequest`), `Watch` (turns, tokens, a spend refusal), `isolation` (what this process can reach), and the `cua-eval-cloud` binary | the bus to inferd (the key stays in accountd) |
 | `cua-host` | the run executor as a library: `Supervisor` (a task per run), `Drivable`, `SupervisorEvent`, `IntentsGate`, `DaemonLinks`, `record_of`, `guard`, `CallerNames`, `CuadConfig`, `SystemClock`, and the settings read from text: `read`, `Locator`, `SettingsFeed`, `SCHEMA`, `Supervisor::{settings, apps, apply_settings, follow}`. No backend, bus or file watch | docket-client and almanac-client without `dbus` |
-| `cuad` | the daemon and its library: `SeatBackend`, `CaptureBackend`, `InferdCuaModel`, `Links` (the three daemon links over one connection), `CuaProvider` (`org.quire.Cua`), `SystemSeams`, `SystemDesktop`, `SystemA11y`, `WaylandPair`, `CosmicEiSockets`, `serve` and `serve_on`, `desktop_keymap` (the keymap built once at start: chordkit's conventions, plus the person's keycap overrides with the `keycap` feature). The binary serves both bus names; the person's settings: `SettingsWatch` (the directory watch on `cua/settings.toml`), `cua-host`'s names re-exported, `SCHEMA` (`dist/settings/cua.settings.toml`), and `--write-schema` | everything |
+| `cuad` | the daemon and its library: `SeatBackend`, `CaptureBackend`, `InferdCuaModel`, `Links` (the three daemon links over one connection), `CuaProvider` (`org.quire.Cua`), `SystemSeams`, `SystemDesktop`, `SystemA11y`, `WaylandPair`, `serve` and `serve_on`, `desktop_keymap` (the keymap built once at start: chordkit's conventions, plus the person's keycap overrides with the `keycap` feature). The binary serves both bus names; the person's settings: `SettingsWatch` (the directory watch on `cua/settings.toml`), `cua-host`'s names re-exported, `SCHEMA` (`dist/settings/cua.settings.toml`), and `--write-schema` | everything |
 
 Allowed direct edges between our own crates (checked by `scripts/check-boundary.sh`;
 dev-dependencies are outside it):
@@ -94,7 +94,7 @@ only; the pure set never reaches an effect crate; `wayland-client` is behind the
 | `cua-eval` | `surface/{def, state, render, access}`, `keys`, `stage`, `world`, `gate`, `script`, `task`, `corpus`, `verdict`, `run/{arena, timed, record}`, `eval`, `metrics`, `report`, `live`, `main` |
 | `cua-eval-cloud` | `watch`, `request`, `entry`, `isolation`, `provider`, `main` |
 | `cua-host` | `lock`, `clock`, `config`, `callers`, `guard`, `gate`, `links`, `settings` (`keys`, `apps`, `read`, `locate`) < `supervisor`, `drive`, `events` |
-| `cuad` | `backend`, `model`, `connect`, `provider`, `watch` < `bus`, `desktop`, `ei_socket`, `system`, `serve` |
+| `cuad` | `backend`, `model`, `connect`, `provider`, `watch` < `bus`, `desktop`, `system`, `serve` |
 
 ## 3. One home per concept
 
@@ -125,7 +125,7 @@ only; the pure set never reaches an effect crate; `wayland-client` is behind the
 
 | Trait | Home | Implemented by |
 | --- | --- | --- |
-| `Desktop`, `LeaseControl` | `cua-desktop` | `CosmicDesktop`, `FakeDesktop` |
+| `Desktop`, `LeaseControl` | `cua-desktop` | `FakeDesktop` |
 | `WindowCapture`, `CaptureSession` | `maskcap` | `StockToplevelCapture`, `QuireMaskedCapture` (through `CaptureBackend`), `FakeCapture` |
 | `AgentSeat` | `seat-input` | `EiSeat` (through `SeatBackend`), `FakeSeat` |
 | `A11ySource` | `a11y-tree` | `AtspiSource`, `FakeA11y` |
@@ -199,8 +199,7 @@ reaction goes through `RunInput::Inbound`, changes no lease, mode, budget or per
 action it leads to is gated like any other.
 
 **Add a dev script.** Under `scripts/dev/`, with a private runtime dir, a private bus and scratch
-`HOME`; never the person's `wayland-0` or bus. Acceptance scripts for the fork are
-`accept-agent-seat.sh` and `accept-masking.sh`, run by hand with `COSMIC_COMP` set, never in CI.
+`HOME`; never the person's `wayland-0` or bus. Acceptance scripts run by hand, never in CI.
 
 ## 7. Repo rules
 

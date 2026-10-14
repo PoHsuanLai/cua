@@ -25,12 +25,12 @@ What cua adds or decides differently, each with its reason:
 4. **Pure crates reach no effect.** `cua-desktop`, `maskcap`, `seat-input`, `a11y-tree`,
    `cua-bus` and `cua-run` never reach `tokio`, `zbus`, `wayland-client`, `wayland-backend`,
    `reis`, `atspi`, an HTTP client, a database or the policy engine, whatever their
-   dependencies' features; their backends (`cosmic`, `wayland`, `ei`, `atspi`) are features that
+   dependencies' features; their backends (`wayland`, `ei`, `atspi`) are features that
    only `cuad` and `cua-fake` turn on. `scripts/check-boundary.sh` fails the gate if a default
    tree reaches one.
 5. **cua sits above docket and below sill.** It depends on stoker, porter, almanac and docket by
-   sibling path; it depends on no sill crate and on nothing of the cosmic-comp fork, and the
-   boundary script checks it. The fork depends on `casement-protocols` alone.
+   sibling path; it depends on no sill crate and on nothing of the compositor, and the
+   boundary script checks it. The compositor depends on `casement-protocols` alone.
 6. **One message model.** A run's progress and its result are `prov::Message`s of kind
    `Report` (`Progress`, `Done`, `Failed`, `Cancelled`), sent to the requester through the router
    (`RunEffect::Report`, `cua_bus::report_draft`). cua defines no result or return type of its

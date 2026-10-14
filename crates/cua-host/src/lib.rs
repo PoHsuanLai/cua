@@ -35,7 +35,7 @@
 //!     },
 //!     ..CuadConfig::default()
 //! };
-//! let parts = world(BackendKind::CosmicStock, Vec::new(), FakePdp::allow_all());
+//! let parts = world(BackendKind::KwinStock, Vec::new(), FakePdp::allow_all());
 //! let supervisor = Supervisor::new(parts, config);
 //! assert_eq!(supervisor.settings().enabled, Enabled::On);
 //! assert_eq!(supervisor.started(), 0);

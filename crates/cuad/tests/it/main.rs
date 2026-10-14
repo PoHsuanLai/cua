@@ -1,5 +1,4 @@
 mod binary;
-mod ei_socket;
 mod inflight;
 mod links;
 mod model;

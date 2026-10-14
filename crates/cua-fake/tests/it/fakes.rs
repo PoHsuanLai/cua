@@ -205,7 +205,7 @@ fn the_fake_desktop_leases_what_the_backend_supports_and_refuses_the_rest() {
         window("w1", WindowTrust::Native),
         window("shell", WindowTrust::Shell),
     ];
-    let stock = FakeDesktop::new(BackendKind::CosmicStock, windows.clone());
+    let stock = FakeDesktop::new(BackendKind::KwinStock, windows.clone());
     let first = ready(stock.lease(request("w1", RunMode::InPlace))).expect("in place works");
     assert_eq!(first.grant.seat, cua_desktop::SeatIsolation::SharedSeat);
     assert_eq!(first.grant.ei, cua_desktop::EiOrigin::SenderSocket);
@@ -265,7 +265,7 @@ fn frame(seq: u64) -> Frame {
 #[test]
 fn scripted_capture_returns_its_frames_in_order_then_the_window_is_gone() {
     let desktop = FakeDesktop::new(
-        BackendKind::CosmicStock,
+        BackendKind::KwinStock,
         vec![window("w1", WindowTrust::Native)],
     );
     let grant = ready(desktop.lease(request("w1", RunMode::InPlace)))

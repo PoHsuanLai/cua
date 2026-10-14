@@ -26,7 +26,7 @@ pub struct Pid(pub u32);
 #[serde(transparent)]
 pub struct GlobalCoord(pub i32);
 
-/// A window's frame in the compositor's global logical space (output-relative on COSMIC).
+/// A window's frame in the compositor's global logical space.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct GlobalRect {
     /// Left edge.

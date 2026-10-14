@@ -231,13 +231,13 @@ pub struct EvalDesktop {
 pub const WINDOW: &str = "w1";
 
 impl EvalDesktop {
-    /// A desktop on stock cosmic-comp's capabilities with the stage's window.
+    /// A desktop on a stock compositor's capabilities with the stage's window.
     pub fn new(stage: Arc<Stage>) -> Result<EvalDesktop, DesktopError> {
         let ident =
             ToplevelIdent::parse(WINDOW).map_err(|e| DesktopError::Protocol(e.to_string()))?;
         let window = window_of(&stage, &ident)?;
         Ok(EvalDesktop {
-            inner: FakeDesktop::new(BackendKind::CosmicStock, vec![window]),
+            inner: FakeDesktop::new(BackendKind::KwinStock, vec![window]),
             stage,
             ident,
         })

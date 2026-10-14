@@ -364,7 +364,7 @@ fn record_of_run(run: &RunId) -> Vec<CuaRecord> {
             app: mail(),
             space: work(),
             mode: RunMode::InPlace,
-            backend: cua_desktop::BackendKind::CosmicStock,
+            backend: cua_desktop::BackendKind::KwinStock,
             budget: cua_bus::RunBudget::PROPOSED,
         },
         CuaRecord::Step {

@@ -6,8 +6,8 @@
 //! `org.quire.IntentProvider1` as `org.quire.Cua` with one action, `cua.run.start` ([`CuaProvider`]).
 //!
 //! Backends are closed sets: [`SeatBackend`] (`Ei`), [`CaptureBackend`] (`StockToplevel`,
-//! `QuireMasked`), and [`cua_desktop::BackendKind`] (`CosmicStock`, `KwinStock`).
-//! On stock cosmic-comp masking is cuad's (`MaskReport::applied_by = Cuad`) and the consent
+//! `QuireMasked`), and [`cua_desktop::BackendKind`] (`KwinStock`).
+//! On a stock compositor masking is cuad's (`MaskReport::applied_by = Cuad`) and the consent
 //! guard is cuad stopping its own input; the fork moves both into the compositor.
 //!
 //! A run's progress and result go to the requester as `prov::Message` reports through the
@@ -26,7 +26,6 @@ mod backend;
 mod bus;
 mod connect;
 mod desktop;
-mod ei_socket;
 mod frame_fd;
 mod keymap;
 mod model;
@@ -44,7 +43,6 @@ pub use cua_host::{
     SupervisorEvent, SystemClock, Why, guard, is_browser, mint_run_id, read, record_of,
 };
 pub use desktop::{SystemA11y, SystemDesktop};
-pub use ei_socket::{CosmicEiSockets, EI_BUS_NAME, EI_INTERFACE, EI_PATH, OSK_NAME};
 pub use frame_fd::{FrameFdError, frame_fd};
 pub use keymap::desktop_keymap;
 pub use model::InferdCuaModel;

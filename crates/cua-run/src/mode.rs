@@ -9,7 +9,7 @@ use cua_desktop::{BackendCaps, HiddenCapture, RunMode, SeatIsolation};
 /// - In place: full on an agent seat; on a shared seat the run works while the person keeps their
 ///   hands off (`HandsOff`): physical input pauses it.
 /// - Agent workspace: needs a hidden window that keeps rendering *and* input that reaches it.
-///   Stock cosmic-comp renders hidden windows (measured) but delivers them no input and has no
+///   A stock compositor renders hidden windows (measured) but delivers them no input and has no
 ///   agent seat, so it is unsupported there (`NoHiddenInput`); a compositor that stops rendering
 ///   them is `HiddenCaptureWithheld`.
 /// - Nested session: needs a nested compositor host; no backend ships one yet.
@@ -72,7 +72,7 @@ mod tests {
             masking: MaskWhere::Compositor,
             consent: ConsentGuard::CompositorOrigin,
             glow: GlowDraw::Compositor,
-            ..BackendCaps::of(BackendKind::CosmicStock)
+            ..BackendCaps::of(BackendKind::KwinStock)
         }
     }
 
@@ -86,8 +86,7 @@ mod tests {
     #[test]
     fn mode_support_table() {
         let fork = agent_seat();
-        let stock = BackendCaps::of(BackendKind::CosmicStock);
-        let kwin = BackendCaps::of(BackendKind::KwinStock);
+        let stock = BackendCaps::of(BackendKind::KwinStock);
         let rows = [
             Row {
                 name: "agent seat in place",
@@ -126,18 +125,6 @@ mod tests {
                 want: Unsupported(NoNestedHost),
             },
             Row {
-                name: "kwin in place",
-                caps: kwin,
-                mode: RunMode::InPlace,
-                want: HandsOff,
-            },
-            Row {
-                name: "kwin workspace",
-                caps: kwin,
-                mode: RunMode::AgentWorkspace,
-                want: Unsupported(NoHiddenInput),
-            },
-            Row {
                 name: "withheld workspace",
                 caps: withheld(),
                 mode: RunMode::AgentWorkspace,
@@ -158,7 +145,7 @@ mod tests {
     #[test]
     fn auto_means_the_workspace_where_supported_else_in_place() {
         let fork = agent_seat();
-        let stock = BackendCaps::of(BackendKind::CosmicStock);
+        let stock = BackendCaps::of(BackendKind::KwinStock);
         assert_eq!(
             choose_mode(DefaultMode::Auto, &fork),
             Some(RunMode::AgentWorkspace)

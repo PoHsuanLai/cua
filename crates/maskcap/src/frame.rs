@@ -18,7 +18,7 @@ pub struct Frame {
     /// The window's logical size.
     pub logical: Size<WindowSpace>,
     /// Device pixels per logical pixel, in 120ths: 120 means the buffer is at logical
-    /// resolution. Stock cosmic-comp captures at logical resolution at every output scale
+    /// resolution. A stock compositor captures at logical resolution at every output scale
     /// (measured at 1.5), so it reports 120 there.
     pub scale: Scale120,
     /// What changed since the previous frame of this session. On stock this is the whole window

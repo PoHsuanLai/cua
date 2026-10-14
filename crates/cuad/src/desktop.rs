@@ -3,16 +3,14 @@
 
 use a11y_tree::{A11yError, A11ySnapshot, A11ySource, A11yTarget, AtspiSource, NodeBudget};
 use cua_desktop::{
-    BackendCaps, BackendKind, CosmicDesktop, Desktop, DesktopError, DesktopEvent, GlowState,
-    LeaseControl, LeaseId, LeaseRequest, Leased, Suspend, ToplevelInfo,
+    BackendCaps, BackendKind, Desktop, DesktopError, DesktopEvent, GlowState, LeaseControl,
+    LeaseId, LeaseRequest, Leased, Suspend, ToplevelInfo,
 };
 
-/// The compositor's desktop, or none.
+/// The compositor's desktop, or none. A compositor backend is a variant added beside `Absent`.
 #[derive(Debug)]
 pub enum SystemDesktop {
-    /// Connected to a compositor.
-    Cosmic(Box<CosmicDesktop>),
-    /// No compositor could be reached: `Backend` reads `none`, no window is listed and no lease
+    /// No compositor backend is built: `Backend` reads `none`, no window is listed and no lease
     /// is granted.
     Absent,
 }
@@ -24,66 +22,57 @@ fn nobody() -> DesktopError {
 impl Desktop for SystemDesktop {
     fn caps(&self) -> BackendCaps {
         match self {
-            SystemDesktop::Cosmic(desktop) => desktop.caps(),
             // Never offered (`backend` is `None`); a value is needed all the same.
-            SystemDesktop::Absent => BackendCaps::of(BackendKind::CosmicStock),
+            SystemDesktop::Absent => BackendCaps::of(BackendKind::KwinStock),
         }
     }
 
     fn backend(&self) -> Option<BackendKind> {
         match self {
-            SystemDesktop::Cosmic(desktop) => desktop.backend(),
             SystemDesktop::Absent => None,
         }
     }
 
     async fn windows(&self) -> Result<Vec<ToplevelInfo>, DesktopError> {
         match self {
-            SystemDesktop::Cosmic(desktop) => desktop.windows().await,
             SystemDesktop::Absent => Err(nobody()),
         }
     }
 
     async fn next_event(&self) -> DesktopEvent {
         match self {
-            SystemDesktop::Cosmic(desktop) => desktop.next_event().await,
             SystemDesktop::Absent => std::future::pending().await,
         }
     }
 }
 
 impl LeaseControl for SystemDesktop {
-    async fn lease(&self, req: LeaseRequest) -> Result<Leased, DesktopError> {
+    async fn lease(&self, _req: LeaseRequest) -> Result<Leased, DesktopError> {
         match self {
-            SystemDesktop::Cosmic(desktop) => desktop.lease(req).await,
             SystemDesktop::Absent => Err(nobody()),
         }
     }
 
-    async fn release(&self, lease: LeaseId) -> Result<(), DesktopError> {
+    async fn release(&self, _lease: LeaseId) -> Result<(), DesktopError> {
         match self {
-            SystemDesktop::Cosmic(desktop) => desktop.release(lease).await,
             SystemDesktop::Absent => Ok(()),
         }
     }
 
-    async fn suspend(&self, lease: LeaseId, why: Suspend) -> Result<(), DesktopError> {
+    async fn suspend(&self, _lease: LeaseId, _why: Suspend) -> Result<(), DesktopError> {
         match self {
-            SystemDesktop::Cosmic(desktop) => desktop.suspend(lease, why).await,
             SystemDesktop::Absent => Err(DesktopError::NoSuchWindow),
         }
     }
 
-    async fn resume(&self, lease: LeaseId) -> Result<(), DesktopError> {
+    async fn resume(&self, _lease: LeaseId) -> Result<(), DesktopError> {
         match self {
-            SystemDesktop::Cosmic(desktop) => desktop.resume(lease).await,
             SystemDesktop::Absent => Err(DesktopError::NoSuchWindow),
         }
     }
 
-    async fn glow(&self, lease: LeaseId, glow: GlowState) -> Result<(), DesktopError> {
+    async fn glow(&self, _lease: LeaseId, _glow: GlowState) -> Result<(), DesktopError> {
         match self {
-            SystemDesktop::Cosmic(desktop) => desktop.glow(lease, glow).await,
             SystemDesktop::Absent => Err(DesktopError::NoSuchWindow),
         }
     }

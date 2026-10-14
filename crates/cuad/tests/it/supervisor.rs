@@ -15,7 +15,7 @@ use docket_core::GateAnswer;
 use prov::{Labelled, MessageKind, ReportStatus};
 use seat_input::Emulation;
 
-const STOCK: BackendKind = BackendKind::CosmicStock;
+const STOCK: BackendKind = BackendKind::KwinStock;
 
 fn ask() -> CuaAction<cua_action::WindowSpace> {
     CuaAction::Ask {
@@ -132,7 +132,7 @@ async fn start_refused_for_non_planner_caller_and_while_disabled_or_unaimed() {
     assert_eq!(
         sup.start(CuaCaller::Router, hidden).await,
         Err(ControlRefusal::ModeUnsupported),
-        "stock cosmic-comp cannot run the agent workspace"
+        "a stock compositor cannot run the agent workspace"
     );
     assert_eq!(
         sup.started(),

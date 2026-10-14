@@ -37,7 +37,7 @@ async fn fixture(
     let bus = PrivateBus::start(dir.path());
     let daemon = bus.connect().await;
     let supervisor = Arc::new(Supervisor::new(
-        world(BackendKind::CosmicStock, script, FakePdp::allow_all()),
+        world(BackendKind::KwinStock, script, FakePdp::allow_all()),
         enabled(),
     ));
     let serving = serve_on(&daemon, supervisor.clone())
@@ -98,7 +98,7 @@ async fn the_planner_starts_a_run_the_shell_answers_it_and_the_end_is_told_on_th
     let shell = named(&fx.bus, "org.quire.Shell").await;
 
     let manager_p = manager(&planner).await;
-    assert_eq!(manager_p.backend().await.unwrap(), "cosmic_stock");
+    assert_eq!(manager_p.backend().await.unwrap(), "kwin_stock");
     let modes = manager_p.modes().await.unwrap();
     assert_eq!(modes.get("in_place").map(String::as_str), Some("hands_off"));
     assert_eq!(

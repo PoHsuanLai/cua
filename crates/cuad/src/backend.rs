@@ -168,10 +168,7 @@ mod tests {
 
     #[test]
     fn capture_follows_who_masks() {
-        let table = [
-            (BackendKind::CosmicStock, CaptureKind::StockToplevel),
-            (BackendKind::KwinStock, CaptureKind::StockToplevel),
-        ];
+        let table = [(BackendKind::KwinStock, CaptureKind::StockToplevel)];
         for (kind, want) in table {
             assert_eq!(capture_kind(kind), want, "{kind:?}");
         }

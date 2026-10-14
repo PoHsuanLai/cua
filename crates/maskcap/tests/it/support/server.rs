@@ -127,7 +127,7 @@ impl FakeCompositor {
             handles: vec![Vec::new(); n],
             sessions: Vec::new(),
             session_toplevel: Vec::new(),
-            // What stock cosmic-comp offers: the 10-bit pair first, then the 8-bit pair.
+            // What a stock compositor offers: the 10-bit pair first, then the 8-bit pair.
             offered: vec![
                 Format::Abgr2101010,
                 Format::Xbgr2101010,

@@ -59,7 +59,7 @@ impl Seams for MuteSeams {
 
 fn mute() -> Supervisor<MuteSeams> {
     let w = world(
-        BackendKind::CosmicStock,
+        BackendKind::KwinStock,
         vec![reply(click())],
         FakePdp::allow_all(),
     );

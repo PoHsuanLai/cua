@@ -8,8 +8,6 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum BackendKind {
-    /// Stock cosmic-comp 1.8: a shared seat, masking in cuad, input steals focus.
-    CosmicStock,
     /// Stock KWin: the nested-session host and the portability reference.
     KwinStock,
 }
@@ -39,7 +37,7 @@ pub enum ConsentGuard {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum HiddenCapture {
-    /// Frames keep arriving and the content keeps updating (stock cosmic-comp 1.8, measured).
+    /// Frames keep arriving and the content keeps updating (measured on a stock compositor).
     Renders,
     /// The compositor stops rendering it.
     Withheld,
@@ -73,12 +71,11 @@ pub struct BackendCaps {
 }
 
 impl BackendCaps {
-    /// The capabilities of `kind`. Stock cosmic-comp's row is what Spike A measured (shared
-    /// seat, unmasked capture, hidden windows render); KWin's is the portability reference and
-    /// is unverified until Spike B.
+    /// The capabilities of `kind`. KWin's row is the portability reference (shared seat,
+    /// unmasked capture, hidden windows render) and is unverified until Spike B.
     pub fn of(kind: BackendKind) -> BackendCaps {
         match kind {
-            BackendKind::CosmicStock | BackendKind::KwinStock => BackendCaps {
+            BackendKind::KwinStock => BackendCaps {
                 kind,
                 seat: SeatIsolation::SharedSeat,
                 masking: MaskWhere::Cuad,
@@ -96,7 +93,7 @@ mod tests {
 
     #[test]
     fn every_backend_is_a_shared_seat_masked_by_cuad_and_guarded_by_suspending_input() {
-        for kind in [BackendKind::CosmicStock, BackendKind::KwinStock] {
+        for kind in [BackendKind::KwinStock] {
             let caps = BackendCaps::of(kind);
             assert_eq!(caps.kind, kind);
             assert_eq!(caps.seat, SeatIsolation::SharedSeat, "{kind:?} seat");

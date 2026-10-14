@@ -103,7 +103,7 @@ fn end_to_end_scripted_run_done() {
         extracted: vec![],
     };
     let mut world = World {
-        desktop: FakeDesktop::new(BackendKind::CosmicStock, vec![window()]),
+        desktop: FakeDesktop::new(BackendKind::KwinStock, vec![window()]),
         seat: FakeSeat::new(cua_desktop::SeatIsolation::SharedSeat, Stamp(0)),
         capture: FakeCapture::scripted(vec![frame(1), frame(2), frame(3)], vec![]),
         a11y: FakeA11y::fixture(Fixture::FirefoxForm),
@@ -132,7 +132,7 @@ fn end_to_end_scripted_run_done() {
     };
     let env = RunEnv::new(
         &CuaConfig::default(),
-        BackendCaps::of(BackendKind::CosmicStock),
+        BackendCaps::of(BackendKind::KwinStock),
     );
     let (run, _) = Run::start(RunId::parse("r-1").unwrap(), task, env, Stamp(0));
 

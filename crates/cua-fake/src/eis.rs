@@ -12,7 +12,7 @@ use std::os::fd::{AsFd, OwnedFd};
 use std::os::unix::net::UnixStream;
 use tokio::io::{Interest, unix::AsyncFd};
 
-/// The one output the fake advertises, as measured on stock cosmic-comp: global logical
+/// The one output the fake advertises, as measured on a stock compositor: global logical
 /// coordinates, scale 1.
 const OUTPUT: (u32, u32, u32, u32) = (0, 0, 1280, 800);
 /// The server's first serial.

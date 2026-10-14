@@ -23,11 +23,11 @@ fn outcome_of(report: &cua_fake::HarnessReport) -> CuaOutcome {
 fn on_stock_input_stops_before_the_prompt_shows_and_starts_after_the_answer() {
     let pdp = FakePdp::scripted(vec![], vec![Verdict::AskThen(GateAnswer::Run)]);
     let mut w = world(
-        BackendKind::CosmicStock,
+        BackendKind::KwinStock,
         vec![reply(click()), reply(finish())],
         pdp,
     );
-    let report = block_on(run_harness(started(BackendKind::CosmicStock), &mut w)).expect("ends");
+    let report = block_on(run_harness(started(BackendKind::KwinStock), &mut w)).expect("ends");
     assert_eq!(outcome_of(&report), CuaOutcome::Done);
     let seat: Vec<&'static str> = w
         .seat
@@ -71,11 +71,11 @@ fn a_refused_action_is_told_to_the_model_and_the_run_goes_on() {
         vec![Verdict::Refuse(CallRefusal::Denied(DenyCode::OutsideTask))],
     );
     let mut w = world(
-        BackendKind::CosmicStock,
+        BackendKind::KwinStock,
         vec![reply(click()), reply(finish())],
         pdp,
     );
-    let report = block_on(run_harness(started(BackendKind::CosmicStock), &mut w)).expect("ends");
+    let report = block_on(run_harness(started(BackendKind::KwinStock), &mut w)).expect("ends");
     assert_eq!(outcome_of(&report), CuaOutcome::Done);
     let second = &w.model.requests()[1];
     assert_eq!(second.prev, vec![PrevResult::Refused("not allowed".into())]);
@@ -91,8 +91,8 @@ fn a_refused_action_is_told_to_the_model_and_the_run_goes_on() {
 #[test]
 fn a_refused_consent_blocks_the_run_before_any_window_is_taken() {
     let pdp = FakePdp::scripted(vec![GrantAnswer::Refused(ConfirmEnd::Refused)], vec![]);
-    let mut w = world(BackendKind::CosmicStock, vec![], pdp);
-    let report = block_on(run_harness(started(BackendKind::CosmicStock), &mut w)).expect("ends");
+    let mut w = world(BackendKind::KwinStock, vec![], pdp);
+    let report = block_on(run_harness(started(BackendKind::KwinStock), &mut w)).expect("ends");
     assert_eq!(
         outcome_of(&report),
         CuaOutcome::Blocked(BlockedOn::ConsentDenied)
@@ -110,7 +110,7 @@ fn a_refused_consent_blocks_the_run_before_any_window_is_taken() {
 #[test]
 fn a_message_that_arrived_becomes_a_note_on_the_next_turn_and_the_run_is_told_nothing_else() {
     let mut w = world(
-        BackendKind::CosmicStock,
+        BackendKind::KwinStock,
         vec![reply(finish())],
         FakePdp::allow_all(),
     );
@@ -130,7 +130,7 @@ fn a_message_that_arrived_becomes_a_note_on_the_next_turn_and_the_run_is_told_no
             "use the work account".to_owned(),
         ))],
     });
-    block_on(run_harness(started(BackendKind::CosmicStock), &mut w)).expect("ends");
+    block_on(run_harness(started(BackendKind::KwinStock), &mut w)).expect("ends");
     assert_eq!(
         w.model.requests()[0].notes,
         vec![StepNote {
@@ -143,11 +143,11 @@ fn a_message_that_arrived_becomes_a_note_on_the_next_turn_and_the_run_is_told_no
 #[test]
 fn a_fatal_model_ends_the_run_failed_and_the_lease_is_given_back() {
     let mut w = world(
-        BackendKind::CosmicStock,
+        BackendKind::KwinStock,
         vec![Err(CuaModelError::Fatal)],
         FakePdp::allow_all(),
     );
-    let report = block_on(run_harness(started(BackendKind::CosmicStock), &mut w)).expect("ends");
+    let report = block_on(run_harness(started(BackendKind::KwinStock), &mut w)).expect("ends");
     assert_eq!(outcome_of(&report), CuaOutcome::Failed(FailReason::Model));
     assert!(matches!(
         w.desktop.calls().last(),
@@ -161,8 +161,8 @@ fn a_fatal_model_ends_the_run_failed_and_the_lease_is_given_back() {
 
 #[test]
 fn a_model_that_runs_dry_is_a_failed_run_not_a_hang() {
-    let mut w = world(BackendKind::CosmicStock, vec![], FakePdp::allow_all());
-    let report = block_on(run_harness(started(BackendKind::CosmicStock), &mut w)).expect("ends");
+    let mut w = world(BackendKind::KwinStock, vec![], FakePdp::allow_all());
+    let report = block_on(run_harness(started(BackendKind::KwinStock), &mut w)).expect("ends");
     assert_eq!(outcome_of(&report), CuaOutcome::Failed(FailReason::Model));
 }
 
@@ -173,11 +173,11 @@ fn a_question_nobody_answers_is_stuck_not_silently_finished() {
         choices: vec![],
     };
     let mut w = world(
-        BackendKind::CosmicStock,
+        BackendKind::KwinStock,
         vec![reply(ask)],
         FakePdp::allow_all(),
     );
-    let err = block_on(run_harness(started(BackendKind::CosmicStock), &mut w)).unwrap_err();
+    let err = block_on(run_harness(started(BackendKind::KwinStock), &mut w)).unwrap_err();
     assert!(
         matches!(
             err,

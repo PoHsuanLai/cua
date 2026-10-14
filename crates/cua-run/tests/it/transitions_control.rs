@@ -17,7 +17,7 @@ use porter_infer::StepIndex;
 use prov::{ConfirmId, MessageKind, ReportStatus};
 use seat_input::{InputOrigin, InputReceipt, SeatError};
 
-const STOCK: BackendKind = BackendKind::CosmicStock;
+const STOCK: BackendKind = BackendKind::KwinStock;
 
 fn model_says() -> SuccessCheck {
     SuccessCheck::ModelSays

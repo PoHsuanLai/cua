@@ -319,7 +319,7 @@ mod tests {
     #[test]
     fn the_served_interfaces_are_the_declared_ones() {
         let supervisor = Arc::new(Supervisor::new(
-            world(BackendKind::CosmicStock, vec![], FakePdp::allow_all()),
+            world(BackendKind::KwinStock, vec![], FakePdp::allow_all()),
             crate::CuadConfig::default(),
         ));
         let mut served = String::from(

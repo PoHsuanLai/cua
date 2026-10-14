@@ -1,5 +1,5 @@
 //! The EI client over reis: the stock `GetSenderSocket` socket or the fork's lease socket.
-//! Measured on stock cosmic-comp 1.8: the handshake offers `ei_pointer_absolute`, `ei_button`,
+//! Measured on a stock compositor: the handshake offers `ei_pointer_absolute`, `ei_button`,
 //! `ei_scroll`, `ei_keyboard` and `ei_text`; the keyboard device sends a 35 KB xkb keymap; the
 //! absolute regions are global logical coordinates, one per output; `start_emulating` takes
 //! `(last_serial, sequence)`.

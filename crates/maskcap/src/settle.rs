@@ -1,6 +1,6 @@
 //! Deciding when the screen has stopped changing after an action.
 //!
-//! Stock cosmic-comp does not gate frames on damage: every captured frame reports full damage
+//! A stock compositor does not gate frames on damage: every captured frame reports full damage
 //! within about 10 ms, even for a static window. So on stock the [`DamageAt`] events are made by
 //! cuad's pixel diff ([`DamageSource::PixelDiff`]); on the fork they come from the compositor.
 

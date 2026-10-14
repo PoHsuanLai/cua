@@ -82,7 +82,7 @@ fn every_record() -> Vec<(CuaRecord, &'static str)> {
                 app: AppName::parse("org.mozilla.firefox").unwrap(),
                 space: space(),
                 mode: RunMode::InPlace,
-                backend: BackendKind::CosmicStock,
+                backend: BackendKind::KwinStock,
                 budget: RunBudget::PROPOSED,
             },
             "cua.run.started",

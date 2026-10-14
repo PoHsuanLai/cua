@@ -1,5 +1,4 @@
-mod support;
-mod wayland;
+mod protocol_codes;
 
 /// Every module file next to this one must be declared above, or its tests never run.
 #[test]

@@ -68,8 +68,8 @@ mod tests {
     #[test]
     fn slugs_are_the_serde_form_of_unit_and_tagged_variants() {
         assert_eq!(
-            slug_of(&BackendKind::CosmicStock).as_deref(),
-            Some("cosmic_stock")
+            slug_of(&BackendKind::KwinStock).as_deref(),
+            Some("kwin_stock")
         );
         assert_eq!(slug_of(&CuaVocab::CURRENT), None);
         assert_eq!(

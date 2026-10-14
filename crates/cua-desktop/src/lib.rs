@@ -8,9 +8,9 @@
 //! `RunMode` and `WindowTrust` live in stoker's `cua-action` (with `WindowClass`) and are
 //! re-exported here.
 //!
-//! Pure by default. The `wayland` feature is the compositor backend (stock cosmic-comp today,
-//! casement's agent socket later) over wayland-client: [`CosmicDesktop`] reports the toplevels
-//! and leases the stock in-place mode through a [`SenderSocket`] the caller supplies.
+//! Pure by default: no backend lives here. A compositor backend implements [`Desktop`] and
+//! [`LeaseControl`]; the `wayland` feature adds [`Pump`], the shared plumbing that drives a
+//! wayland connection from async code.
 
 mod caps;
 mod error;
@@ -36,10 +36,7 @@ pub use lease::{
 pub use traits::{Desktop, LeaseControl};
 pub use units::{Digest32, DigestError, GlobalCoord, GlobalRect, Ms, Pid, Stamp};
 #[cfg(feature = "wayland")]
-pub use wayland::{
-    CosmicDesktop, DeviceTypes, ObjectKey, Pump, PumpError, Rounds, SenderSocket, SocketFuture,
-    SyncTag,
-};
+pub use wayland::{ObjectKey, Pump, PumpError, Rounds, SyncTag};
 pub use window::{
     IdentError, ToplevelIdent, ToplevelInfo, ToplevelState, WindowTitle, WorkspaceRef,
     WorkspaceShown,

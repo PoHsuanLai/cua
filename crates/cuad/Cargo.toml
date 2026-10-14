@@ -23,7 +23,7 @@ default = ["keycap"]
 keycap = ["dep:keycap-client"]
 
 [dependencies]
-cua-desktop = { workspace = true, features = ["wayland"] }
+cua-desktop = { workspace = true }
 maskcap = { workspace = true, features = ["wayland"] }
 seat-input = { workspace = true, features = ["ei"] }
 a11y-tree = { workspace = true, features = ["atspi"] }

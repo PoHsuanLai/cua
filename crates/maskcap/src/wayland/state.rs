@@ -195,7 +195,7 @@ impl CapState {
     }
 }
 
-/// The format to ask for among those offered: 8-bit, the order stock cosmic-comp prefers.
+/// The format to ask for among those offered: 8-bit, the order a stock compositor prefers.
 pub(crate) fn pick_format(offered: &[WEnum<Format>]) -> Option<(Format, PixelFormat)> {
     [
         (Format::Abgr8888, PixelFormat::Abgr8888),

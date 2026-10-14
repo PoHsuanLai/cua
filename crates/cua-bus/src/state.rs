@@ -128,7 +128,7 @@ pub enum ModeGap {
     /// The compositor stops rendering hidden windows, so nothing can be captured.
     HiddenCaptureWithheld,
     /// Hidden windows render, but the backend delivers no input to a window on a workspace that
-    /// is not shown (stock cosmic-comp: the seat is shared).
+    /// is not shown (a stock compositor: the seat is shared).
     NoHiddenInput,
     /// There is no nested compositor to run the window in.
     NoNestedHost,
@@ -329,7 +329,6 @@ mod tests {
             modes.get("agent_workspace").map(String::as_str),
             Some("unsupported:no_hidden_input")
         );
-        assert_eq!(backend_wire(Some(BackendKind::CosmicStock)), "cosmic_stock");
         assert_eq!(backend_wire(Some(BackendKind::KwinStock)), "kwin_stock");
         assert_eq!(backend_wire(None), "none");
     }

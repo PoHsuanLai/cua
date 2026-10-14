@@ -1,6 +1,6 @@
 [package]
 name = "cua-desktop"
-description = "The desktop vocabulary every cua crate shares: windows, leases, backend capabilities, glow, units and the Desktop and LeaseControl seams. The `wayland` feature is the COSMIC backend over wayland-client."
+description = "The desktop vocabulary every cua crate shares: windows, leases, backend capabilities, glow, units and the Desktop and LeaseControl seams. The `wayland` feature is the connection plumbing a backend shares."
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -15,32 +15,16 @@ porter-core = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
 wayland-client = { workspace = true, optional = true }
-wayland-protocols = { workspace = true, optional = true }
-wayland-scanner = { workspace = true, optional = true }
-wayland-backend = { workspace = true, optional = true }
-casement-protocols = { workspace = true, optional = true }
 tokio = { workspace = true, optional = true }
 
 [dev-dependencies]
 serde_json = { workspace = true }
-tokio = { workspace = true }
-wayland-server = { workspace = true }
-wayland-protocols = { workspace = true, features = ["server"] }
-rustix = { workspace = true, features = ["event"] }
+casement-protocols = { workspace = true, features = ["client"] }
 
 [features]
-# The compositor backend over a wayland connection: ext-foreign-toplevel-list, the COSMIC
-# toplevel info and ext-workspace for what is on screen, and the stock `GetSenderSocket` lease.
-# Linux only; reaches wayland-client and a tokio reactor (it waits on the connection's fd).
-wayland = [
-  "dep:wayland-client",
-  "dep:wayland-protocols",
-  "dep:wayland-scanner",
-  "dep:wayland-backend",
-  "dep:casement-protocols",
-  "dep:tokio",
-  "casement-protocols/client",
-]
+# The connection plumbing a compositor backend shares. Linux only; reaches wayland-client and a
+# tokio reactor (it waits on the connection's fd).
+wayland = ["dep:wayland-client", "dep:tokio"]
 
 [lints]
 workspace = true

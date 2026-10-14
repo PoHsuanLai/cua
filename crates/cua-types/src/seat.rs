@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 pub enum TextPath {
     /// Key codes in the EIS keymap: ASCII on a US layout.
     EiKeymap,
-    /// `ei_text.utf8`: any Unicode, committed through the focused text-input. Stock cosmic-comp
+    /// `ei_text.utf8`: any Unicode, committed through the focused text-input. A stock compositor
     /// has it; it targets the person's focus, so it is not offered there (decision S10).
     EiText,
     /// A temporary keymap through `zwp_virtual_keyboard_v1`. Same reservation as `EiText`.

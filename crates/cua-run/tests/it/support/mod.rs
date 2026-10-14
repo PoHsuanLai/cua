@@ -302,7 +302,7 @@ pub fn count(n: u32) -> Count {
 /// A stock run waiting for the router's verdict on the first of three clicks.
 pub fn authorising() -> Drive {
     let mut d = Drive::thinking(
-        BackendKind::CosmicStock,
+        BackendKind::KwinStock,
         task(SuccessCheck::ModelSays),
         tree(vec![]),
     );

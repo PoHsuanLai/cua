@@ -11,7 +11,6 @@ use porter_core::AppName;
 /// Fragments of an app id that name a kind of window, first match wins. Lower case.
 const APPS: &[(&str, WindowClass)] = &[
     ("terminal", WindowClass::Terminal),
-    ("cosmicterm", WindowClass::Terminal),
     ("konsole", WindowClass::Terminal),
     ("alacritty", WindowClass::Terminal),
     ("kitty", WindowClass::Terminal),
@@ -94,7 +93,6 @@ mod tests {
     fn the_app_and_the_title_pick_the_class_and_anything_else_is_ordinary() {
         let table = [
             ("org.gnome.Terminal", "bash", WindowClass::Terminal),
-            ("com.system76.CosmicTerm", "~", WindowClass::Terminal),
             (
                 "org.keepassxc.KeePassXC",
                 "Vault",

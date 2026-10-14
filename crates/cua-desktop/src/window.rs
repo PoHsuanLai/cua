@@ -73,11 +73,11 @@ pub struct WorkspaceRef {
 pub enum WorkspaceShown {
     /// Active on its output.
     Shown,
-    /// Not on screen: stock cosmic-comp renders it for capture but delivers it no input.
+    /// Not on screen: a stock compositor renders it for capture but delivers it no input.
     Hidden,
 }
 
-/// One bit of a toplevel's state (`zcosmic_toplevel_handle_v1.state`).
+/// One bit of a toplevel's state.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ToplevelState {
