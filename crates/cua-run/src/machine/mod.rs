@@ -4,6 +4,7 @@ pub(crate) mod control;
 pub(crate) mod effect;
 pub(crate) mod finish;
 pub(crate) mod input;
+pub(crate) mod kept;
 pub(crate) mod ops;
 pub(crate) mod phase;
 pub(crate) mod run;

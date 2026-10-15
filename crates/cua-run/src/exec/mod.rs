@@ -22,6 +22,7 @@ use cua_bus::{CuaRecord, CuaTask, ReportDelivery};
 pub use deadline::{Deadline, deadline_of};
 use docket_core::{Delivery, GrantAsk, SendRefusal, WireRefusal};
 use maskcap::DamageAt;
+use porter_core::Count;
 use prov::{MessageId, RunId};
 use session::Held;
 
@@ -134,6 +135,7 @@ pub struct Exec<'a, S: Seams> {
     opened: Opened,
     hints: Vec<String>,
     seen: Option<fit::Seen>,
+    record_failures: Count,
 }
 
 impl<S: Seams> std::fmt::Debug for Exec<'_, S> {
@@ -162,6 +164,7 @@ impl<'a, S: Seams> Exec<'a, S> {
             opened: Opened::No,
             hints: Vec::new(),
             seen: None,
+            record_failures: Count(0),
         }
     }
 
@@ -225,7 +228,7 @@ impl<'a, S: Seams> Exec<'a, S> {
             RunEffect::VerifyTree(selector) => self.verify(selector, out).await,
             RunEffect::Glow(glow) => self.glow(glow).await,
             RunEffect::Emit(signal) => out.signal(signal),
-            RunEffect::Record(record) => self.record(*record).await,
+            RunEffect::Record(record) => self.record(*record, out).await,
             RunEffect::Report(draft) => self.report(*draft).await,
         }
     }
@@ -269,15 +272,29 @@ impl<'a, S: Seams> Exec<'a, S> {
         }
     }
 
-    async fn record(&mut self, mut record: CuaRecord) {
+    /// How many records the log refused so far. A run that cannot write the record of an
+    /// injected action ends (`FailReason::Log`); the others are only counted here, for the
+    /// caller to surface.
+    pub fn record_failures(&self) -> Count {
+        self.record_failures
+    }
+
+    async fn record(&mut self, mut record: CuaRecord, out: &mut impl Outlet) {
         if let CuaRecord::Finished { report, .. } = &mut record
             && let Reported::Delivered(delivery) = &self.reported
         {
             *report = Some(delivery.message.clone());
         }
-        // The log is the person's, not the run's: a record that cannot be written does not
-        // stop the run (memoryd may be away), and nothing here retries it.
-        let _ = self.seam.events.record(record).await;
+        // A record of input that went out must be written: with nothing to account for it the
+        // run stops. Any other record that cannot be written is counted and the run goes on
+        // (memoryd may be away); nothing here retries it.
+        let injected = matches!(&record, CuaRecord::Step { input: Some(_), .. });
+        if self.seam.events.record(record).await.is_err() {
+            self.record_failures = Count(self.record_failures.0.saturating_add(1));
+            if injected {
+                out.input(RunInput::RecordFailed);
+            }
+        }
     }
 
     async fn report(&mut self, draft: docket_core::MessageDraft) {

@@ -114,7 +114,8 @@ pub enum CuaRecord {
         n: StepIndex,
         /// The model's thought, as a digest.
         thought: ThoughtDigest,
-        /// The action.
+        /// The action. Typed text is never kept: a `Type` action stands as a note of its length
+        /// and the blake3 digest of its text (`[12 chars, blake3 ...]`).
         action: TargetedAction,
         /// Its effect.
         effect: Effect,

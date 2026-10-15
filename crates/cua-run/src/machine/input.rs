@@ -82,6 +82,9 @@ pub enum RunInput {
     Injected(InputReceipt),
     /// Input could not be delivered.
     InjectFailed(SeatError),
+    /// A record of an injected action could not be written. The run ends rather than go on
+    /// with input nobody can account for.
+    RecordFailed,
     /// The window is not what the action was aimed at: nothing was injected, and the run looks
     /// again.
     StateMoved(Moved),

@@ -23,7 +23,9 @@ use crate::machine::track::RunTrack;
 use crate::mode::mode_support;
 use crate::stall::Repeats;
 use cua_bus::CuaTask;
-use cua_bus::{BlockedOn, CuaOutcome, CuaRecord, ModeSupport, RunBudgetKind, TaskTarget};
+use cua_bus::{
+    BlockedOn, CuaOutcome, CuaRecord, FailReason, ModeSupport, RunBudgetKind, TaskTarget,
+};
 use cua_desktop::{Stamp, ToplevelIdent};
 use docket_core::GrantAnswer;
 use maskcap::{FrameWant, Settle};
@@ -138,6 +140,7 @@ fn dispatch(run: &mut Run, fx: &mut Vec<RunEffect>, input: RunInput, at: Stamp) 
         RunInput::Injected(receipt) => injected(run, fx, at, receipt),
         RunInput::InjectFailed(error) => inject_failed(run, fx, error),
         RunInput::StateMoved(_) => state_moved(run, fx),
+        RunInput::RecordFailed => finish_plain(run, fx, CuaOutcome::Failed(FailReason::Log)),
         RunInput::Damage(damage) => damaged(run, fx, at, damage),
         RunInput::Checked(result) => checked(run, fx, result),
         RunInput::UserAnswer(question, answer) => answered(run, fx, at, question, answer),

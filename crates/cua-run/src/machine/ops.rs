@@ -3,6 +3,7 @@
 
 use crate::effect_class::classify_effect_in;
 use crate::machine::effect::{CuaSignal, HintSource, RunEffect};
+use crate::machine::kept::kept_action;
 use crate::machine::phase::RunPhase;
 use crate::machine::run::Run;
 use crate::observation::{Observation, TreeObs};
@@ -299,7 +300,7 @@ pub(crate) fn step_record(
             .track
             .thought
             .unwrap_or(ThoughtDigest(Digest32([0; 32]))),
-        action: outcome.action.clone(),
+        action: kept_action(&outcome.action),
         effect,
         basis,
         authorised_by: run.track.authorised,

@@ -11,9 +11,18 @@ use std::sync::Mutex;
 /// reports is a `prov::Message` draft of kind `Report`: [`MemoryEvents::sent`] returns them.
 #[derive(Debug, Default)]
 pub struct MemoryEvents {
+    writes: Mutex<Writes>,
     records: Mutex<Vec<CuaRecord>>,
     sent: Mutex<Vec<(SessionId, MessageDraft)>>,
     inbox: Mutex<VecDeque<InboundLine>>,
+}
+
+/// Whether the log takes records.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+enum Writes {
+    #[default]
+    Open,
+    Refused,
 }
 
 impl MemoryEvents {
@@ -30,6 +39,11 @@ impl MemoryEvents {
             .push_back(line);
     }
 
+    /// From now on the log refuses every record, as a memoryd that is away does.
+    pub fn refuse_records(&self) {
+        *self.writes.lock().expect("memory events lock") = Writes::Refused;
+    }
+
     /// The records, in order.
     pub fn records(&self) -> Vec<CuaRecord> {
         self.records.lock().expect("memory events lock").clone()
@@ -43,6 +57,9 @@ impl MemoryEvents {
 
 impl RecordSink for MemoryEvents {
     async fn record(&self, record: CuaRecord) -> Result<(), LinkError> {
+        if *self.writes.lock().expect("memory events lock") == Writes::Refused {
+            return Err(LinkError::Unavailable);
+        }
         self.records
             .lock()
             .expect("memory events lock")

@@ -57,6 +57,9 @@ pub enum FailReason {
     CheckFailed,
     /// The model said the task cannot be done.
     Infeasible,
+    /// The run's log could not be written after input went out: with no record of what was
+    /// done the run does not go on.
+    Log,
 }
 
 /// What stopped a run before it began or kept it from going on.

@@ -29,6 +29,7 @@ fn said_of(outcome: CuaOutcome) -> &'static str {
         CuaOutcome::Failed(FailReason::Input) => "The window could not be controlled.",
         CuaOutcome::Failed(FailReason::CheckFailed) => "The result did not check out.",
         CuaOutcome::Failed(FailReason::Infeasible) => "This cannot be done in this window.",
+        CuaOutcome::Failed(FailReason::Log) => "What was done could not be written down.",
         CuaOutcome::Blocked(BlockedOn::ConsentDenied) => {
             "Computer use was not allowed for this app."
         }

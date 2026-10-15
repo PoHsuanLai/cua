@@ -125,6 +125,18 @@ fn input_goes_only_to_the_window_that_is_focused_and_visible() {
 }
 
 #[test]
+fn input_that_cannot_be_written_down_ends_the_run() {
+    let mut w = world(
+        BackendKind::KwinStock,
+        vec![reply(click()), reply(finish())],
+        FakePdp::allow_all(),
+    );
+    w.events.refuse_records();
+    let report = block_on(run_harness(started(BackendKind::KwinStock), &mut w)).expect("ends");
+    assert_eq!(outcome_of(&report), CuaOutcome::Failed(FailReason::Log));
+}
+
+#[test]
 fn the_seat_is_told_where_the_window_is_before_each_injection() {
     let mut w = world_over(
         BackendKind::KwinStock,
