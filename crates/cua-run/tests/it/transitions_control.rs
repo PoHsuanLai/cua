@@ -284,6 +284,7 @@ fn every_input_in_every_phase_has_a_row_and_leaves_a_valid_run() {
             RunInput::Injected(receipt(1)),
             RunInput::InjectFailed(SeatError::Refused),
             RunInput::StateMoved(cua_run::Moved::Geometry),
+            RunInput::RecordFailed,
             RunInput::Damage(damage(1)),
             RunInput::Checked(CheckResult::Pass),
             RunInput::UserPause,
