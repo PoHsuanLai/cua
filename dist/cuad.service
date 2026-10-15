@@ -6,7 +6,7 @@
 #
 # How the settings reach the daemon: cuad reads `cua/settings.toml` from `$XDG_CONFIG_HOME`
 # (under the person's home), then from each of `$XDG_CONFIG_DIRS` (`/etc/xdg` by default). The
-# unit keeps `ProtectHome=yes`, so under it the person's own file is out of reach and the
+# drop-in (cuad.service.d/sandbox.conf) keeps `ProtectHome=yes`, so under it the person's own file is out of reach and the
 # system-wide `/etc/xdg/cua/settings.toml` (readable: `ProtectSystem=strict` only forbids
 # writes) is the one that applies. A file that exists and cannot be read is logged at start
 # and on every change ("settings: <path>: could not be read"), not skipped silently. Until a
@@ -40,19 +40,11 @@ TasksMax=128
 
 # --- Sandbox ---
 # Only Unix sockets: the session bus, the accessibility bus, the Wayland socket, inferd's and
-# memoryd's sockets, and the EIS socket the compositor hands over. Nothing can reach the network,
-# so a compromised cuad cannot send what it sees anywhere. (All of these are filesystem Unix
-# sockets, so PrivateNetwork=yes below does not cut them off.)
+# memoryd's sockets, and the EIS socket the compositor hands over. The rest (no network, no home
+# folder, a read-only system, private temporary files, no devices, no kernel surfaces) is
+# cuad.service.d/sandbox.conf, which the installer leaves out on a system that refuses private
+# namespaces for user units.
 RestrictAddressFamilies=AF_UNIX
-PrivateNetwork=yes
-# The person's files are out of reach: cuad never reads or writes them. A step's thumbnail is
-# stored by memoryd in the Space's encrypted store, and only when `cua.screens.keep` is on.
-ProtectHome=yes
-# The whole file system is read-only; nothing is writable. Frames live in memory (memfds) and
-# are never written to disk.
-ProtectSystem=strict
-ReadWritePaths=
-PrivateTmp=yes
 # No setuid gain, no writable-and-executable memory (no JIT, no injected code).
 NoNewPrivileges=yes
 MemoryDenyWriteExecute=yes
@@ -60,16 +52,6 @@ LockPersonality=yes
 RestrictRealtime=yes
 RestrictNamespaces=yes
 RestrictSUIDSGID=yes
-# No devices at all: capture is shared memory, never a GPU or an input node. (uinput, in any
-# form, is never used: input goes through the compositor's EIS server.)
-PrivateDevices=yes
-# No kernel, module or debug surfaces.
-ProtectKernelTunables=yes
-ProtectKernelModules=yes
-ProtectKernelLogs=yes
-ProtectControlGroups=yes
-ProtectClock=yes
-ProtectHostname=yes
 # A narrow syscall set: the system-service baseline, minus privileged and obsolete calls. Frames
 # travel in memfds, so memfd_create is named rather than assumed.
 SystemCallFilter=@system-service memfd_create
