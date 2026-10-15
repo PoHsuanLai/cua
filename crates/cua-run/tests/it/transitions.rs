@@ -338,11 +338,19 @@ fn a_verdict_to_run_injects_and_the_input_settles_before_the_next_look() {
     assert_eq!(kinds(&d.effects), ["cua.step"]);
     assert!(d.has(|e| matches!(e, RunEffect::WatchSettle { .. })));
     assert!(d.has(|e| matches!(e, RunEffect::Emit(CuaSignal::ActionDone(..)))));
-    assert_eq!(d.run.pending.actions.len(), 1, "the second click waits");
+    assert!(
+        d.run.pending.actions.is_empty(),
+        "the rest of the batch is dropped"
+    );
+    assert_eq!(
+        d.run.track.outcomes.last().map(|o| &o.result),
+        Some(&ActionResult::NotExecuted),
+        "the model is told the second click did not run"
+    );
 }
 
 #[test]
-fn settling_waits_while_the_screen_changes_then_asks_about_the_next_action() {
+fn settling_waits_while_the_screen_changes_then_looks_again() {
     let mut d = Drive::thinking(STOCK, task(model_says()), tree(vec![]));
     d.feed(RunInput::ModelReplied(reply(vec![
         click_at(1, 1),
@@ -364,11 +372,11 @@ fn settling_waits_while_the_screen_changes_then_asks_about_the_next_action() {
     d.feed_after(250, RunInput::Tick);
     assert_eq!(
         *d.phase(),
-        RunPhase::Authorising(StepIndex(1)),
-        "a queue that is not empty goes on to the next action"
+        RunPhase::Observing(StepIndex(2)),
+        "the rest of the batch was dropped, so the run looks before it acts again"
     );
     assert!(d.has(|e| matches!(e, RunEffect::CancelSettle)));
-    assert!(d.has(|e| matches!(e, RunEffect::Check(_))));
+    assert!(!d.has(|e| matches!(e, RunEffect::Check(_))));
 }
 
 #[test]
@@ -756,15 +764,16 @@ fn the_rate_limit_ends_the_run_before_the_action_that_would_pass_it() {
     let mut t = task(model_says());
     t.budget.actions_per_min = porter_core::Count(2);
     let mut d = Drive::thinking(STOCK, t, tree(vec![]));
-    d.feed(RunInput::ModelReplied(reply(vec![
-        click_at(1, 1),
-        click_at(2, 2),
-        click_at(3, 3),
-    ])));
-    for _ in 0..2 {
+    d.feed(RunInput::ModelReplied(reply(vec![click_at(1, 1)])));
+    for i in 0..2_u8 {
         d.feed(RunInput::Verdict(GateAnswer::Run));
         d.feed(RunInput::Injected(receipt(0)));
         d.feed_after(300, RunInput::Tick);
+        d.feed(RunInput::Observed(Box::new(observation(
+            10 + i,
+            tree(vec![]),
+        ))));
+        d.feed(RunInput::ModelReplied(reply(vec![click_at(3, 3)])));
     }
     d.feed(RunInput::Verdict(GateAnswer::Run));
     assert_eq!(

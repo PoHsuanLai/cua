@@ -78,6 +78,9 @@ pub(super) fn injected(run: &mut Run, fx: &mut Vec<RunEffect>, at: Stamp, receip
         },
         Some(receipt),
     );
+    // One input action per observation: whatever came next in the batch was chosen against the
+    // screen as it was, and it is neither re-observed nor re-authorised until the model looks again.
+    drop_rest(run);
     let (quiet, timeout) = (run.env.settle.quiet, run.env.settle.timeout);
     run.track.settle = SettleWatch::Damage {
         since: at,
