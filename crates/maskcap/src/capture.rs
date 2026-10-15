@@ -13,9 +13,15 @@ use std::future::Future;
 pub enum FrameWant {
     /// The current content.
     Now,
-    /// The first frame after the content changed (on stock: after a pixel diff).
+    /// The first frame after the content changed (on stock: after a pixel diff). A session waits
+    /// at most `AFTER_DAMAGE_LIMIT`; a window that stayed still answers with its current frame
+    /// and no damage.
     AfterDamage,
 }
+
+/// The longest a session waits for a changed frame under `FrameWant::AfterDamage`, in
+/// milliseconds.
+pub const AFTER_DAMAGE_LIMIT_MS: u64 = 1000;
 
 /// Why a capture failed.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, thiserror::Error)]

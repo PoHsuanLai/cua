@@ -3,15 +3,15 @@
 use super::shm::Shared;
 use super::state::{CapState, Constraints, Failure, FrameSlot, pick_format};
 use crate::{
-    CaptureError, CaptureSession, DamageAt, DamageSource, Frame, FrameSeq, FrameWant, MaskRegion,
-    MaskReport, PixelBuf, WholeMask, apply_masks, pixel_diff,
+    AFTER_DAMAGE_LIMIT_MS, CaptureError, CaptureSession, DamageAt, DamageSource, Frame, FrameSeq,
+    FrameWant, MaskRegion, MaskReport, PixelBuf, WholeMask, apply_masks, pixel_diff,
 };
 use cua_action::{Coord, Point, Rect, Scale120, Size, WindowSpace};
 use cua_desktop::ObjectKey as Key;
 use cua_desktop::{MaskWhere, Pump, Stamp};
 use std::fmt;
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 /// Where frame and damage stamps come from.
 pub trait StampClock: Send + Sync + fmt::Debug {
@@ -38,6 +38,9 @@ impl StampClock for SinceStart {
 
 /// Stock captures at logical resolution at every output scale (Spike A, measured at 1.5).
 const LOGICAL: Scale120 = Scale120(120);
+
+/// The pause between two looks at a window that has not changed.
+const PACE: Duration = Duration::from_millis(50);
 
 /// A session over a source of either kind.
 #[derive(Debug)]
@@ -158,6 +161,7 @@ impl WaylandSession {
             if let Some(region) = change {
                 return Ok((raw, region));
             }
+            tokio::time::sleep(PACE).await;
         }
     }
 }
@@ -170,8 +174,18 @@ impl CaptureSession for WaylandSession {
     ) -> Result<Frame, CaptureError> {
         let (raw, damage) = match want {
             FrameWant::AfterDamage => {
-                let (raw, region) = self.next_change().await?;
-                (raw, vec![region])
+                let limit = Duration::from_millis(AFTER_DAMAGE_LIMIT_MS);
+                match tokio::time::timeout(limit, self.next_change()).await {
+                    Ok(changed) => {
+                        let (raw, region) = changed?;
+                        (raw, vec![region])
+                    }
+                    // Nothing moved: the window is still, so the last look is the current frame.
+                    Err(_) => match self.last.clone() {
+                        Some(raw) => (raw, Vec::new()),
+                        None => (self.capture().await?, Vec::new()),
+                    },
+                }
             }
             FrameWant::Now => {
                 let raw = self.capture().await?;

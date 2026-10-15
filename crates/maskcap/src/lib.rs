@@ -19,7 +19,7 @@ mod settle;
 #[cfg(feature = "wayland")]
 mod wayland;
 
-pub use capture::{CaptureError, CaptureSession, FrameWant, WindowCapture};
+pub use capture::{AFTER_DAMAGE_LIMIT_MS, CaptureError, CaptureSession, FrameWant, WindowCapture};
 pub use digest::{FrameDigest, digest};
 pub use frame::Frame;
 pub use mask::{MaskReason, MaskRegion, MaskReport, WholeMask, apply_masks};

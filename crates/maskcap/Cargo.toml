@@ -20,6 +20,8 @@ wayland-client = { workspace = true, optional = true }
 wayland-protocols = { workspace = true, optional = true }
 casement-protocols = { workspace = true, optional = true }
 rustix = { workspace = true, optional = true }
+# Bounds the wait for a changed frame (feature `wayland` only).
+tokio = { workspace = true, optional = true }
 
 [dev-dependencies]
 serde_json = { workspace = true }
@@ -36,6 +38,7 @@ wayland = [
   "dep:wayland-protocols",
   "dep:casement-protocols",
   "dep:rustix",
+  "dep:tokio",
   "casement-protocols/client",
   "cua-desktop/wayland",
 ]

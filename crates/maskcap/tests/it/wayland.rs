@@ -156,6 +156,22 @@ async fn after_damage_waits_for_a_pixel_diff_and_names_the_changed_box() {
 }
 
 #[tokio::test]
+async fn after_damage_on_a_still_window_gives_the_current_frame_when_the_wait_ends() {
+    let mut server = FakeCompositor::start(vec![Window::solid("w1", (4, 3), RED)]);
+    let capture = capture(&mut server);
+    let mut session = capture.open(&grant("w1")).await.expect("open");
+    let first = session.frame(FrameWant::Now, &[]).await.expect("first");
+    let started = std::time::Instant::now();
+    let still = session
+        .frame(FrameWant::AfterDamage, &[])
+        .await
+        .expect("a frame, not a hang");
+    assert!(started.elapsed().as_millis() >= u128::from(maskcap::AFTER_DAMAGE_LIMIT_MS));
+    assert!(still.damage.is_empty(), "nothing changed");
+    assert_eq!(still.pixels, first.pixels, "the current frame");
+}
+
+#[tokio::test]
 async fn damage_is_the_next_pixel_diff() {
     let window = Window::solid("w1", (4, 3), RED);
     let mut server = FakeCompositor::start(vec![window.clone()]);
