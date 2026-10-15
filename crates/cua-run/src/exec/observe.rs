@@ -7,16 +7,17 @@ use crate::observation::{
     ContextObs, CursorObs, Focus, Observation, TreeAbsence, TreeObs, Visibility, WindowInfo,
 };
 use crate::seams::{MessageLink, Seams};
+use crate::sensitivity::window_sensitivity;
 use crate::turn::note_of;
 use a11y_tree::{
     A11yError, A11ySource, A11yTarget, NodeBudget, NodeSelector, Resolution, prune, resolve,
     secret_rects,
 };
-use cua_action::{Coord, Size, WindowSpace};
+use cua_action::{Coord, Point, Rect, Size, WindowSpace};
 use cua_bus::WindowRef;
 use cua_desktop::{Desktop, ToplevelInfo, ToplevelState, WorkspaceShown};
 use docket_core::InboxAsk;
-use maskcap::{CaptureError, CaptureSession, FrameWant, MaskReason, MaskRegion};
+use maskcap::{CaptureError, CaptureSession, FrameWant, MaskReason, MaskRegion, WholeMask};
 use porter_infer::StepIndex;
 use prov::{AgentRef, Label, Labelled, Source};
 
@@ -119,6 +120,24 @@ impl<S: Seams> Exec<'_, S> {
         }
     }
 
+    /// The whole window as one mask, when it is sensitive and no accessibility tree says which
+    /// parts are secret: with nothing to tell a password field from the rest, the safe default
+    /// is to show the model none of it.
+    fn blackout_of(&self, info: &ToplevelInfo) -> Option<MaskRegion> {
+        match &self.staged.tree {
+            TreeObs::Present(_) => None,
+            TreeObs::Absent(_) => window_sensitivity(&info.app, &info.title.0, &[])
+                .asks()
+                .then(|| MaskRegion {
+                    rect: Rect {
+                        origin: Point::new(Coord(0), Coord(0)),
+                        size: size_of(info),
+                    },
+                    why: MaskReason::SensitiveWindow,
+                }),
+        }
+    }
+
     /// Takes the messages that wait for the run: each is an input to the machine (which
     /// changes nothing by it) and a note for the model's next turn.
     async fn read_inbox(&mut self, out: &mut impl Outlet) {
@@ -147,14 +166,19 @@ impl<S: Seams> Exec<'_, S> {
         let Some(info) = self.window_now().await else {
             return out.input(RunInput::CaptureFailed(CaptureError::SourceGone));
         };
-        let hints = self.hints_of(hints);
+        let mut hints = self.hints_of(hints);
+        let blackout = self.blackout_of(&info);
+        hints.extend(blackout.clone());
         let Some(held) = self.held.as_mut() else {
             return out.input(RunInput::CaptureFailed(CaptureError::SourceGone));
         };
-        let frame = match held.capture.frame(want, &hints).await {
+        let mut frame = match held.capture.frame(want, &hints).await {
             Ok(frame) => frame,
             Err(error) => return out.input(RunInput::CaptureFailed(error)),
         };
+        if blackout.is_some() {
+            frame.masks.whole = WholeMask::Blacked(MaskReason::SensitiveWindow);
+        }
         self.read_inbox(out).await;
         let label = Label::untrusted(
             Source::Screen {

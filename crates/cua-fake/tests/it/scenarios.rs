@@ -5,7 +5,7 @@ use crate::support::*;
 use cua_action::CuaAction;
 use cua_bus::{BlockedOn, CuaOutcome, CuaRecord, FailReason};
 use cua_desktop::{BackendKind, Suspend};
-use cua_fake::{DesktopCall, FakeDesktop, FakePdp, SeatEvent, Verdict, run_harness};
+use cua_fake::{DesktopCall, FakeA11y, FakeDesktop, FakePdp, SeatEvent, Verdict, run_harness};
 use cua_run::{CuaModelError, CuaSignal, RunPhase};
 use docket_core::{CallRefusal, ConfirmEnd, DenyCode, GateAnswer, GrantAnswer, InboundLine};
 use porter_infer::{NoteFrom, PrevResult, StepNote};
@@ -131,6 +131,28 @@ fn the_seat_is_told_where_the_window_is_before_each_injection() {
     block_on(run_harness(started(BackendKind::KwinStock), &mut w)).expect("ends");
     assert_eq!(w.seat.rebinds().len(), 1);
     assert_eq!(w.seat.rebinds()[0].1, cua_fake::scene::window().geometry);
+}
+
+#[test]
+fn a_sensitive_window_with_no_tree_is_shown_to_the_model_as_black() {
+    let cases = [("Checkout", 1), ("Notes", 0)];
+    for (title, masked) in cases {
+        let mut w = world(
+            BackendKind::KwinStock,
+            vec![reply(finish())],
+            FakePdp::allow_all(),
+        );
+        let mut window = cua_fake::scene::window();
+        window.title = cua_desktop::WindowTitle(title.into());
+        w.desktop = FakeDesktop::new(BackendKind::KwinStock, vec![window]);
+        w.a11y = FakeA11y::failing(a11y_tree::A11yError::NotExposed);
+        block_on(run_harness(started(BackendKind::KwinStock), &mut w)).expect("ends");
+        assert_eq!(
+            w.model.requests()[0].masked,
+            porter_infer::MaskedRegions(masked),
+            "{title}"
+        );
+    }
 }
 
 #[test]
