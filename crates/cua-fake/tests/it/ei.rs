@@ -266,3 +266,44 @@ async fn a_later_attach_replaces_the_keymap_of_the_earlier_one() {
     };
     tokio::join!(first.serve(), second.serve(), client);
 }
+
+#[tokio::test]
+async fn a_dropped_perform_stops_the_thread_and_lets_go_of_held_keys() {
+    let key = |dir| InputOp::Key {
+        key: Keycode(30),
+        dir,
+    };
+    let events = run(stock(), |seat, _| async move {
+        // A long pause after a key goes down: the deadline drops the call mid-batch.
+        let long = [key(Press::Down), InputOp::Gap(Ms(60_000)), key(Press::Up)];
+        let stopped = tokio::time::timeout(
+            std::time::Duration::from_millis(100),
+            seat.perform(LEASE, &long),
+        )
+        .await;
+        assert!(stopped.is_err(), "the call was dropped");
+        // The next call is not stuck behind the abandoned one.
+        seat.perform(LEASE, &[at(2, 3)]).await.expect("perform");
+        seat.detach(LEASE).await.expect("detach");
+    })
+    .await;
+    let input: Vec<&EisEvent> = events
+        .iter()
+        .filter(|e| matches!(e, EisEvent::Key { .. } | EisEvent::PointerAbsolute { .. }))
+        .collect();
+    assert_eq!(
+        input,
+        vec![
+            &EisEvent::Key {
+                code: 30,
+                dir: Press::Down
+            },
+            &EisEvent::Key {
+                code: 30,
+                dir: Press::Up
+            },
+            &EisEvent::PointerAbsolute { x: 716, y: 151 },
+        ],
+        "the held key is released and the abandoned tail never runs"
+    );
+}

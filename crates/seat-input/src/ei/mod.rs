@@ -79,9 +79,15 @@ impl AgentSeat for EiSeat {
 
     async fn perform(&self, lease: LeaseId, ops: &[InputOp]) -> Result<InputReceipt, SeatError> {
         let mut slot = self.link.lock().await;
-        let result = of_lease(&slot, lease)?
-            .ask(|reply| Cmd::Perform(ops.to_vec(), reply))
+        let link = of_lease(&slot, lease)?;
+        let generation = link.generation();
+        // Dropped before it ends (cancel, pause, the kill chord, a deadline): the thread stops
+        // between ops and refuses what is still queued.
+        let stopper = link.stop_on_drop();
+        let result = link
+            .ask(|reply| Cmd::Perform(ops.to_vec(), generation, reply))
             .await;
+        stopper.finish();
         if result == Err(SeatError::NotConnected) {
             slot.take();
         }
