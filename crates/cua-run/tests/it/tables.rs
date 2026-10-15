@@ -96,6 +96,28 @@ fn secret_node(id: u32, role: Role, name: &str, sensitivity: Sensitivity, value:
 }
 
 #[test]
+fn effects_that_talk_to_a_neighbour_have_a_deadline_and_the_ones_that_wait_on_the_person_have_none()
+{
+    use cua_run::{HintSource, RunEffect, RunInput, deadline_of};
+    use maskcap::{CaptureError, FrameWant};
+    let capture = RunEffect::Capture {
+        want: FrameWant::Now,
+        hints: HintSource::FromTree,
+    };
+    let deadline = deadline_of(&capture).expect("a capture is bounded");
+    assert!(matches!(
+        deadline.failure,
+        Some(RunInput::CaptureFailed(CaptureError::Protocol(_)))
+    ));
+    let waits_on_the_person = RunEffect::Grant {
+        app: AppName::parse("org.gnome.Calculator").expect("an app"),
+        space: SpaceId::parse("desktop").expect("a space"),
+    };
+    assert_eq!(deadline_of(&waits_on_the_person), None);
+    assert_eq!(deadline_of(&RunEffect::Proceed), None);
+}
+
+#[test]
 fn classify_effect_table() {
     use WindowClass::{MailCompose, Ordinary, Payments, Terminal};
     struct Row {

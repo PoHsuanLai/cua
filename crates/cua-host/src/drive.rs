@@ -14,6 +14,7 @@ use cua_run::{
 };
 use prov::RunId;
 use std::collections::{BTreeMap, VecDeque};
+use std::future::Future;
 use std::sync::{Arc, Mutex, MutexGuard, RwLock};
 use std::time::Duration;
 use tokio::sync::{OwnedMutexGuard, broadcast, mpsc};
@@ -280,29 +281,57 @@ pub(crate) async fn drive<S: Drivable>(
             heard(&shared, &id, &mut machine, event);
         }
         if let Some(effect) = machine.queue.pop_front() {
-            let work = async {
-                if Exec::<S>::needs_model(&effect) && guard.is_none() {
-                    guard = Some(shared.model.clone().lock_owned().await);
+            let deadline = cua_run::deadline_of(&effect);
+            if Exec::<S>::needs_model(&effect) && guard.is_none() {
+                // Waiting for the model is not the model call: no deadline, but the controls and
+                // the budget still reach the run.
+                let lock = shared.model.clone().lock_owned();
+                match race(
+                    &shared,
+                    &id,
+                    &mut machine,
+                    &mut control,
+                    &mut wire,
+                    lock,
+                    None,
+                )
+                .await
+                {
+                    Raced::Finished(held) => guard = Some(held),
+                    Raced::Interrupted | Raced::Ended | Raced::TimedOut => continue,
                 }
-                exec.carry_out(effect, guard.as_deref_mut(), &mut outlet)
-                    .await;
-            };
-            tokio::pin!(work);
-            loop {
-                tokio::select! {
-                    biased;
-                    Some(input) = control.recv() => {
-                        machine.interrupt(&shared, input, shared.clock.now());
-                        break;
-                    }
-                    Some(event) = wire.recv() => heard(&shared, &id, &mut machine, event),
-                    () = &mut work => break,
-                }
+            }
+            let limit = deadline.as_ref().map(|d| d.after);
+            let work = exec.carry_out(effect, guard.as_deref_mut(), &mut outlet);
+            if let Raced::TimedOut = race(
+                &shared,
+                &id,
+                &mut machine,
+                &mut control,
+                &mut wire,
+                work,
+                limit,
+            )
+            .await
+                && let Some(failure) = deadline.and_then(|d| d.failure)
+            {
+                machine.feed(&shared, failure, shared.clock.now());
             }
             continue;
         }
         if let Some(outcome) = machine.run().phase.outcome() {
             break outcome;
+        }
+        // A run that waits on the person lets the model go: it holds no model while paused, and
+        // opens a new model session when it goes on.
+        if guard.is_some()
+            && matches!(
+                machine.run().phase,
+                RunPhase::Paused(_) | RunPhase::TakenOver(..) | RunPhase::WaitingForUser(..)
+            )
+        {
+            guard = None;
+            exec.forget_model_session();
         }
         // Nothing to do: wait for the person, the desktop, the screen or the clock.
         let wake = machine.run().wake();
@@ -337,6 +366,59 @@ pub(crate) async fn drive<S: Drivable>(
     drop(cleanup);
     shared.tell(SupervisorEvent::Ended(id.clone(), Box::new(end)));
     shared.tell(SupervisorEvent::Removed(id));
+}
+
+/// How a race between an effect and the outside world ended.
+enum Raced<T> {
+    /// The effect finished.
+    Finished(T),
+    /// The person or the desktop interrupted it; the machine has been told.
+    Interrupted,
+    /// The clock ended the run (the active budget); the machine has been told.
+    Ended,
+    /// The effect passed its deadline.
+    TimedOut,
+}
+
+/// Races `work` against the controls, the effects' answers, the effect's `limit` and the
+/// machine's own clock: the active budget ticks while an effect runs, so a stalled neighbour
+/// cannot hold a run past its budget.
+async fn race<S: Seams, T>(
+    shared: &Shared<S>,
+    id: &RunId,
+    machine: &mut Machine,
+    control: &mut mpsc::UnboundedReceiver<RunInput>,
+    wire: &mut mpsc::UnboundedReceiver<Wire>,
+    work: impl Future<Output = T>,
+    limit: Option<Duration>,
+) -> Raced<T> {
+    tokio::pin!(work);
+    let timer = tokio::time::sleep(limit.unwrap_or(Duration::ZERO));
+    tokio::pin!(timer);
+    loop {
+        let wake = machine.run().wake();
+        let nap = wake.map_or(Duration::ZERO, |at| {
+            Duration::from_millis(at.0.saturating_sub(shared.clock.now().0))
+        });
+        tokio::select! {
+            biased;
+            Some(input) = control.recv() => {
+                machine.interrupt(shared, input, shared.clock.now());
+                return Raced::Interrupted;
+            }
+            Some(event) = wire.recv() => heard(shared, id, machine, event),
+            done = &mut work => return Raced::Finished(done),
+            () = &mut timer, if limit.is_some() => return Raced::TimedOut,
+            () = tokio::time::sleep(nap), if wake.is_some() => {
+                let now = shared.clock.now();
+                machine.feed(shared, RunInput::Tick, wake.map_or(now, |due| now.max(due)));
+                if machine.run().phase.is_finished() {
+                    machine.queue.retain(|e| !is_work(e));
+                    return Raced::Ended;
+                }
+            }
+        }
+    }
 }
 
 /// What an effect said as it ran: an input for the machine, or a signal for the bus.

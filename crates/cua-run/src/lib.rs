@@ -73,7 +73,7 @@ pub use config::{
     SettingValue, SettleLimits,
 };
 pub use effect_class::classify_effect;
-pub use exec::{Collected, Exec, Outlet, Seam};
+pub use exec::{Collected, Deadline, Exec, Outlet, Seam, deadline_of};
 pub use lease_book::{LeaseBook, LeaseHeld, Slot, SlotState};
 pub use machine::effect::{CuaSignal, HintSource, RunEffect};
 pub use machine::input::{CheckResult, ModelReply, RunInput};

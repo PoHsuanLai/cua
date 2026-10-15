@@ -121,3 +121,32 @@ async fn pausing_a_run_that_is_thinking_stops_its_input_and_nothing_is_injected_
         "a paused run can still be cancelled"
     );
 }
+
+#[tokio::test(start_paused = true)]
+async fn a_model_call_that_never_returns_is_given_up_on_and_counted() {
+    let sup = mute();
+    let id = sup.start(CuaCaller::Router, task()).await.unwrap();
+    until(&sup, &id, |p| matches!(p, RunPhase::Thinking(_))).await;
+    tokio::time::sleep(std::time::Duration::from_secs(200)).await;
+    let failures = sup.view(&id).map(|v| v.budget.used.model_failures.0);
+    assert!(
+        failures.is_some_and(|n| n >= 1),
+        "the call hit its deadline: {failures:?}"
+    );
+    sup.stop_all(CuaCaller::Shell).await.unwrap();
+}
+
+#[tokio::test(start_paused = true)]
+async fn the_active_budget_runs_out_while_an_effect_is_stuck() {
+    let sup = mute();
+    let mut events = sup.subscribe();
+    let mut short = task();
+    short.budget.active = cua_desktop::Ms(5_000);
+    let id = sup.start(CuaCaller::Router, short).await.unwrap();
+    until(&sup, &id, |p| matches!(p, RunPhase::Thinking(_))).await;
+    let end = ended(&mut events, &id).await;
+    assert_eq!(
+        end.outcome,
+        CuaOutcome::BudgetOut(cua_bus::RunBudgetKind::Active)
+    );
+}

@@ -8,6 +8,7 @@
 //! clock, the harness has none of either).
 
 mod cost;
+mod deadline;
 mod observe;
 mod session;
 
@@ -17,6 +18,7 @@ use crate::seams::{
     Clock, GateCheck, GateEvent, GateLink, LinkError, MessageLink, Parts, RecordSink, Seams,
 };
 use cua_bus::{CuaRecord, CuaTask, ReportDelivery};
+pub use deadline::{Deadline, deadline_of};
 use docket_core::{Delivery, GrantAsk, SendRefusal, WireRefusal};
 use maskcap::DamageAt;
 use prov::{MessageId, RunId};
