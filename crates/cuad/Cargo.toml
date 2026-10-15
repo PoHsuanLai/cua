@@ -35,6 +35,7 @@ cua-host = { workspace = true }
 cua-dbus = { workspace = true }
 docket-core = { workspace = true }
 docket-client = { workspace = true, features = ["dbus"] }
+docket-dbus = { workspace = true }
 prov = { workspace = true }
 porter-core = { workspace = true }
 porter-daemon = { workspace = true }
