@@ -410,3 +410,51 @@ impl ParseRun for str {
         prov::RunId::parse(self).unwrap()
     }
 }
+
+#[tokio::test]
+async fn what_the_model_proposes_and_the_screen_asks_reaches_the_shell_and_no_one_else() {
+    let fx = fixture(vec![reply(ask()), reply(finish())]).await;
+    let planner = named(&fx.bus, "org.quire.Companion1").await;
+    let shell = named(&fx.bus, "org.quire.Shell").await;
+    let stranger = bus_stranger(&fx.bus).await;
+    let path = zbus::zvariant::OwnedObjectPath::try_from("/org/quire/Cua1/run/r_1").unwrap();
+    let mut shell_asked = run_proxy(&shell, &path)
+        .await
+        .receive_ask_user()
+        .await
+        .unwrap();
+    let spy = run_proxy(&stranger, &path).await;
+    let mut spy_asked = spy.receive_ask_user().await.unwrap();
+    let mut spy_proposed = spy.receive_action_proposed().await.unwrap();
+    let mut spy_states = spy.receive_phase_changed().await.unwrap();
+
+    manager(&planner)
+        .await
+        .start(&start_body(task()))
+        .await
+        .expect("a run");
+    tokio::time::timeout(Duration::from_secs(10), shell_asked.next())
+        .await
+        .expect("the run asks the shell")
+        .expect("a signal");
+    // Broadcast state changes still reach a stranger; the question and the proposals do not.
+    tokio::time::timeout(Duration::from_secs(10), spy_states.next())
+        .await
+        .expect("a state change is public")
+        .expect("a signal");
+    let quiet = Duration::from_millis(500);
+    assert!(
+        tokio::time::timeout(quiet, spy_asked.next()).await.is_err(),
+        "the question is the shell's"
+    );
+    assert!(
+        tokio::time::timeout(quiet, spy_proposed.next())
+            .await
+            .is_err(),
+        "the proposed action is the shell's"
+    );
+    fx.supervisor
+        .stop_all(cua_bus::CuaCaller::Shell)
+        .await
+        .unwrap();
+}

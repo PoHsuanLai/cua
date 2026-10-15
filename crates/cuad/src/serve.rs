@@ -149,6 +149,31 @@ where
         .await;
 }
 
+/// Says a run's private signal to the shell and to nobody else: a destination on the message
+/// keeps it from every other connection's match rules. What the model thought, what it is about
+/// to type and what the screen asked are the person's to read, not the session bus's.
+async fn emit_to_shell<B>(
+    connection: &zbus::Connection,
+    shell: &[String],
+    path: &str,
+    member: &str,
+    body: &B,
+) where
+    B: serde::Serialize + zbus::zvariant::DynamicType,
+{
+    for name in shell {
+        let _ = connection
+            .emit_signal(
+                Some(name.as_str()),
+                path,
+                "org.quire.Cua1.Run",
+                member,
+                body,
+            )
+            .await;
+    }
+}
+
 /// Says one supervisor event on the bus.
 async fn say<S: Drivable>(
     connection: &zbus::Connection,
@@ -177,6 +202,7 @@ async fn say<S: Drivable>(
         }
         SupervisorEvent::Signal(run, signal) => {
             let path = run_path(&run);
+            let shell = supervisor.config().callers.shell.clone();
             match signal {
                 CuaSignal::StateChanged(slug) => {
                     let state = cua_bus::slug_of(&slug).unwrap_or_default();
@@ -186,22 +212,26 @@ async fn say<S: Drivable>(
                     emit_run(connection, &path, "StepStarted", &(step.0,)).await;
                 }
                 CuaSignal::ThoughtDelta(step, text) => {
-                    emit_run(connection, &path, "ThoughtDelta", &(step.0, text.0)).await;
+                    emit_to_shell(connection, &shell, &path, "ThoughtDelta", &(step.0, text.0))
+                        .await;
                 }
                 CuaSignal::ActionProposed(step, action) => {
                     if let Ok(body) = enveloped(action) {
-                        emit_run(connection, &path, "ActionProposed", &(step.0, body)).await;
+                        emit_to_shell(connection, &shell, &path, "ActionProposed", &(step.0, body))
+                            .await;
                     }
                 }
                 CuaSignal::ActionDone(step, outcome) => {
                     if let Ok(body) = enveloped(outcome) {
-                        emit_run(connection, &path, "ActionDone", &(step.0, body)).await;
+                        emit_to_shell(connection, &shell, &path, "ActionDone", &(step.0, body))
+                            .await;
                     }
                 }
                 CuaSignal::AskUser(question, ask) => {
                     let ask: AskBody = ask;
                     if let Ok(body) = enveloped(ask) {
-                        emit_run(connection, &path, "AskUser", &(question.0, body)).await;
+                        emit_to_shell(connection, &shell, &path, "AskUser", &(question.0, body))
+                            .await;
                     }
                 }
                 // The run's end is told with its `RunEnd`, once the report is out. A signal
