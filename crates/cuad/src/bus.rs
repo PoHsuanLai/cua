@@ -3,19 +3,20 @@
 //! introspection of these objects to `dbus/org.quire.Cua1.xml`).
 //!
 //! Bodies are JSON in an `s` argument, in the `CuaEnvelope` where a body is sent. Who is calling
-//! is derived from the connection: the well-known names the sender owns (`CallerNames`), never
-//! anything in a body.
+//! is derived from the process behind the message's sender (`callers`), never from a bus name it
+//! owns and never from anything in a body.
 
+use crate::callers;
 use cua_bus::{
     CuaCaller, CuaEnvelope, CuaMember, CuaTask, CuaVocab, QuestionId, WindowBody, backend_wire,
     modes_wire, slug_of,
 };
 use cua_dbus::{CUA_PATH, CuaError, run_path};
 use cua_desktop::{Desktop, RunMode, WindowTitle};
-use cua_host::CallerNames;
 use cua_host::Drivable;
 use cua_host::Supervisor;
 use cua_run::mode_support;
+use docket_dbus::callers::Callers;
 use prov::{Label, Labelled, RunId};
 use serde::Serialize;
 use std::collections::HashMap;
@@ -31,35 +32,9 @@ pub(crate) fn enveloped<T: Serialize>(body: T) -> fdo::Result<String> {
         .map_err(|e| fdo::Error::Failed(e.to_string()))
 }
 
-/// Who is calling: whichever of the configured well-known names the sender owns decides.
-pub(crate) async fn caller_of(
-    connection: &zbus::Connection,
-    header: &Header<'_>,
-    names: &CallerNames,
-) -> CuaCaller {
-    let Some(sender) = header.sender() else {
-        return CuaCaller::Other;
-    };
-    let Ok(dbus) = fdo::DBusProxy::new(connection).await else {
-        return CuaCaller::Other;
-    };
-    let mut owned = Vec::new();
-    for name in names
-        .router
-        .iter()
-        .chain(&names.companion)
-        .chain(&names.shell)
-    {
-        let Ok(bus_name) = zbus::names::BusName::try_from(name.as_str()) else {
-            continue;
-        };
-        if let Ok(owner) = dbus.get_name_owner(bus_name).await
-            && owner.as_str() == sender.as_str()
-        {
-            owned.push(name.clone());
-        }
-    }
-    names.classify(&owned)
+/// Who is calling: the process behind the header's sender decides.
+async fn caller_of(who: &impl Callers, header: &Header<'_>) -> CuaCaller {
+    callers::caller_of(who, header.sender().map(|sender| sender.as_str())).await
 }
 
 fn object_path(run: &RunId) -> OwnedObjectPath {
@@ -67,13 +42,13 @@ fn object_path(run: &RunId) -> OwnedObjectPath {
 }
 
 /// `org.quire.Cua1.Manager`.
-pub(crate) struct ManagerObject<S: Drivable> {
+pub(crate) struct ManagerObject<S: Drivable, K: Callers> {
     pub supervisor: Arc<Supervisor<S>>,
-    pub names: CallerNames,
+    pub who: Arc<K>,
 }
 
 #[zbus::interface(name = "org.quire.Cua1.Manager")]
-impl<S: Drivable> ManagerObject<S> {
+impl<S: Drivable, K: Callers> ManagerObject<S, K> {
     #[zbus(out_args("run"))]
     async fn start(
         &self,
@@ -81,7 +56,7 @@ impl<S: Drivable> ManagerObject<S> {
         #[zbus(header)] header: Header<'_>,
         #[zbus(connection)] connection: &zbus::Connection,
     ) -> Result<OwnedObjectPath, CuaError> {
-        let caller = caller_of(connection, &header, &self.names).await;
+        let caller = caller_of(&self.who, &header).await;
         let envelope: CuaEnvelope<CuaTask> =
             serde_json::from_str(&task).map_err(|e| CuaError::BadTask(e.to_string()))?;
         if envelope.vocab != CuaVocab::CURRENT {
@@ -98,7 +73,7 @@ impl<S: Drivable> ManagerObject<S> {
                 RunObject {
                     supervisor: self.supervisor.clone(),
                     id: id.clone(),
-                    names: self.names.clone(),
+                    who: self.who.clone(),
                 },
             )
             .await?;
@@ -107,7 +82,7 @@ impl<S: Drivable> ManagerObject<S> {
             // has already said it is removed, so nothing would take the object down later.
             connection
                 .object_server()
-                .remove::<RunObject<S>, _>(run_path(&id))
+                .remove::<RunObject<S, K>, _>(run_path(&id))
                 .await?;
         }
         Ok(object_path(&id))
@@ -117,12 +92,8 @@ impl<S: Drivable> ManagerObject<S> {
         self.supervisor.runs().iter().map(object_path).collect()
     }
 
-    async fn stop_all(
-        &self,
-        #[zbus(header)] header: Header<'_>,
-        #[zbus(connection)] connection: &zbus::Connection,
-    ) -> Result<(), CuaError> {
-        let caller = caller_of(connection, &header, &self.names).await;
+    async fn stop_all(&self, #[zbus(header)] header: Header<'_>) -> Result<(), CuaError> {
+        let caller = caller_of(&self.who, &header).await;
         Ok(self.supervisor.stop_all(caller).await?)
     }
 
@@ -157,20 +128,15 @@ impl<S: Drivable> ManagerObject<S> {
 }
 
 /// `org.quire.Cua1.Run`.
-pub(crate) struct RunObject<S: Drivable> {
+pub(crate) struct RunObject<S: Drivable, K: Callers> {
     pub supervisor: Arc<Supervisor<S>>,
     pub id: RunId,
-    pub names: CallerNames,
+    pub who: Arc<K>,
 }
 
-impl<S: Drivable> RunObject<S> {
-    async fn control(
-        &self,
-        member: CuaMember,
-        header: &Header<'_>,
-        connection: &zbus::Connection,
-    ) -> Result<(), CuaError> {
-        let caller = caller_of(connection, header, &self.names).await;
+impl<S: Drivable, K: Callers> RunObject<S, K> {
+    async fn control(&self, member: CuaMember, header: &Header<'_>) -> Result<(), CuaError> {
+        let caller = caller_of(&self.who, header).await;
         Ok(self.supervisor.control(caller, &self.id, member).await?)
     }
 
@@ -182,29 +148,17 @@ impl<S: Drivable> RunObject<S> {
 }
 
 #[zbus::interface(name = "org.quire.Cua1.Run")]
-impl<S: Drivable> RunObject<S> {
-    async fn cancel(
-        &self,
-        #[zbus(header)] header: Header<'_>,
-        #[zbus(connection)] connection: &zbus::Connection,
-    ) -> Result<(), CuaError> {
-        self.control(CuaMember::Cancel, &header, connection).await
+impl<S: Drivable, K: Callers> RunObject<S, K> {
+    async fn cancel(&self, #[zbus(header)] header: Header<'_>) -> Result<(), CuaError> {
+        self.control(CuaMember::Cancel, &header).await
     }
 
-    async fn pause(
-        &self,
-        #[zbus(header)] header: Header<'_>,
-        #[zbus(connection)] connection: &zbus::Connection,
-    ) -> Result<(), CuaError> {
-        self.control(CuaMember::Pause, &header, connection).await
+    async fn pause(&self, #[zbus(header)] header: Header<'_>) -> Result<(), CuaError> {
+        self.control(CuaMember::Pause, &header).await
     }
 
-    async fn resume(
-        &self,
-        #[zbus(header)] header: Header<'_>,
-        #[zbus(connection)] connection: &zbus::Connection,
-    ) -> Result<(), CuaError> {
-        self.control(CuaMember::Resume, &header, connection).await
+    async fn resume(&self, #[zbus(header)] header: Header<'_>) -> Result<(), CuaError> {
+        self.control(CuaMember::Resume, &header).await
     }
 
     async fn answer(
@@ -212,9 +166,8 @@ impl<S: Drivable> RunObject<S> {
         question: u64,
         answer: String,
         #[zbus(header)] header: Header<'_>,
-        #[zbus(connection)] connection: &zbus::Connection,
     ) -> Result<(), CuaError> {
-        let caller = caller_of(connection, &header, &self.names).await;
+        let caller = caller_of(&self.who, &header).await;
         // The shell's answer is the person's own words.
         let words = Labelled::new(answer, Label::trusted_user());
         Ok(self
@@ -223,20 +176,12 @@ impl<S: Drivable> RunObject<S> {
             .await?)
     }
 
-    async fn take_over(
-        &self,
-        #[zbus(header)] header: Header<'_>,
-        #[zbus(connection)] connection: &zbus::Connection,
-    ) -> Result<(), CuaError> {
-        self.control(CuaMember::TakeOver, &header, connection).await
+    async fn take_over(&self, #[zbus(header)] header: Header<'_>) -> Result<(), CuaError> {
+        self.control(CuaMember::TakeOver, &header).await
     }
 
-    async fn hand_back(
-        &self,
-        #[zbus(header)] header: Header<'_>,
-        #[zbus(connection)] connection: &zbus::Connection,
-    ) -> Result<(), CuaError> {
-        self.control(CuaMember::HandBack, &header, connection).await
+    async fn hand_back(&self, #[zbus(header)] header: Header<'_>) -> Result<(), CuaError> {
+        self.control(CuaMember::HandBack, &header).await
     }
 
     // The `RunId` slug; the path spelling of it is lossy (`-` and `.` become `_`).
@@ -314,7 +259,17 @@ mod tests {
     use super::*;
     use cua_desktop::BackendKind;
     use cua_fake::{FakePdp, scene::world};
+    use docket_dbus::callers::Caller;
     use zbus::object_server::Interface;
+
+    /// Identifies nobody: the introspection needs the types, not a bus.
+    struct NoCallers;
+
+    impl Callers for NoCallers {
+        async fn caller_of(&self, _: &str) -> Option<Caller> {
+            None
+        }
+    }
 
     #[test]
     fn the_served_interfaces_are_the_declared_ones() {
@@ -327,13 +282,13 @@ mod tests {
         );
         ManagerObject {
             supervisor: supervisor.clone(),
-            names: CallerNames::default(),
+            who: Arc::new(NoCallers),
         }
         .introspect_to_writer(&mut served, 1);
         RunObject {
             supervisor,
             id: RunId::parse("r-1").unwrap(),
-            names: CallerNames::default(),
+            who: Arc::new(NoCallers),
         }
         .introspect_to_writer(&mut served, 1);
         served.push_str("</node>\n");

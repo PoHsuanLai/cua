@@ -1,7 +1,7 @@
-//! cuad's configuration: the settings sill's Intelligence page owns, plus which backend and who
-//! may call. Parsed once, at the edge.
+//! cuad's configuration: the settings sill's Intelligence page owns, plus which backend. Parsed
+//! once, at the edge. Who may call is not here: it is the process behind a connection, named by
+//! `cuad-callers.toml`.
 
-use crate::callers::CallerNames;
 use cua_desktop::BackendKind;
 use cua_run::CuaConfig;
 use porter_core::Tier;
@@ -39,8 +39,6 @@ pub struct CuadConfig {
     pub backend: BackendChoice,
     /// The tier asked of inferd for the computer-use need (`Need::ComputerUse`, class `Screen`).
     pub tier: Tier,
-    /// Which bus names are the router, the planner and the shell.
-    pub callers: CallerNames,
     /// Whether the accessibility tree is read.
     #[serde(default)]
     pub a11y: A11yChoice,
@@ -52,7 +50,6 @@ impl Default for CuadConfig {
             settings: CuaConfig::default(),
             backend: BackendChoice::Detect,
             tier: Tier::Balanced,
-            callers: CallerNames::default(),
             a11y: A11yChoice::default(),
         }
     }

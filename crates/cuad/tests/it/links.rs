@@ -23,9 +23,10 @@ use docket_core::{
     GrantAnswer, GrantAsk, GrantScope, InboundPart, InboxAsk, IntentsRequest, MessageDraft,
     SessionOpen,
 };
+use docket_dbus::callers::{CallerTable, Identity, Role};
 use docket_fake::{ScriptedConfirmer, fake_router};
 use docket_router::Router;
-use intentd::{IntentdConfig, serve_on};
+use intentd::{AcpGate, IntentdConfig, ProcRoot, serve_on_gated};
 use maskcap::FrameDigest;
 use porter_core::AppName;
 use prov::{
@@ -67,6 +68,7 @@ fn yes() -> ConfirmAnswer {
 struct Desk {
     _dir: tempfile::TempDir,
     bus: PrivateBus,
+    who: Arc<Identity>,
     _daemon: Connection,
 }
 
@@ -88,12 +90,27 @@ async fn desk(answers: Vec<ConfirmAnswer>) -> Desk {
         reviewers: None,
         agent: docket_core::AgentConfig::default(),
     };
-    serve_on(&daemon, Arc::new(router), Arc::new(config))
-        .await
-        .expect("intentd serves");
+    // Nothing is read from a real `/proc`: the tree is empty and every caller is introduced.
+    let proc_root = dir.path().join("proc");
+    let who = Arc::new(Identity::on_fixture(
+        daemon.clone(),
+        CallerTable::default(),
+        proc_root.clone(),
+    ));
+    serve_on_gated(
+        &daemon,
+        Arc::new(router),
+        Arc::new(config),
+        who.clone(),
+        &ProcRoot::Fake(proc_root),
+        AcpGate::shut(),
+    )
+    .await
+    .expect("intentd serves");
     Desk {
         _dir: dir,
         bus,
+        who,
         _daemon: daemon,
     }
 }
@@ -102,6 +119,7 @@ impl Desk {
     async fn as_companion(&self) -> Intents<DbusTransport> {
         let connection = self.bus.connect().await;
         connection.request_name(COMPANION).await.expect("a name");
+        self.who.introduce_app(&connection, COMPANION, Role::Agent);
         // The connection is kept alive by the transport.
         Intents::over(DbusTransport::new(connection))
     }
@@ -109,6 +127,7 @@ impl Desk {
     async fn cuad_connection(&self) -> Connection {
         let connection = self.bus.connect().await;
         connection.request_name(CUAD).await.expect("a name");
+        self.who.introduce_app(&connection, CUAD, Role::Cua);
         connection
     }
 

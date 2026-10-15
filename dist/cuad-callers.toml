@@ -1,0 +1,29 @@
+# Who may call cuad (org.quire.Cua1), and as what. A caller is the systemd unit behind the bus
+# connection (the bus names its process, /proc/<pid>/cgroup names the unit or app scope, and a
+# service's role goes only to the unit's main process, as the systemd manager says). Install as
+# /etc/quire/cuad-callers.toml; the user's ~/.config/quire/cuad-callers.toml is laid over it, and
+# only THIS file can give a fixed role (sheet_host, ...): the user's fixed rows are ignored. A
+# well-known bus name decides nothing: anyone can own one.
+#
+#   app org.quire.Intents    + role agent      -> intentd, the router: starts runs (Start)
+#   app org.quire.Companion1 + role agent      -> companiond, the planner: starts runs (Start)
+#   app org.quire.Shell      + role sheet_host -> sill, the shell: answers, controls, hears a run's thoughts
+#
+# A scope never carries a fixed role, so the shell is sill.service and nothing else. A process in
+# no row (an app scope, a terminal's child) is not one of the three: it may read what the bus
+# shows everyone and nothing more.
+
+[[caller]]
+app = "org.quire.Intents"
+unit = "intentd.service"
+role = "agent"
+
+[[caller]]
+app = "org.quire.Companion1"
+unit = "companiond.service"
+role = "agent"
+
+[[caller]]
+app = "org.quire.Shell"
+unit = "sill.service"
+role = "sheet_host"

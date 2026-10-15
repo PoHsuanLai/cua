@@ -2,6 +2,7 @@
 //! `org.quire.IntentProvider1` as `org.quire.Cua` with the one action `cua.run.start`.
 
 use crate::bus::{MANAGER_PATH, ManagerObject, RunObject, enveloped};
+use crate::callers::shell_owner;
 use crate::provider::{CuaProvider, ModeChoice, StartRequest};
 use cua_bus::{
     AskBody, ControlRefusal, CuaCaller, CuaTask, ProcedureUse, ReportRoute, RunOrigin,
@@ -18,6 +19,7 @@ use docket_core::{
     ContextScope, ContextSnapshot, Here, Selection, SummonAnswer, SummonOrigin, SummonSerial,
     TextTarget, Visible, WindowPrivacy,
 };
+use docket_dbus::callers::{CallerTable, Identity};
 use futures_util::StreamExt;
 use porter_core::{AppName, Count};
 use prov::{Address, Label, Labelled, RunId};
@@ -35,6 +37,10 @@ pub enum ServeError {
     /// The session bus could not be reached or the name could not be taken.
     #[error("bus: {0}")]
     Bus(String),
+    /// `cuad-callers.toml` exists and cannot be used. A daemon that dropped it would identify
+    /// fewer or more callers than it was told to.
+    #[error("cuad-callers.toml: {0}")]
+    Callers(String),
 }
 
 fn bus<E: std::fmt::Display>(error: E) -> ServeError {
@@ -151,33 +157,37 @@ where
 
 /// Says a run's private signal to the shell and to nobody else: a destination on the message
 /// keeps it from every other connection's match rules. What the model thought, what it is about
-/// to type and what the screen asked are the person's to read, not the session bus's.
+/// to type and what the screen asked are the person's to read, not the session bus's. The
+/// destination is the owner of the shell's name only while its process is the shell
+/// ([`shell_owner`]); a program that took the name says nothing to anyone, and hears nothing.
 async fn emit_to_shell<B>(
     connection: &zbus::Connection,
-    shell: &[String],
+    who: &Identity,
     path: &str,
     member: &str,
     body: &B,
 ) where
     B: serde::Serialize + zbus::zvariant::DynamicType,
 {
-    for name in shell {
-        let _ = connection
-            .emit_signal(
-                Some(name.as_str()),
-                path,
-                "org.quire.Cua1.Run",
-                member,
-                body,
-            )
-            .await;
-    }
+    let Some(shell) = shell_owner(connection, who).await else {
+        return;
+    };
+    let _ = connection
+        .emit_signal(
+            Some(shell.as_str()),
+            path,
+            "org.quire.Cua1.Run",
+            member,
+            body,
+        )
+        .await;
 }
 
 /// Says one supervisor event on the bus.
 async fn say<S: Drivable>(
     connection: &zbus::Connection,
     supervisor: &Arc<Supervisor<S>>,
+    who: &Arc<Identity>,
     event: SupervisorEvent,
 ) {
     match event {
@@ -185,7 +195,7 @@ async fn say<S: Drivable>(
             let object = RunObject {
                 supervisor: supervisor.clone(),
                 id: run.clone(),
-                names: supervisor.config().callers.clone(),
+                who: who.clone(),
             };
             let _ = connection.object_server().at(run_path(&run), object).await;
             if let Ok(path) = OwnedObjectPath::try_from(run_path(&run)) {
@@ -202,7 +212,6 @@ async fn say<S: Drivable>(
         }
         SupervisorEvent::Signal(run, signal) => {
             let path = run_path(&run);
-            let shell = supervisor.config().callers.shell.clone();
             match signal {
                 CuaSignal::StateChanged(slug) => {
                     let state = cua_bus::slug_of(&slug).unwrap_or_default();
@@ -212,26 +221,23 @@ async fn say<S: Drivable>(
                     emit_run(connection, &path, "StepStarted", &(step.0,)).await;
                 }
                 CuaSignal::ThoughtDelta(step, text) => {
-                    emit_to_shell(connection, &shell, &path, "ThoughtDelta", &(step.0, text.0))
-                        .await;
+                    emit_to_shell(connection, who, &path, "ThoughtDelta", &(step.0, text.0)).await;
                 }
                 CuaSignal::ActionProposed(step, action) => {
                     if let Ok(body) = enveloped(action) {
-                        emit_to_shell(connection, &shell, &path, "ActionProposed", &(step.0, body))
+                        emit_to_shell(connection, who, &path, "ActionProposed", &(step.0, body))
                             .await;
                     }
                 }
                 CuaSignal::ActionDone(step, outcome) => {
                     if let Ok(body) = enveloped(outcome) {
-                        emit_to_shell(connection, &shell, &path, "ActionDone", &(step.0, body))
-                            .await;
+                        emit_to_shell(connection, who, &path, "ActionDone", &(step.0, body)).await;
                     }
                 }
                 CuaSignal::AskUser(question, ask) => {
                     let ask: AskBody = ask;
                     if let Ok(body) = enveloped(ask) {
-                        emit_to_shell(connection, &shell, &path, "AskUser", &(question.0, body))
-                            .await;
+                        emit_to_shell(connection, who, &path, "AskUser", &(question.0, body)).await;
                     }
                 }
                 // The run's end is told with its `RunEnd`, once the report is out. A signal
@@ -258,7 +264,7 @@ async fn say<S: Drivable>(
             }
             let _ = connection
                 .object_server()
-                .remove::<RunObject<S>, _>(run_path(&run))
+                .remove::<RunObject<S, Identity>, _>(run_path(&run))
                 .await;
         }
         // An event this build does not know has nothing to say on the bus.
@@ -302,6 +308,7 @@ fn note_exported(exported: &mut BTreeSet<RunId>, event: &SupervisorEvent) {
 async fn relay<S: Drivable>(
     connection: zbus::Connection,
     supervisor: Arc<Supervisor<S>>,
+    who: Arc<Identity>,
     mut events: broadcast::Receiver<SupervisorEvent>,
 ) {
     let mut exported = BTreeSet::new();
@@ -309,7 +316,7 @@ async fn relay<S: Drivable>(
         match events.recv().await {
             Ok(event) => {
                 note_exported(&mut exported, &event);
-                say(&connection, &supervisor, event).await;
+                say(&connection, &supervisor, &who, event).await;
             }
             Err(broadcast::error::RecvError::Lagged(missed)) => {
                 eprintln!(
@@ -317,7 +324,7 @@ async fn relay<S: Drivable>(
                 );
                 for event in reconcile(&exported, &supervisor.runs()) {
                     note_exported(&mut exported, &event);
-                    say(&connection, &supervisor, event).await;
+                    say(&connection, &supervisor, &who, event).await;
                 }
             }
             Err(broadcast::error::RecvError::Closed) => break,
@@ -339,15 +346,44 @@ impl Drop for Serving {
     }
 }
 
+/// Who the provider answers: intentd by the system's `/proc` in the daemon, or whom a test's
+/// identity says is intentd.
+enum Answering {
+    IntentdOnly,
+    Told(Arc<Identity>),
+}
+
 /// Serves `org.quire.Cua1` (`Manager` at `/org/quire/Cua1`, a `Run` per live run at
 /// `/org/quire/Cua1/run/<id>`) and `org.quire.IntentProvider1` as `org.quire.Cua` on
-/// `connection`, with each caller's role derived from the connection. Returns once the names are
-/// ours; the connection keeps serving until the returned guard is dropped.
+/// `connection`. Each caller's role is its process's, named by `table` (`cuad-callers.toml`) over
+/// the system's `/proc`, never a bus name it owns; the provider answers intentd's unit alone.
+/// Returns once the names are ours; the connection keeps serving until the returned guard is
+/// dropped.
 pub async fn serve_on<S: Drivable>(
     connection: &zbus::Connection,
     supervisor: Arc<Supervisor<S>>,
+    table: CallerTable,
 ) -> Result<Serving, ServeError> {
-    let names = supervisor.config().callers.clone();
+    let who = Arc::new(Identity::on_system(connection.clone(), table));
+    serve_as(connection, supervisor, who, Answering::IntentdOnly).await
+}
+
+/// [`serve_on`] with callers named by `who` (a test's fixture proc root and introductions), which
+/// also says who the provider takes for intentd.
+pub async fn serve_on_with<S: Drivable>(
+    connection: &zbus::Connection,
+    supervisor: Arc<Supervisor<S>>,
+    who: Arc<Identity>,
+) -> Result<Serving, ServeError> {
+    serve_as(connection, supervisor, who.clone(), Answering::Told(who)).await
+}
+
+async fn serve_as<S: Drivable>(
+    connection: &zbus::Connection,
+    supervisor: Arc<Supervisor<S>>,
+    who: Arc<Identity>,
+    answering: Answering,
+) -> Result<Serving, ServeError> {
     // Subscribed before any name is taken, so no run is missed.
     let events = supervisor.subscribe();
     connection
@@ -356,15 +392,24 @@ pub async fn serve_on<S: Drivable>(
             CUA_PATH,
             ManagerObject {
                 supervisor: supervisor.clone(),
-                names,
+                who: who.clone(),
             },
         )
         .await
         .map_err(bus)?;
     let (provider, queue) = CuaProvider::starting(supervisor.settings().enabled).map_err(bus)?;
-    docket_client::serve_on(connection, provider, NoContext, NoSummon)
-        .await
-        .map_err(bus)?;
+    match answering {
+        Answering::IntentdOnly => {
+            docket_client::serve_on(connection, provider, NoContext, NoSummon)
+                .await
+                .map_err(bus)?;
+        }
+        Answering::Told(intentd) => {
+            docket_client::serve_on_with(connection, provider, NoContext, NoSummon, intentd)
+                .await
+                .map_err(bus)?;
+        }
+    }
     let taken = connection
         .request_name_with_flags(CUA_BUS, fdo::RequestNameFlags::DoNotQueue.into())
         .await
@@ -377,7 +422,7 @@ pub async fn serve_on<S: Drivable>(
     }
     Ok(Serving {
         tasks: vec![
-            tokio::spawn(relay(connection.clone(), supervisor.clone(), events)),
+            tokio::spawn(relay(connection.clone(), supervisor.clone(), who, events)),
             tokio::spawn(starts(supervisor, queue)),
         ],
     })
@@ -386,7 +431,9 @@ pub async fn serve_on<S: Drivable>(
 /// Serves cuad on the session bus until the bus goes away.
 pub async fn serve<S: Drivable>(supervisor: Supervisor<S>) -> Result<(), ServeError> {
     let connection = zbus::Connection::session().await.map_err(bus)?;
-    let _serving = serve_on(&connection, Arc::new(supervisor)).await?;
+    let table = crate::callers::read(&|key: &str| std::env::var(key).ok())
+        .map_err(|e| ServeError::Callers(e.to_string()))?;
+    let _serving = serve_on(&connection, Arc::new(supervisor), table).await?;
     let mut messages = zbus::MessageStream::from(&connection);
     while messages.next().await.is_some() {}
     Ok(())

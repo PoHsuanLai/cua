@@ -1,6 +1,8 @@
 //! cuad on a private bus: `org.quire.Cua1` for the shell, the planner and strangers, and the
-//! `org.quire.Cua` provider for the router. Each caller is a connection that owns the well-known
-//! name its role is configured to have, so the identity cuad derives is the real one.
+//! `org.quire.Cua` provider for the router. Every connection of a test is one process, so each
+//! caller is introduced as the app and role its process would have in cuad's callers table
+//! (`Who`); a bus name decides nothing, and a program that owns `org.quire.Shell` is only the
+//! shell if its process is.
 
 use crate::support::bus::PrivateBus;
 use crate::support::enabled;
@@ -10,7 +12,8 @@ use cua_dbus::{CUA_BUS, ManagerProxy, RunProxy};
 use cua_desktop::BackendKind;
 use cua_fake::FakePdp;
 use cua_fake::scene::{click, finish, reply, task, world};
-use cuad::{Supervisor, serve_on};
+use cuad::{SHELL_BUS, Supervisor, serve_on_with, shipped_callers};
+use docket_dbus::callers::{Identity, Role};
 use futures_util::StreamExt;
 use std::sync::Arc;
 use std::time::Duration;
@@ -20,13 +23,49 @@ struct Fixture {
     _dir: tempfile::TempDir,
     bus: PrivateBus,
     _serving: cuad::Serving,
+    who: Arc<Identity>,
     supervisor: Arc<Supervisor<cua_fake::FakeSeams>>,
     _daemon: Connection,
 }
 
-async fn named(bus: &PrivateBus, name: &str) -> Connection {
-    let connection = bus.connect().await;
-    connection.request_name(name).await.expect("a name");
+/// Who a caller's process is, as cuad's callers table would name it.
+#[derive(Clone, Copy)]
+enum Who {
+    Router,
+    Planner,
+    Shell,
+    Stranger,
+    /// A program that took `org.quire.Shell` while the shell restarted: an app, not the shell.
+    Squatter,
+}
+
+impl Who {
+    fn standing(self) -> (&'static str, Role) {
+        match self {
+            Who::Router => ("org.quire.Intents", Role::Agent),
+            Who::Planner => ("org.quire.Companion1", Role::Agent),
+            Who::Shell => ("org.quire.Shell", Role::SheetHost),
+            Who::Stranger => ("org.example.Stranger", Role::App),
+            Who::Squatter => ("org.example.Squatter", Role::App),
+        }
+    }
+
+    /// The well-known name it owns: the shell's, for the shell and for its squatter.
+    fn name(self) -> Option<&'static str> {
+        match self {
+            Who::Shell | Who::Squatter => Some(SHELL_BUS),
+            Who::Router | Who::Planner | Who::Stranger => None,
+        }
+    }
+}
+
+async fn named(fx: &Fixture, who: Who) -> Connection {
+    let connection = fx.bus.connect().await;
+    if let Some(name) = who.name() {
+        connection.request_name(name).await.expect("a name");
+    }
+    let (app, role) = who.standing();
+    fx.who.introduce_app(&connection, app, role);
     connection
 }
 
@@ -40,13 +79,20 @@ async fn fixture(
         world(BackendKind::KwinStock, script, FakePdp::allow_all()),
         enabled(),
     ));
-    let serving = serve_on(&daemon, supervisor.clone())
+    // The fixture tree is empty: nobody is identified but whom a test introduces.
+    let who = Arc::new(Identity::on_fixture(
+        daemon.clone(),
+        shipped_callers(),
+        dir.path().join("proc"),
+    ));
+    let serving = serve_on_with(&daemon, supervisor.clone(), who.clone())
         .await
         .expect("cuad serves");
     Fixture {
         _dir: dir,
         bus,
         _serving: serving,
+        who,
         supervisor,
         _daemon: daemon,
     }
@@ -94,8 +140,8 @@ fn refusal_name(error: &zbus::Error) -> String {
 #[tokio::test]
 async fn the_planner_starts_a_run_the_shell_answers_it_and_the_end_is_told_on_the_bus() {
     let fx = fixture(vec![reply(ask()), reply(click()), reply(finish())]).await;
-    let planner = named(&fx.bus, "org.quire.Companion1").await;
-    let shell = named(&fx.bus, "org.quire.Shell").await;
+    let planner = named(&fx, Who::Planner).await;
+    let shell = named(&fx, Who::Shell).await;
 
     let manager_p = manager(&planner).await;
     assert_eq!(manager_p.backend().await.unwrap(), "kwin_stock");
@@ -148,7 +194,7 @@ async fn the_planner_starts_a_run_the_shell_answers_it_and_the_end_is_told_on_th
     assert_eq!(budget.body.limits, cua_bus::RunBudget::PROPOSED);
 
     // Who may answer: the shell alone.
-    let stranger = bus_stranger(&fx.bus).await;
+    let stranger = named(&fx, Who::Stranger).await;
     let run_x = run_proxy(&stranger, &path).await;
     let refused = run_x.answer(1, "x").await.unwrap_err();
     assert_eq!(refusal_name(&refused), "org.quire.Cua1.Error.NotPermitted");
@@ -217,16 +263,12 @@ async fn the_planner_starts_a_run_the_shell_answers_it_and_the_end_is_told_on_th
     assert!(fx.supervisor.runs().is_empty());
 }
 
-async fn bus_stranger(bus: &PrivateBus) -> Connection {
-    named(bus, "org.example.Stranger").await
-}
-
 #[tokio::test]
 async fn start_and_stop_are_refused_to_the_wrong_callers_with_their_error_names() {
     let fx = fixture(vec![reply(ask())]).await;
-    let shell = named(&fx.bus, "org.quire.Shell").await;
-    let stranger = bus_stranger(&fx.bus).await;
-    let planner = named(&fx.bus, "org.quire.Companion1").await;
+    let shell = named(&fx, Who::Shell).await;
+    let stranger = named(&fx, Who::Stranger).await;
+    let planner = named(&fx, Who::Planner).await;
     for (who, name) in [(&shell, "the shell"), (&stranger, "a stranger")] {
         let refused = manager(who)
             .await
@@ -319,7 +361,7 @@ async fn perform(
 #[tokio::test]
 async fn the_router_starts_a_run_through_the_provider_and_gets_its_id() {
     let fx = fixture(vec![reply(ask())]).await;
-    let router = named(&fx.bus, "org.quire.Intents1").await;
+    let router = named(&fx, Who::Router).await;
     let window = docket_core::Value::Entity(prov::EntityId {
         app: porter_core::AppName::parse("org.quire.Cua").unwrap(),
         kind: prov::EntityKind::parse("desktop.window").unwrap(),
@@ -396,7 +438,7 @@ async fn the_router_starts_a_run_through_the_provider_and_gets_its_id() {
     );
 
     // Only the router calls a provider.
-    let stranger = bus_stranger(&fx.bus).await;
+    let stranger = named(&fx, Who::Stranger).await;
     let refused = perform(&stranger, &invocation(&[], planner_actor())).await;
     assert!(refused.is_err(), "{refused:?}");
 }
@@ -414,9 +456,9 @@ impl ParseRun for str {
 #[tokio::test]
 async fn what_the_model_proposes_and_the_screen_asks_reaches_the_shell_and_no_one_else() {
     let fx = fixture(vec![reply(ask()), reply(finish())]).await;
-    let planner = named(&fx.bus, "org.quire.Companion1").await;
-    let shell = named(&fx.bus, "org.quire.Shell").await;
-    let stranger = bus_stranger(&fx.bus).await;
+    let planner = named(&fx, Who::Planner).await;
+    let shell = named(&fx, Who::Shell).await;
+    let stranger = named(&fx, Who::Stranger).await;
     let path = zbus::zvariant::OwnedObjectPath::try_from("/org/quire/Cua1/run/r_1").unwrap();
     let mut shell_asked = run_proxy(&shell, &path)
         .await
@@ -453,6 +495,67 @@ async fn what_the_model_proposes_and_the_screen_asks_reaches_the_shell_and_no_on
             .is_err(),
         "the proposed action is the shell's"
     );
+    fx.supervisor
+        .stop_all(cua_bus::CuaCaller::Shell)
+        .await
+        .unwrap();
+}
+
+#[tokio::test]
+async fn a_program_that_took_the_shells_name_is_not_the_shell() {
+    let fx = fixture(vec![reply(ask()), reply(finish())]).await;
+    let planner = named(&fx, Who::Planner).await;
+    let squatter = named(&fx, Who::Squatter).await;
+    let path = zbus::zvariant::OwnedObjectPath::try_from("/org/quire/Cua1/run/r_1").unwrap();
+    let spy = run_proxy(&squatter, &path).await;
+    let mut spy_asked = spy.receive_ask_user().await.unwrap();
+    let mut spy_proposed = spy.receive_action_proposed().await.unwrap();
+    let mut spy_thoughts = spy.receive_thought_delta().await.unwrap();
+    let mut spy_states = spy.receive_phase_changed().await.unwrap();
+
+    // Owning the name makes it neither the shell nor the planner.
+    let refused = manager(&squatter)
+        .await
+        .start(&start_body(task()))
+        .await
+        .unwrap_err();
+    assert_eq!(refusal_name(&refused), "org.quire.Cua1.Error.NotPermitted");
+    assert_eq!(fx.supervisor.started(), 0);
+
+    manager(&planner)
+        .await
+        .start(&start_body(task()))
+        .await
+        .expect("a run");
+    // The run reaches its question, which only the shell is told.
+    loop {
+        let state = tokio::time::timeout(Duration::from_secs(10), spy_states.next())
+            .await
+            .expect("the run asks")
+            .expect("a signal");
+        if state.args().unwrap().state == "waiting_for_user" {
+            break;
+        }
+    }
+    let quiet = Duration::from_millis(500);
+    assert!(
+        tokio::time::timeout(quiet, spy_asked.next()).await.is_err(),
+        "the question is the shell's, not the name's owner's"
+    );
+    assert!(
+        tokio::time::timeout(quiet, spy_proposed.next())
+            .await
+            .is_err(),
+        "the proposed action is the shell's"
+    );
+    assert!(
+        tokio::time::timeout(quiet, spy_thoughts.next())
+            .await
+            .is_err(),
+        "the thoughts are the shell's"
+    );
+    let refused = spy.answer(1, "yes").await.unwrap_err();
+    assert_eq!(refusal_name(&refused), "org.quire.Cua1.Error.NotPermitted");
     fx.supervisor
         .stop_all(cua_bus::CuaCaller::Shell)
         .await

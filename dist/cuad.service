@@ -12,6 +12,10 @@
 # and on every change ("settings: <path>: could not be read"), not skipped silently. Until a
 # file lists an app, no app is on (`cua.apps` starts empty), so an installed unit with no
 # settings file does nothing.
+#
+# Who may call the daemon: /etc/quire/cuad-callers.toml (dist/cuad-callers.toml) names the units
+# of the router, the planner and the shell. The person's own file under their home is out of
+# reach here, which only narrows it: a user file can never give a fixed role anyway.
 [Unit]
 Description=Quire computer-use daemon (org.quire.Cua1)
 

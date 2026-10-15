@@ -23,7 +23,7 @@ glow, revoke, suspend and mode wire codes (pinned against the generated protocol
 `wayland` feature), `SeatCaps::for_isolation` (S10: stock offers no Unicode text path), `RegionMap`,
 `MaskReason::code`, `mode_support` and `choose_mode`, `CuaConfig` with `SETTING_ROWS`, `RunPhase`
 facts, the `ModeSupport` and `Modes`/`Backend` wire strings, `CuaOutcome::status`, `permits`,
-`report_draft`, `ControlRefusal` names, `cuad::guard`, `CallerNames::classify`, `manifest_for`,
+`report_draft`, `ControlRefusal` names, `cuad::guard`, `cuad::classify`, `manifest_for`,
 `record_of`, `capture_kind`, `CuadConfig::from_toml`, and the fakes other than the stubs above; and,
 from the w4-cua fill: the a11y-tree functions (`prune`, `render`, `diff`, `secret_rects`,
 `resolve`), maskcap (`apply_masks`, `digest`, `settle`, `pixel_diff`), `Keymap::parse_xkb`, cua-run
@@ -159,8 +159,8 @@ docket `InProcess` feature ask (it is behind `in_process`), and the porter `Step
 - `cua.run.start` returns the run id once the run has begun (`latency = long`: it waits for the
   consent and the lease); its report arrives as a message. Its manifest is `reach = hidden` while
   `cua.enabled = off` and `offered` once on (`manifest_for`).
-- `Cua1` caller classes `Router`, `Companion`, `Shell`, `Other`, derived from bus-name ownership
-  (`CallerNames`); `Start` is the router's and the planner's, `Answer` the shell's alone.
+- `Cua1` caller classes `Router`, `Companion`, `Shell`, `Other`, derived from the process behind the
+  connection (CUA-06 below); `Start` is the router's and the planner's, `Answer` the shell's alone.
 - `Emulation::{Running, Stopped}` on `AgentSeat` (suspend and resume in one method, six methods in
   all); on stock it keeps cuad's input out of a confirmation.
 - `seat_input::region` is a public module (its `GlobalPoint` is named nowhere else).
@@ -256,7 +256,7 @@ the machine under it. What was decided:
   queued when it was first polled). `cua_fake::scene` holds the scenes the tests share.
 - **Tests.** `cuad/tests/it/links.rs` runs `IntentsGate` and `DaemonLinks` against a real intentd on a
   private bus (docket's fakes behind it) and a real memory service (almanac's fakes);
-  `cuad/tests/it/serve.rs` runs `serve_on` on a private bus with callers that own the role names;
+  `cuad/tests/it/serve.rs` runs `serve_on_with` on a private bus with callers introduced as their process's app and role;
   `cuad/tests/it/{supervisor,inflight}.rs` run the supervisor over the fakes with paused time.
 - **Not done:** `CuaProvider` offers no `dry_run`, search or suggest; procedures
   (`ProcedureUse::{Hint, Replay}`) are carried and not used; `data_in` is not sent to the model;
@@ -519,3 +519,34 @@ a real desktop. The model-time figures are wall time on a shared machine and are
   them or the tasks say what they measure. See `eval/reports/cloud-comparison.md`.
 - The run machine counts one micro-dollar a reply from a provider's servers, so every cloud task gets
   a budget (`Lot::spend_microusd`); the money is inferd's `[ai.spend]` cap.
+
+## CUA-06: who is calling is a process, not a name (2026-10-16)
+
+- **Finding.** cuad classified a caller by the well-known name its connection owned
+  (`CallerNames`: `org.quire.Intents1`, `org.quire.Companion1`, `org.quire.Shell`). Any local
+  program can own a name, so one that took `org.quire.Shell` while the shell restarted was the
+  shell: it could answer confirmations, stop runs, and (through `emit_to_shell`) read a run's
+  thoughts, proposed actions and questions.
+- **Change.** The caller is the process behind the message's sender, as docket does since
+  `187751f`: `docket_dbus::callers::Identity` (porter's `ProcCallers`) names the unit or app scope
+  from `/proc/<pid>/cgroup` and the systemd manager's main pid, and `cuad-callers.toml`
+  (`dist/cuad-callers.toml`, laid over by the person's file; only the system's can give a fixed
+  role) gives the role. The router is docket's `INTENTD` (`org.quire.Intents`, `agent`), the planner
+  is `org.quire.Companion1` (`agent`), the shell is docket's `SHELL` (`org.quire.Shell`,
+  `sheet_host`); everything else, an app scope called like any of them included, is `Other`.
+  `CallerNames` and `CuadConfig::callers` are gone (an old `callers` key in `cuad.toml` is ignored).
+- **Shell-only signals** (`ThoughtDelta`, `ActionProposed`, `ActionDone`, `AskUser`) go to the owner
+  of `org.quire.Shell` only if that owner's process holds `SHELL`; otherwise nothing is emitted.
+- **Provider.** `org.quire.Cua` still answers intentd's unit alone (`docket_client::serve_on`).
+  `serve_on_with` is the test seam: one `Identity` for the objects and the provider.
+- **API.** `serve_on(connection, supervisor, table)` takes the callers table (`read_callers`);
+  `serve_on_with(connection, supervisor, identity)` is the seam. No environment variable or feature
+  switches the proc root in the shipped binary.
+- **Pins.** porter `7911dee`, stoker `f42e737`, and docket `187751f` (with almanac `8a07b35`, the one
+  docket pins) move together: `Identity` exists from docket `187751f`. `docket-dbus` is a new
+  direct dependency of cuad.
+- **Tests.** The classify table, the shipped file's three rows, a squatter of the shell's name (not
+  the shell: its Start and Answer are refused and it hears no shell-only signal); the links and serve
+  tests introduce their callers.
+- **Open.** An installed cuad needs `/etc/quire/cuad-callers.toml`; without it nobody is identified
+  and every caller is `Other` (fail closed). The install step is the packager's.

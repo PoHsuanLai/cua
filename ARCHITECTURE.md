@@ -33,8 +33,8 @@ picture), section 6 (copy the recipe).
 | `cua-fake` | test only: `FakeSeat`, `FakeEis`, `FakeCapture`, `FakeDesktop`, `FakeA11y`, `ScriptedModel`, `FakePdp`, `MemoryEvents`, `FixedClock`, `FakeSeams`, `run_harness`, and `scene` (a window, frames, a world, a task) | none (`FakeEis`: reis, tokio) |
 | `cua-eval` | the computer-use model eval (section 8): fake `surface`s drawn as pixels, a `Stage` shared by an `EvalSeat`, an `EvalCapture` and an `EvalDesktop`, a reference gate, `ScriptModel` (lines of moves) and `ProviderModel` (a model on a local engine, over stoker's `CuaSession`), `Corpus` (`eval/surfaces`, `eval/tasks`), verdicts, rates with Wilson bounds, the markdown report, and the `cua-eval` binary | the binary: files; `live`: loopback HTTP to an engine the caller started |
 | `cua-eval-cloud` | the eval against a hosted model (section 8): `InferdProvider` (a stoker `Provider` whose turns are inferd chat turns, `Need::Llm` with images on class `screen`), `request` (a stoker turn as an inferd `ChatRequest`), `Watch` (turns, tokens, a spend refusal), `isolation` (what this process can reach), and the `cua-eval-cloud` binary | the bus to inferd (the key stays in accountd) |
-| `cua-host` | the run executor as a library: `Supervisor` (a task per run), `Drivable`, `SupervisorEvent`, `IntentsGate`, `DaemonLinks`, `record_of`, `guard`, `CallerNames`, `CuadConfig`, `SystemClock`, and the settings read from text: `read`, `Locator`, `SettingsFeed`, `SCHEMA`, `Supervisor::{settings, apps, apply_settings, follow}`. No backend, bus or file watch | docket-client and almanac-client without `dbus` |
-| `cuad` | the daemon and its library: `SeatBackend`, `CaptureBackend`, `InferdCuaModel`, `Links` (the three daemon links over one connection), `CuaProvider` (`org.quire.Cua`), `SystemSeams`, `SystemDesktop`, `SystemA11y`, `WaylandPair`, `serve` and `serve_on`, `desktop_keymap` (the keymap built once at start: chordkit's conventions, plus the person's keycap overrides with the `keycap` feature). The binary serves both bus names; the person's settings: `SettingsWatch` (the directory watch on `cua/settings.toml`), `cua-host`'s names re-exported, `SCHEMA` (`dist/settings/cua.settings.toml`), and `--write-schema` | everything |
+| `cua-host` | the run executor as a library: `Supervisor` (a task per run), `Drivable`, `SupervisorEvent`, `IntentsGate`, `DaemonLinks`, `record_of`, `guard`, `CuadConfig`, `SystemClock`, and the settings read from text: `read`, `Locator`, `SettingsFeed`, `SCHEMA`, `Supervisor::{settings, apps, apply_settings, follow}`. No backend, bus or file watch | docket-client and almanac-client without `dbus` |
+| `cuad` | the daemon and its library: `SeatBackend`, `CaptureBackend`, `InferdCuaModel`, `Links` (the three daemon links over one connection), `CuaProvider` (`org.quire.Cua`), `SystemSeams`, `SystemDesktop`, `SystemA11y`, `WaylandPair`, `serve`, `serve_on` and `serve_on_with` (who is calling is the process behind the connection, named by `cuad-callers.toml` through docket-dbus's `Identity`; never a bus name), `classify`, `desktop_keymap` (the keymap built once at start: chordkit's conventions, plus the person's keycap overrides with the `keycap` feature). The binary serves both bus names; the person's settings: `SettingsWatch` (the directory watch on `cua/settings.toml`), `cua-host`'s names re-exported, `SCHEMA` (`dist/settings/cua.settings.toml`), and `--write-schema` | everything |
 
 Allowed direct edges between our own crates (checked by `scripts/check-boundary.sh`;
 dev-dependencies are outside it):
@@ -93,7 +93,7 @@ only; the pure set never reaches an effect crate; `wayland-client` is behind the
 | `cua-fake` | `clock`, `seat`, `eis`, `capture`, `desktop`, `a11y`, `model`, `gate`, `events`, `harness`, `scene` |
 | `cua-eval` | `surface/{def, state, render, access}`, `keys`, `stage`, `world`, `gate`, `script`, `task`, `corpus`, `verdict`, `run/{arena, timed, record}`, `eval`, `metrics`, `report`, `live`, `main` |
 | `cua-eval-cloud` | `watch`, `request`, `entry`, `isolation`, `provider`, `main` |
-| `cua-host` | `lock`, `clock`, `config`, `callers`, `guard`, `gate`, `links`, `settings` (`keys`, `apps`, `read`, `locate`) < `supervisor`, `drive`, `events` |
+| `cua-host` | `lock`, `clock`, `config`, `guard`, `gate`, `links`, `settings` (`keys`, `apps`, `read`, `locate`) < `supervisor`, `drive`, `events` |
 | `cuad` | `backend`, `model`, `connect`, `provider`, `watch` < `bus`, `desktop`, `system`, `serve` |
 
 ## 3. One home per concept
@@ -230,7 +230,9 @@ action it leads to is gated like any other.
   only through fakes; the live checks are the dev scripts).
 - The `dist/` units carry their sandbox lines (`cuad.service`: Unix sockets only, no network, no
   files, no devices, no capabilities); the D-Bus activation files name the two bus names cuad
-  owns (`org.quire.Cua1`, `org.quire.Cua`).
+  owns (`org.quire.Cua1`, `org.quire.Cua`). `dist/cuad-callers.toml` (installed as
+  `/etc/quire/cuad-callers.toml`) names the three units cuad takes for the router, the planner and
+  the shell; a well-known name never decides who is calling.
 
 ## 8. The computer-use model eval
 

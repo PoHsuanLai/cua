@@ -11,7 +11,7 @@
 //!
 //! - the supervisor, its drive loop ([`Drivable`]) and its event stream ([`SupervisorEvent`]);
 //! - the safety tables the supervisor applies to every start and every call ([`guard`],
-//!   [`CuadConfig`], [`CallerNames`]);
+//!   [`CuadConfig`]);
 //! - the links over docket's and almanac's transports: the router's gate ([`IntentsGate`]), the
 //!   message path and the record sink ([`DaemonLinks`], [`record_of`]);
 //! - the person's settings, read from text ([`read`], [`Locator`]) and followed through a
@@ -42,7 +42,6 @@
 //! assert!(supervisor.runs().is_empty());
 //! ```
 
-mod callers;
 mod clock;
 mod config;
 mod drive;
@@ -54,7 +53,6 @@ mod lock;
 mod settings;
 mod supervisor;
 
-pub use callers::CallerNames;
 pub use clock::SystemClock;
 pub use config::{A11yChoice, BackendChoice, ConfigError, CuadConfig};
 pub use drive::Drivable;
