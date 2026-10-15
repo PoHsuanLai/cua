@@ -51,6 +51,32 @@ impl RunBudget {
     };
 }
 
+fn lesser<T: PartialOrd + Copy>(a: T, b: T) -> T {
+    if a < b { a } else { b }
+}
+
+impl RunBudget {
+    /// These limits, held to `cap` (the person's own settings): no limit above the cap. A stall
+    /// limit of zero would switch stall detection off, so it takes the cap's instead.
+    pub fn capped_by(self, cap: RunBudget) -> RunBudget {
+        let stall_frames = if self.stall_frames.0 == 0 {
+            cap.stall_frames
+        } else if cap.stall_frames.0 == 0 {
+            self.stall_frames
+        } else {
+            lesser(self.stall_frames, cap.stall_frames)
+        };
+        RunBudget {
+            steps: lesser(self.steps, cap.steps),
+            active: lesser(self.active, cap.active),
+            stall_frames,
+            actions_per_min: lesser(self.actions_per_min, cap.actions_per_min),
+            model_failures: lesser(self.model_failures, cap.model_failures),
+            spend: lesser(self.spend, cap.spend),
+        }
+    }
+}
+
 /// What a run has used so far (the `Budget` property's `used`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct BudgetUse {
@@ -95,6 +121,24 @@ mod tests {
             serde_json::from_str::<RunBudget>(&json).unwrap(),
             RunBudget::PROPOSED
         );
+    }
+
+    #[test]
+    fn a_budget_is_held_to_the_cap_and_a_zero_stall_limit_takes_the_caps() {
+        let greedy = RunBudget {
+            steps: Count(1_000_000),
+            active: Ms(u32::MAX),
+            stall_frames: Count(0),
+            actions_per_min: Count(u32::MAX),
+            model_failures: Count(9),
+            spend: MicroUsd(u64::MAX),
+        };
+        assert_eq!(greedy.capped_by(RunBudget::PROPOSED), RunBudget::PROPOSED);
+        let modest = RunBudget {
+            steps: Count(5),
+            ..RunBudget::PROPOSED
+        };
+        assert_eq!(modest.capped_by(RunBudget::PROPOSED).steps, Count(5));
     }
 
     #[test]

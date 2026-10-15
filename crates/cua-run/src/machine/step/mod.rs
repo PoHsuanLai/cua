@@ -117,6 +117,10 @@ fn dispatch(run: &mut Run, fx: &mut Vec<RunEffect>, input: RunInput, at: Stamp) 
         RunInput::GrantFailed(_) => {
             finish_plain(run, fx, CuaOutcome::Blocked(BlockedOn::ConsentDenied))
         }
+        // The window the desktop leased is not the app the consent and the allow-list were for.
+        RunInput::Leased(grant) if grant.window.app != run.task.app => {
+            leased_elsewhere(run, fx, grant.id);
+        }
         RunInput::Leased(grant) => leased(run, fx, grant.id),
         RunInput::LeaseRefused(_) => {
             finish_plain(run, fx, CuaOutcome::Blocked(BlockedOn::LeaseRefused))
@@ -179,6 +183,15 @@ fn leased(run: &mut Run, fx: &mut Vec<RunEffect>, lease: cua_desktop::LeaseId) {
     })));
     fx.push(RunEffect::Glow(cua_desktop::GlowState::Working));
     observe(run, fx, StepIndex(1), FrameWant::Now, AlsoContext::Yes);
+}
+
+fn leased_elsewhere(run: &mut Run, fx: &mut Vec<RunEffect>, lease: cua_desktop::LeaseId) {
+    if run.phase != RunPhase::Leasing {
+        return;
+    }
+    // Held for a moment so the finish gives it back.
+    run.lease = Some(lease);
+    finish_plain(run, fx, CuaOutcome::Blocked(BlockedOn::LeaseRefused));
 }
 
 fn over_budget(run: &Run, kind: RunBudgetKind) -> bool {

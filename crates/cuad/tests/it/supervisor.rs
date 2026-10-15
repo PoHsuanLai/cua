@@ -428,3 +428,26 @@ async fn pausing_during_a_confirmation_takes_the_check_back() {
     until(&sup, &id, |p| matches!(p, RunPhase::Paused(_))).await;
     assert_eq!(sup.gate().closes(), 1, "the sheet comes down");
 }
+
+#[tokio::test(start_paused = true)]
+async fn the_callers_body_is_a_request_the_app_is_the_windows_and_limits_stay_in_the_settings() {
+    let sup = supervisor(STOCK, vec![reply(finish())], FakePdp::allow_all());
+    let mut elsewhere = task();
+    elsewhere.app = porter_core::AppName::parse("org.gnome.Terminal").unwrap();
+    assert!(matches!(
+        sup.start(CuaCaller::Companion, elsewhere).await,
+        Err(ControlRefusal::BadTask)
+    ));
+    let mut greedy = task();
+    greedy.budget.steps = porter_core::Count(1_000_000);
+    greedy.budget.stall_frames = porter_core::Count(0);
+    let id = sup.start(CuaCaller::Companion, greedy).await.unwrap();
+    let view = sup.view(&id).expect("live");
+    assert_eq!(view.task.budget, cua_bus::RunBudget::PROPOSED);
+    assert_eq!(
+        view.task.goal.label.integrity,
+        prov::Integrity::Untrusted,
+        "the planner's words are not the person's"
+    );
+    sup.stop_all(CuaCaller::Shell).await.unwrap();
+}

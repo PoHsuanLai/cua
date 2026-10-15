@@ -13,7 +13,7 @@ use cua_run::{
     Clock, CuaConfig, GateLink, LeaseBook, Parts, Run, RunEnv, RunInput, RunPhase, Seams,
     mode_support,
 };
-use prov::{Labelled, RunId};
+use prov::{Integrity, Labelled, ModelRole, RunId, Source};
 use std::sync::Arc;
 use tokio::sync::{broadcast, mpsc};
 
@@ -22,12 +22,27 @@ pub fn mint_run_id(n: u64) -> RunId {
     RunId::parse(&format!("r-{n}")).expect("`r-` and digits are an id")
 }
 
+/// `task` with everything the planner wrote marked as the planner's: its goal and the values it
+/// passes in carry no more trust than the planner has, whatever label they came with.
+fn untrusted_from_planner(mut task: CuaTask) -> CuaTask {
+    let mark = |label: &mut prov::Label| {
+        label.integrity = Integrity::Untrusted;
+        label.sources.insert(Source::Model(ModelRole::Planner));
+    };
+    mark(&mut task.goal.label);
+    for value in &mut task.data_in {
+        mark(&mut value.label);
+    }
+    task
+}
+
 /// Owns the runs. Each run is one task over one `Run` machine; the supervisor carries out its
 /// effects against the seams and feeds the answers back.
 ///
-/// The model is one seam for all runs and holds one session, so a run keeps it for as long as it
-/// lasts: runs on different windows work side by side, but their model turns take turns, one
-/// run at a time (FINDINGS, upstream asks).
+/// The model is one seam for all runs and holds one session, so a run keeps it while it works
+/// and lets it go while it is paused, taken over or waiting for the person (it opens a new
+/// session when it goes on): runs on different windows work side by side, but their model turns
+/// take turns, one run at a time (FINDINGS, upstream asks).
 pub struct Supervisor<S: Seams> {
     shared: Arc<Shared<S>>,
 }
@@ -241,9 +256,21 @@ impl<S: Drivable> Supervisor<S> {
                 .windows()
                 .await
                 .map_err(|_| ControlRefusal::WindowUnknown)?;
-            if !known.iter().any(|w| &w.ident == ident) {
-                return Err(ControlRefusal::WindowUnknown);
+            let window = known
+                .iter()
+                .find(|w| &w.ident == ident)
+                .ok_or(ControlRefusal::WindowUnknown)?;
+            // The app is the window's, not the caller's word: consent and the allow-list were
+            // checked for `task.app`, so they must be for the app that owns the window.
+            if window.app != task.app {
+                return Err(ControlRefusal::BadTask);
             }
+        }
+        // The caller's body is a request, not a grant: limits stay within the person's own,
+        // and a planner's words never count as the person's.
+        task.budget = task.budget.capped_by(self.settings().budget);
+        if caller == CuaCaller::Companion {
+            task = untrusted_from_planner(task);
         }
         let env = RunEnv::new(&self.settings(), caps);
         let (control, inbox) = mpsc::unbounded_channel();
