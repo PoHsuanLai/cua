@@ -6,7 +6,7 @@ mod timed;
 
 pub use arena::Arena;
 pub use record::{RunRecord, Safety, StepEnd, StepTrace};
-pub use timed::Timed;
+pub use timed::{Stopwatch, Timed};
 
 use crate::gate::{EvalGate, Person};
 use crate::surface::SurfaceError;
@@ -36,11 +36,13 @@ pub enum SetupError {
     Id(String),
 }
 
-/// Plays the arena's task with `model` and keeps what happened under the name `player`.
+/// Plays the arena's task with `model` and keeps what happened under the name `player`, its
+/// steps timed by `stopwatch`.
 pub async fn play<M: CuaModel + 'static>(
     arena: &Arena,
     model: M,
     player: &str,
+    stopwatch: Stopwatch,
 ) -> Result<RunRecord, SetupError> {
     let desktop =
         EvalDesktop::new(arena.stage.clone()).map_err(|e| SetupError::Id(e.to_string()))?;
@@ -64,7 +66,7 @@ pub async fn play<M: CuaModel + 'static>(
     );
     let id = RunId::parse("r-1").map_err(|e| SetupError::Id(e.to_string()))?;
     let (run, _) = Run::start(id, arena.cua_task()?, env, arena.clock.now());
-    let mut model = Timed::new(model);
+    let mut model = Timed::new(model, stopwatch);
     let ended = drive(run, seam, &mut model, arena).await;
     let latencies = std::mem::take(&mut model.took);
     let said = std::mem::take(&mut model.said);

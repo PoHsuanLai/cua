@@ -5,10 +5,22 @@ use cua_run::{CuaModel, CuaModelError, FrameAttachment, StepEvent, StepSink};
 use porter_infer::{CuaBegin, CuaStepReply, CuaStepRequest, ServedBy, TokenUsage, TreeText};
 use std::time::Instant;
 
+/// Whether a run's steps are timed. A script or a cassette is a made-up run: what its steps
+/// take is the harness's time on a busy machine, not a model's, so it is not measured and the
+/// report it makes is the same every time.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Stopwatch {
+    /// The wall clock: a live model.
+    Wall,
+    /// Every step takes no time: a script or a cassette.
+    Still,
+}
+
 /// A model with a stopwatch: how long each step took it.
 #[derive(Debug)]
 pub struct Timed<M> {
     inner: M,
+    stopwatch: Stopwatch,
     pub(super) took: Vec<u64>,
     pub(super) said: String,
     pub(super) moves: Vec<String>,
@@ -16,10 +28,11 @@ pub struct Timed<M> {
 }
 
 impl<M> Timed<M> {
-    /// Wraps `inner`.
-    pub fn new(inner: M) -> Timed<M> {
+    /// Wraps `inner`, timing its steps by `stopwatch`.
+    pub fn new(inner: M, stopwatch: Stopwatch) -> Timed<M> {
         Timed {
             inner,
+            stopwatch,
             took: Vec::new(),
             said: String::new(),
             moves: Vec::new(),
@@ -47,8 +60,11 @@ impl<M: CuaModel> CuaModel for Timed<M> {
             .inner
             .step(request, frame, &mut Tap(sink, &mut heard))
             .await;
-        self.took
-            .push(u64::try_from(began.elapsed().as_millis()).unwrap_or(u64::MAX));
+        let took = match self.stopwatch {
+            Stopwatch::Wall => u64::try_from(began.elapsed().as_millis()).unwrap_or(u64::MAX),
+            Stopwatch::Still => 0,
+        };
+        self.took.push(took);
         if let Err(error) = &reply {
             self.thoughts
                 .push(format!("[model failed: {error}] {}", brief(Some(&heard))));

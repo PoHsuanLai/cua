@@ -4,7 +4,7 @@
 use crate::corpus::Corpus;
 use crate::live::{Plan, ProviderModel};
 use crate::report::Check;
-use crate::run::{RunRecord, SetupError, play};
+use crate::run::{RunRecord, SetupError, Stopwatch, play};
 use crate::script::ScriptModel;
 use crate::task::{Engines, Served, TaskDef};
 use crate::verdict::Verdict;
@@ -92,7 +92,13 @@ pub async fn run_scripted(
             if let Some(served) = served_by(script.served)? {
                 model = model.served_by(served);
             }
-            let record = play(&arena, model, &format!("script:{}", script.name)).await?;
+            let record = play(
+                &arena,
+                model,
+                &format!("script:{}", script.name),
+                Stopwatch::Still,
+            )
+            .await?;
             checks.push(Check {
                 task: task.id.clone(),
                 script: script.name.clone(),
@@ -121,7 +127,7 @@ pub async fn run_cassette(
         let arena = corpus.arena(task)?;
         let model = ScriptModel::new(arena.stage.clone(), &take.steps)
             .map_err(|e| SetupError::Id(e.to_string()))?;
-        let record = play(&arena, model, &take.player).await?;
+        let record = play(&arena, model, &take.player, Stopwatch::Still).await?;
         checks.push(Check {
             task: task.id.clone(),
             script: take.player.clone(),
@@ -197,7 +203,7 @@ pub async fn run_live_until<P: Provider + 'static>(
             };
             let arena = corpus.arena(&task)?;
             let model = ProviderModel::new(provider.clone(), plan.clone(), lot.served.clone());
-            records.push(play(&arena, model, lot.player).await?);
+            records.push(play(&arena, model, lot.player, Stopwatch::Wall).await?);
         }
     }
     let last = halt(&records);
