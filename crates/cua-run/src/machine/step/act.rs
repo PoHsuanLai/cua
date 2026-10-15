@@ -13,6 +13,7 @@ use crate::observation::CursorObs;
 use cua_action::{CuaAction, Point, WindowSpace};
 use cua_bus::{
     ActionOutcome, ActionResult, CuaOutcome, FailReason, LocalRefusal, Refusal, RunBudgetKind,
+    TargetedAction,
 };
 use cua_desktop::Stamp;
 use maskcap::{DamageAt, FrameWant, Settle, settle};
@@ -137,6 +138,31 @@ pub(super) fn inject_failed(run: &mut Run, fx: &mut Vec<RunEffect>, error: SeatE
         }
         other => ActionResult::Failed(other),
     };
+    end_head(run, fx, n, head, result);
+}
+
+/// The window moved under the aim: the action was not injected, the model is told, and the run
+/// looks again.
+pub(super) fn state_moved(run: &mut Run, fx: &mut Vec<RunEffect>) {
+    let RunPhase::Acting(n) = run.phase else {
+        return;
+    };
+    let Some(head) = run.pending.actions.pop_front() else {
+        finish_plain(run, fx, CuaOutcome::Failed(FailReason::Input));
+        return;
+    };
+    let result = ActionResult::Refused(Refusal::Local(LocalRefusal::StateMoved));
+    end_head(run, fx, n, head, result);
+}
+
+/// The head action ended without running: the rest of the batch is dropped and the run looks.
+fn end_head(
+    run: &mut Run,
+    fx: &mut Vec<RunEffect>,
+    n: StepIndex,
+    head: TargetedAction,
+    result: ActionResult,
+) {
     action_ended(
         run,
         fx,

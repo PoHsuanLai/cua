@@ -139,9 +139,11 @@ fn window_ident(run: &Run) -> Option<&cua_desktop::ToplevelIdent> {
 
 /// What the desktop says on its own: the kill chord ends every run, a revoked lease or a closed
 /// window ends this one, and physical input on a shared seat pauses a run that asked to be
-/// paused by it. A moved or resized window changes nothing here: the executor reads the window
-/// again before every injection, tells the seat where the window is (`AgentSeat::rebind`) and
-/// refuses input aimed at another size.
+/// paused by it. A moved or resized window changes nothing here, on purpose: the executor
+/// reads the window again before every injection, compares it with what the last look saw
+/// (owner, frame, focus), and answers `RunInput::StateMoved` instead of injecting; the machine
+/// refuses the action, drops the batch and looks again. The same read tells the seat where the
+/// window is (`AgentSeat::rebind`) so the pointer region follows it.
 pub(crate) fn desktop(run: &mut Run, fx: &mut Vec<RunEffect>, event: DesktopEvent) {
     match event {
         DesktopEvent::KillChord => {

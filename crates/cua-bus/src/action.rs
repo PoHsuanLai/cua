@@ -24,6 +24,9 @@ pub enum LocalRefusal {
     OutsideLease,
     /// The action would type into a secret field.
     SecretField,
+    /// The window was not what the action was aimed at when it came to be injected (moved,
+    /// resized, refocused or taken over): nothing was injected.
+    StateMoved,
 }
 
 /// Who refused an action.

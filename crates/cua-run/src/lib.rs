@@ -76,7 +76,7 @@ pub use effect_class::classify_effect;
 pub use exec::{Collected, Deadline, Exec, Outlet, Seam, deadline_of};
 pub use lease_book::{LeaseBook, LeaseHeld, Slot, SlotState};
 pub use machine::effect::{CuaSignal, HintSource, RunEffect};
-pub use machine::input::{CheckResult, ModelReply, RunInput};
+pub use machine::input::{CheckResult, ModelReply, Moved, RunInput};
 pub use machine::phase::{ActionQueue, RunPhase};
 pub use machine::run::{Run, RunEnv};
 pub use machine::track::{CaptureTries, Held, RunTrack, SettleWatch};

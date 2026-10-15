@@ -216,6 +216,10 @@ fn action_results_pin_their_json() {
             ActionResult::Refused(Refusal::Local(LocalRefusal::SecretField)),
             r#"{"kind":"refused","v":{"kind":"local","v":"secret_field"}}"#,
         ),
+        (
+            ActionResult::Refused(Refusal::Local(LocalRefusal::StateMoved)),
+            r#"{"kind":"refused","v":{"kind":"local","v":"state_moved"}}"#,
+        ),
         (ActionResult::UserDeclined, r#"{"kind":"user_declined"}"#),
         (
             ActionResult::Failed(SeatError::Suspended),

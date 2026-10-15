@@ -103,6 +103,11 @@ impl<S: Seams> Exec<'_, S> {
         if fit_of(&now, planned.window, self.seam.seat.caps().isolation) != Fit::Ready {
             return out.input(RunInput::InjectFailed(SeatError::OutsideLease));
         }
+        // Not what the aim was made against (moved, another owner, the focus gone elsewhere):
+        // nothing is injected and the run looks again.
+        if let Some(moved) = self.seen.as_ref().and_then(|seen| seen.moved_by(&now)) {
+            return out.input(RunInput::StateMoved(moved));
+        }
         if let Err(error) = self.seam.seat.rebind(lease, now.geometry).await {
             return out.input(RunInput::InjectFailed(error));
         }

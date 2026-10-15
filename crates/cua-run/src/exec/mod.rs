@@ -133,6 +133,7 @@ pub struct Exec<'a, S: Seams> {
     reported: Reported,
     opened: Opened,
     hints: Vec<String>,
+    seen: Option<fit::Seen>,
 }
 
 impl<S: Seams> std::fmt::Debug for Exec<'_, S> {
@@ -160,6 +161,7 @@ impl<'a, S: Seams> Exec<'a, S> {
             reported: Reported::Nothing,
             opened: Opened::No,
             hints: Vec::new(),
+            seen: None,
         }
     }
 

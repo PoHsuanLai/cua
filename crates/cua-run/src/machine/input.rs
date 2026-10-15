@@ -14,6 +14,18 @@ use prov::{ConfirmId, Labelled};
 use seat_input::{InputReceipt, SeatError};
 use serde::{Deserialize, Serialize};
 
+/// What about the window changed between the look an action was aimed at and its injection.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Moved {
+    /// Another app or process owns the window now.
+    Identity,
+    /// The window's frame is not where it was.
+    Geometry,
+    /// The window gained or lost the keyboard focus.
+    Focus,
+}
+
 /// A model's answer to one step, with what it cost.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ModelReply {
@@ -70,6 +82,9 @@ pub enum RunInput {
     Injected(InputReceipt),
     /// Input could not be delivered.
     InjectFailed(SeatError),
+    /// The window is not what the action was aimed at: nothing was injected, and the run looks
+    /// again.
+    StateMoved(Moved),
     /// The screen changed.
     Damage(DamageAt),
     /// The success check ended.

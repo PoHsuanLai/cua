@@ -799,6 +799,15 @@ fn input_that_cannot_be_delivered_looks_again_unless_the_window_is_gone() {
 }
 
 #[test]
+fn a_window_that_moved_under_the_aim_is_not_injected_into_and_the_run_looks_again() {
+    let mut d = authorising();
+    d.feed(RunInput::Verdict(GateAnswer::Run));
+    d.feed(RunInput::StateMoved(cua_run::Moved::Focus));
+    assert_eq!(*d.phase(), RunPhase::Observing(StepIndex(2)));
+    assert_eq!(kinds(&d.effects), ["cua.step"]);
+}
+
+#[test]
 fn the_bus_is_told_how_many_equal_frames_came_in_a_row() {
     let mut d = Drive::leased(STOCK, task(model_says()));
     d.feed(RunInput::Observed(Box::new(observation(5, tree(vec![])))));

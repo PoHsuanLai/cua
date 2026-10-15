@@ -5,9 +5,52 @@
 //! (on a shared seat, where keys land in whichever window has the focus) focused.
 
 use super::observe::visibility_of;
-use crate::observation::Visibility;
+use crate::machine::input::Moved;
+use crate::observation::{Focus, Visibility};
 use cua_action::{Coord, Size, WindowSpace};
-use cua_desktop::{SeatIsolation, ToplevelInfo, ToplevelState};
+use cua_desktop::{GlobalRect, Pid, SeatIsolation, ToplevelInfo, ToplevelState};
+use porter_core::AppName;
+
+/// The window as the last observation saw it: what an action was aimed at.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(super) struct Seen {
+    app: AppName,
+    pid: Pid,
+    geometry: GlobalRect,
+    focus: Focus,
+}
+
+fn focus_of(window: &ToplevelInfo) -> Focus {
+    if window.state.contains(&ToplevelState::Activated) {
+        Focus::Focused
+    } else {
+        Focus::Unfocused
+    }
+}
+
+impl Seen {
+    pub(super) fn of(window: &ToplevelInfo) -> Self {
+        Self {
+            app: window.app.clone(),
+            pid: window.pid,
+            geometry: window.geometry,
+            focus: focus_of(window),
+        }
+    }
+
+    /// What about the window is not as it was seen, if anything.
+    pub(super) fn moved_by(&self, now: &ToplevelInfo) -> Option<Moved> {
+        if self.app != now.app || self.pid != now.pid {
+            Some(Moved::Identity)
+        } else if self.geometry != now.geometry {
+            Some(Moved::Geometry)
+        } else if self.focus != focus_of(now) {
+            Some(Moved::Focus)
+        } else {
+            None
+        }
+    }
+}
 
 /// What the window is fit for.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -69,6 +112,24 @@ mod tests {
             },
             state: state.iter().copied().collect::<BTreeSet<_>>(),
             trust: cua_desktop::WindowTrust::Native,
+        }
+    }
+
+    #[test]
+    fn a_window_that_is_not_as_it_was_seen_names_what_moved() {
+        let seen = Seen::of(&window(&[ToplevelState::Activated]));
+        let mut other_pid = window(&[ToplevelState::Activated]);
+        other_pid.pid = Pid(2);
+        let mut moved = window(&[ToplevelState::Activated]);
+        moved.geometry.x = GlobalCoord(5);
+        let table = [
+            (window(&[ToplevelState::Activated]), None),
+            (other_pid, Some(Moved::Identity)),
+            (moved, Some(Moved::Geometry)),
+            (window(&[]), Some(Moved::Focus)),
+        ];
+        for (now, want) in table {
+            assert_eq!(seen.moved_by(&now), want, "{now:?}");
         }
     }
 

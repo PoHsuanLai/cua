@@ -6,7 +6,7 @@ mod authorise;
 mod model;
 mod observe;
 
-use act::{checked, damaged, inject_failed, injected, settling};
+use act::{checked, damaged, inject_failed, injected, settling, state_moved};
 use authorise::{answered, confirming, verdict};
 use model::proceed;
 use model::{model_event, model_failed, model_replied};
@@ -137,6 +137,7 @@ fn dispatch(run: &mut Run, fx: &mut Vec<RunEffect>, input: RunInput, at: Stamp) 
         }
         RunInput::Injected(receipt) => injected(run, fx, at, receipt),
         RunInput::InjectFailed(error) => inject_failed(run, fx, error),
+        RunInput::StateMoved(_) => state_moved(run, fx),
         RunInput::Damage(damage) => damaged(run, fx, at, damage),
         RunInput::Checked(result) => checked(run, fx, result),
         RunInput::UserAnswer(question, answer) => answered(run, fx, at, question, answer),

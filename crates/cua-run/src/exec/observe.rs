@@ -1,5 +1,6 @@
 //! Looking at the window: the tree, the frame, the messages that wait, and the success check.
 
+use super::fit::Seen;
 use super::{Exec, Outlet};
 use crate::machine::effect::HintSource;
 use crate::machine::input::{CheckResult, RunInput};
@@ -180,6 +181,7 @@ impl<S: Seams> Exec<'_, S> {
             frame.masks.whole = WholeMask::Blacked(MaskReason::SensitiveWindow);
         }
         self.read_inbox(out).await;
+        self.seen = Some(Seen::of(&info));
         let label = Label::untrusted(
             Source::Screen {
                 app: info.app.clone(),

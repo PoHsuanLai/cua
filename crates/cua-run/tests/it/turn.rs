@@ -174,6 +174,10 @@ fn how_the_last_actions_ended_is_told_without_the_routers_reasons() {
             ActionResult::Refused(Refusal::Local(LocalRefusal::SecretField)),
             PrevResult::Refused("a secret field".into()),
         ),
+        (
+            ActionResult::Refused(Refusal::Local(LocalRefusal::StateMoved)),
+            PrevResult::Refused("the window changed".into()),
+        ),
         (ActionResult::UserDeclined, PrevResult::UserDeclined),
         (
             ActionResult::Failed(SeatError::TargetGone),

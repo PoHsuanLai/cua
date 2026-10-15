@@ -32,6 +32,9 @@ fn prev_result(outcome: &ActionOutcome) -> PrevResult {
         ActionResult::Refused(Refusal::Local(LocalRefusal::SecretField)) => {
             PrevResult::Refused("a secret field".to_owned())
         }
+        ActionResult::Refused(Refusal::Local(LocalRefusal::StateMoved)) => {
+            PrevResult::Refused("the window changed".to_owned())
+        }
         ActionResult::UserDeclined => PrevResult::UserDeclined,
         ActionResult::Failed(error) => PrevResult::Failed(error.to_string()),
         ActionResult::UserActed { .. } => PrevResult::UserActed,
