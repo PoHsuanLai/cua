@@ -245,6 +245,7 @@ mod tests {
             limits: sp::Limits {
                 max_output: sp::Tokens(512),
                 stop: vec![],
+                deadline: None,
             },
             sampling: sp::Sampling {
                 temperature: sp::Milli(0),

@@ -37,7 +37,7 @@ mod watch;
 
 pub use backend::{CaptureBackend, CaptureKind, CaptureSessionKind, SeatBackend, capture_kind};
 pub use callers::{
-    FILE as CALLERS_FILE, classify, read as read_callers, shipped as shipped_callers,
+    FILE as CALLERS_FILE, SHELL_BUS, classify, read as read_callers, shipped as shipped_callers,
 };
 pub use connect::Links;
 pub use cua_host::{

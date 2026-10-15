@@ -97,6 +97,7 @@ impl Plan {
             limits: Limits {
                 max_output: text_out.max_output,
                 stop: Vec::new(),
+                deadline: None,
             },
             reasoning,
             tool_calls: match batching {
