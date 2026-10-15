@@ -38,9 +38,11 @@ impl<S: Seams> Exec<'_, S> {
         let grant = leased.grant;
         if let Err(error) = self.seam.seat.attach(&grant, leased.socket).await {
             let _ = self.seam.desktop.release(grant.id).await;
-            return out.input(RunInput::LeaseRefused(DesktopError::Protocol(
-                error.to_string(),
-            )));
+            let refusal = match error {
+                SeatError::Busy => DesktopError::Busy,
+                other => DesktopError::Protocol(other.to_string()),
+            };
+            return out.input(RunInput::LeaseRefused(refusal));
         }
         match self.seam.capture.open(&grant).await {
             Ok(capture) => {

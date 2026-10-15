@@ -70,10 +70,20 @@ impl AgentSeat for EiSeat {
     }
 
     async fn attach(&self, lease: &LeaseGrant, socket: EiSocket) -> Result<(), SeatError> {
+        let mut slot = self.link.lock().await;
+        // One seat, one connection, one keymap: a second lease does not take the first one's
+        // link away (its run would lose its input mid-task). The caller is told, and the lease
+        // goes back. A link whose thread is gone is no holder.
+        if let Some(held) = slot.as_ref()
+            && held.lease != lease.id
+            && held.is_alive()
+        {
+            return Err(SeatError::Busy);
+        }
         let (link, keymap) = actor::spawn(lease, socket.0).await?;
         *self.keymap.write().unwrap_or_else(PoisonError::into_inner) = Arc::new(keymap);
-        // The old link, if any, is dropped here: its thread says goodbye and ends.
-        *self.link.lock().await = Some(link);
+        // The same lease attaching again replaces its own link: the old thread says goodbye.
+        *slot = Some(link);
         Ok(())
     }
 

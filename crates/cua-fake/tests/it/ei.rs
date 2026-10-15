@@ -254,6 +254,28 @@ async fn a_rebound_window_takes_the_pointer_to_where_it_is_now() {
 }
 
 #[tokio::test]
+async fn a_second_lease_does_not_take_the_seat_from_the_first() {
+    let (mut server, socket) = FakeEis::pair().expect("socketpair");
+    let (_idle, second_socket) = FakeEis::pair().expect("socketpair");
+    let first = stock();
+    let mut second = stock();
+    second.id = LeaseId(8);
+    let seat = EiSeat::new(first.seat);
+    let client = async {
+        seat.attach(&first, socket).await.expect("attach");
+        assert_eq!(
+            seat.attach(&second, second_socket).await,
+            Err(SeatError::Busy)
+        );
+        seat.perform(LEASE, &[at(5, 5)])
+            .await
+            .expect("the first lease still has its input");
+        seat.detach(LEASE).await.expect("detach");
+    };
+    let (_events, ()) = tokio::join!(server.serve(), client);
+}
+
+#[tokio::test]
 async fn dropping_the_seat_ends_the_server_run() {
     let events = run(stock(), |seat, _| async move {
         drop(seat);

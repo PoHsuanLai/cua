@@ -70,6 +70,11 @@ impl Link {
         *self.stop.borrow()
     }
 
+    /// Whether the connection thread still runs.
+    pub(super) fn is_alive(&self) -> bool {
+        !self.tx.is_closed()
+    }
+
     /// A guard that stops the thread's work if dropped before `finish`.
     pub(super) fn stop_on_drop(&self) -> StopOnDrop {
         StopOnDrop {

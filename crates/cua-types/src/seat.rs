@@ -55,6 +55,10 @@ pub enum SeatError {
     /// The compositor refused.
     #[error("refused")]
     Refused,
+    /// Another lease holds this seat: one seat has one connection, and a second lease does not
+    /// take it over.
+    #[error("the seat is held by another lease")]
+    Busy,
     /// The operation lies outside the lease's window.
     #[error("outside the lease")]
     OutsideLease,
