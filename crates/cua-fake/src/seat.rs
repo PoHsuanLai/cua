@@ -1,6 +1,6 @@
 //! A seat that records what it is asked to do.
 
-use cua_desktop::{EiSocket, LeaseGrant, LeaseId, SeatIsolation, Stamp};
+use cua_desktop::{EiSocket, GlobalRect, LeaseGrant, LeaseId, SeatIsolation, Stamp};
 use porter_core::Count;
 use seat_input::{
     AgentSeat, Emulation, InputOp, InputOrigin, InputReceipt, Keymap, SeatCaps, SeatError,
@@ -29,6 +29,7 @@ pub struct FakeSeat {
     log: Mutex<Vec<SeatEvent>>,
     fail_next: Mutex<Option<SeatError>>,
     emulation: Mutex<Emulation>,
+    rebinds: Mutex<Vec<(LeaseId, GlobalRect)>>,
 }
 
 impl FakeSeat {
@@ -41,6 +42,7 @@ impl FakeSeat {
             log: Mutex::new(Vec::new()),
             fail_next: Mutex::new(None),
             emulation: Mutex::new(Emulation::Running),
+            rebinds: Mutex::new(Vec::new()),
         }
     }
 
@@ -52,6 +54,11 @@ impl FakeSeat {
     /// Everything that happened, in order.
     pub fn events(&self) -> Vec<SeatEvent> {
         self.log.lock().expect("fake seat lock").clone()
+    }
+
+    /// The frames the seat was told the window moved to, in order.
+    pub fn rebinds(&self) -> Vec<(LeaseId, GlobalRect)> {
+        self.rebinds.lock().expect("fake seat lock").clone()
     }
 
     fn push(&self, event: SeatEvent) {
@@ -98,6 +105,14 @@ impl AgentSeat for FakeSeat {
     async fn emulation(&self, lease: LeaseId, state: Emulation) -> Result<(), SeatError> {
         *self.emulation.lock().expect("fake seat lock") = state;
         self.push(SeatEvent::Emulation(lease, state));
+        Ok(())
+    }
+
+    async fn rebind(&self, lease: LeaseId, frame: GlobalRect) -> Result<(), SeatError> {
+        self.rebinds
+            .lock()
+            .expect("fake seat lock")
+            .push((lease, frame));
         Ok(())
     }
 

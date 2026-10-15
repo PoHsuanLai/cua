@@ -58,7 +58,7 @@ fn size_of(info: &ToplevelInfo) -> Size<WindowSpace> {
     Size::new(Coord(info.geometry.w.0), Coord(info.geometry.h.0))
 }
 
-fn visibility_of(info: &ToplevelInfo) -> Visibility {
+pub(super) fn visibility_of(info: &ToplevelInfo) -> Visibility {
     if info.state.contains(&ToplevelState::Minimized) {
         Visibility::Minimized
     } else if info.workspace.shown == WorkspaceShown::Hidden {
@@ -70,7 +70,7 @@ fn visibility_of(info: &ToplevelInfo) -> Visibility {
 
 impl<S: Seams> Exec<'_, S> {
     /// The window as the desktop reports it now; the lease's own record when it is not listed.
-    async fn window_now(&mut self) -> Option<ToplevelInfo> {
+    pub(super) async fn window_now(&mut self) -> Option<ToplevelInfo> {
         let leased = self.held.as_ref()?.grant.window.clone();
         let listed = self
             .seam

@@ -1,7 +1,7 @@
 //! The backends cuad chooses between: closed sets, so enums that implement the seams.
 
 use cua_desktop::{BackendCaps, BackendKind, LeaseGrant, MaskWhere};
-use cua_desktop::{EiSocket, LeaseId};
+use cua_desktop::{EiSocket, GlobalRect, LeaseId};
 use maskcap::{
     CaptureError, CaptureSession, DamageAt, Frame, FrameWant, MaskRegion, QuireMaskedCapture,
     StampClock, StockToplevelCapture, WaylandSession, WindowCapture,
@@ -152,6 +152,12 @@ impl AgentSeat for SeatBackend {
     async fn emulation(&self, lease: LeaseId, state: Emulation) -> Result<(), SeatError> {
         match self {
             SeatBackend::Ei(seat) => seat.emulation(lease, state).await,
+        }
+    }
+
+    async fn rebind(&self, lease: LeaseId, frame: GlobalRect) -> Result<(), SeatError> {
+        match self {
+            SeatBackend::Ei(seat) => seat.rebind(lease, frame).await,
         }
     }
 

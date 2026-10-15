@@ -9,6 +9,7 @@
 
 mod cost;
 mod deadline;
+mod fit;
 mod observe;
 mod session;
 

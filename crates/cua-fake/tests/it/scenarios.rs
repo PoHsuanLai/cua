@@ -5,7 +5,7 @@ use crate::support::*;
 use cua_action::CuaAction;
 use cua_bus::{BlockedOn, CuaOutcome, CuaRecord, FailReason};
 use cua_desktop::{BackendKind, Suspend};
-use cua_fake::{DesktopCall, FakePdp, SeatEvent, Verdict, run_harness};
+use cua_fake::{DesktopCall, FakeDesktop, FakePdp, SeatEvent, Verdict, run_harness};
 use cua_run::{CuaModelError, CuaSignal, RunPhase};
 use docket_core::{CallRefusal, ConfirmEnd, DenyCode, GateAnswer, GrantAnswer, InboundLine};
 use porter_infer::{NoteFrom, PrevResult, StepNote};
@@ -86,6 +86,51 @@ fn a_refused_action_is_told_to_the_model_and_the_run_goes_on() {
             .all(|e| !matches!(e, SeatEvent::Performed(..))),
         "a refused click never reaches the seat"
     );
+}
+
+#[test]
+fn input_goes_only_to_the_window_that_is_focused_and_visible() {
+    type Change = fn(&mut cua_desktop::ToplevelInfo);
+    let cases: [(&str, Change); 3] = [
+        ("lost the focus", |w| w.state.clear()),
+        ("minimized", |w| {
+            w.state.insert(cua_desktop::ToplevelState::Minimized);
+        }),
+        ("on a hidden workspace", |w| {
+            w.workspace.shown = cua_desktop::WorkspaceShown::Hidden;
+        }),
+    ];
+    for (name, change) in cases {
+        let mut w = world(
+            BackendKind::KwinStock,
+            vec![reply(click()), reply(finish())],
+            FakePdp::allow_all(),
+        );
+        let mut window = cua_fake::scene::window();
+        change(&mut window);
+        w.desktop = FakeDesktop::new(BackendKind::KwinStock, vec![window]);
+        let report = block_on(run_harness(started(BackendKind::KwinStock), &mut w)).expect("ends");
+        assert_eq!(outcome_of(&report), CuaOutcome::Done, "{name}");
+        assert!(
+            w.seat
+                .events()
+                .iter()
+                .all(|e| !matches!(e, SeatEvent::Performed(..))),
+            "{name}: nothing reached the seat"
+        );
+    }
+}
+
+#[test]
+fn the_seat_is_told_where_the_window_is_before_each_injection() {
+    let mut w = world(
+        BackendKind::KwinStock,
+        vec![reply(click()), reply(finish())],
+        FakePdp::allow_all(),
+    );
+    block_on(run_harness(started(BackendKind::KwinStock), &mut w)).expect("ends");
+    assert_eq!(w.seat.rebinds().len(), 1);
+    assert_eq!(w.seat.rebinds()[0].1, cua_fake::scene::window().geometry);
 }
 
 #[test]

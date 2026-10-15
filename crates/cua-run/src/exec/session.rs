@@ -1,6 +1,7 @@
 //! The lease and what hangs on it: the seat, the capture session, the model's session, input.
 
 use super::cost::reply_cost;
+use super::fit::{Fit, fit_of};
 use super::{Exec, ModelSession, Outlet};
 use crate::machine::input::{ModelReply, RunInput};
 use crate::model::{CuaModel, CuaModelError, StepEvent, StepSink};
@@ -95,6 +96,16 @@ impl<S: Seams> Exec<'_, S> {
         let Some(lease) = self.held.as_ref().map(|held| held.grant.id) else {
             return out.input(RunInput::InjectFailed(SeatError::NotConnected));
         };
+        // The window is read again: the aim was made against an earlier look.
+        let Some(now) = self.window_now().await else {
+            return out.input(RunInput::InjectFailed(SeatError::TargetGone));
+        };
+        if fit_of(&now, planned.window, self.seam.seat.caps().isolation) != Fit::Ready {
+            return out.input(RunInput::InjectFailed(SeatError::OutsideLease));
+        }
+        if let Err(error) = self.seam.seat.rebind(lease, now.geometry).await {
+            return out.input(RunInput::InjectFailed(error));
+        }
         let keymap = self.seam.seat.keymap();
         let ops: Vec<InputOp> = match plan(&planned, &keymap, &self.seam.seat.caps()) {
             Ok(ops) => ops,

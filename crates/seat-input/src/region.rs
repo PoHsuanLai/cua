@@ -34,6 +34,31 @@ impl RegionMap {
         }
     }
 
+    /// Whether an EI point lies inside the window. On the fork the region is the window; on
+    /// stock it is the window's frame, not the whole output the region spans.
+    pub fn contains(self, p: GlobalPoint) -> bool {
+        match self {
+            RegionMap::Identity => true,
+            RegionMap::Offset(frame) => {
+                let (x, y) = (i64::from(p.0), i64::from(p.1));
+                let (left, top) = (i64::from(frame.x.0), i64::from(frame.y.0));
+                x >= left
+                    && y >= top
+                    && x < left + i64::from(frame.w.0)
+                    && y < top + i64::from(frame.h.0)
+            }
+        }
+    }
+
+    /// The same map with the window at `frame` now. The fork's region follows the window itself,
+    /// so it stays as it is.
+    pub fn moved_to(self, frame: GlobalRect) -> RegionMap {
+        match self {
+            RegionMap::Identity => RegionMap::Identity,
+            RegionMap::Offset(_) => RegionMap::Offset(frame),
+        }
+    }
+
     /// The window-local point for an EI point, or `None` when it falls left of or above the
     /// window.
     pub fn window_of(self, p: GlobalPoint) -> Option<Point<WindowSpace>> {
@@ -115,5 +140,23 @@ mod tests {
     fn a_point_left_of_the_window_has_no_window_coordinate() {
         let map = RegionMap::Offset(frame(714, 148));
         assert_eq!(map.window_of(GlobalPoint(700, 200)), None);
+    }
+
+    #[test]
+    fn a_moved_window_bounds_the_pointer_to_where_it_is_now() {
+        let map = RegionMap::Offset(frame(714, 148));
+        assert!(map.contains(GlobalPoint(714, 148)));
+        assert!(!map.contains(GlobalPoint(1114, 200)), "right of the window");
+        assert!(!map.contains(GlobalPoint(800, 448)), "below the window");
+        let moved = map.moved_to(frame(0, 0));
+        assert!(moved.contains(GlobalPoint(10, 10)));
+        assert!(
+            !moved.contains(GlobalPoint(800, 200)),
+            "the old place is outside now"
+        );
+        assert_eq!(
+            RegionMap::Identity.moved_to(frame(5, 5)),
+            RegionMap::Identity
+        );
     }
 }

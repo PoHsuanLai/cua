@@ -4,7 +4,7 @@ use crate::caps::SeatCaps;
 use crate::keymap::Keymap;
 use crate::op::InputOp;
 use crate::receipt::InputReceipt;
-use cua_desktop::{EiSocket, LeaseGrant, LeaseId};
+use cua_desktop::{EiSocket, GlobalRect, LeaseGrant, LeaseId};
 pub use cua_types::SeatError;
 use serde::{Deserialize, Serialize};
 use std::future::Future;
@@ -49,6 +49,17 @@ pub trait AgentSeat: Send + Sync {
         lease: LeaseId,
         state: Emulation,
     ) -> impl Future<Output = Result<(), SeatError>> + Send;
+
+    /// The leased window moved or was resized: pointer points map to `frame` from now on, and
+    /// the pointer is held inside it. A seat whose region is the window itself (the fork's) has
+    /// nothing to do.
+    fn rebind(
+        &self,
+        _lease: LeaseId,
+        _frame: GlobalRect,
+    ) -> impl Future<Output = Result<(), SeatError>> + Send {
+        async { Ok(()) }
+    }
 
     /// Stops emulating and closes the connection.
     fn detach(&self, lease: LeaseId) -> impl Future<Output = Result<(), SeatError>> + Send;

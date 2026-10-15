@@ -13,7 +13,7 @@ use crate::op::InputOp;
 use crate::receipt::{InputOrigin, InputReceipt};
 use crate::seat::{AgentSeat, Emulation, SeatError};
 use actor::{Cmd, Link};
-use cua_desktop::{EiSocket, LeaseGrant, LeaseId, SeatIsolation};
+use cua_desktop::{EiSocket, GlobalRect, LeaseGrant, LeaseId, SeatIsolation};
 use porter_core::Count;
 use std::sync::{Arc, PoisonError, RwLock};
 use tokio::sync::Mutex;
@@ -104,6 +104,13 @@ impl AgentSeat for EiSeat {
         let slot = self.link.lock().await;
         of_lease(&slot, lease)?
             .ask(|reply| Cmd::Emulation(state, reply))
+            .await
+    }
+
+    async fn rebind(&self, lease: LeaseId, frame: GlobalRect) -> Result<(), SeatError> {
+        let slot = self.link.lock().await;
+        of_lease(&slot, lease)?
+            .ask(|reply| Cmd::Rebind(frame, reply))
             .await
     }
 

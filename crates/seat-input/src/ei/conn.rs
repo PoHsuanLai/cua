@@ -5,7 +5,7 @@ use crate::op::{InputOp, Press};
 use crate::region::{GlobalPoint, RegionMap};
 use crate::seat::{Emulation, SeatError};
 use cua_action::{Button, ScrollDir};
-use cua_desktop::{EiOrigin, LeaseGrant};
+use cua_desktop::{EiOrigin, GlobalRect, LeaseGrant};
 use futures_util::{FutureExt, StreamExt};
 use reis::ei::{self, button::ButtonState, keyboard::KeyState};
 use reis::event::{Connection, Device, DeviceCapability, EiEvent};
@@ -207,6 +207,11 @@ impl Conn {
         self.link.flush().map_err(protocol)
     }
 
+    /// The window moved: points map to its new frame from now on.
+    pub(super) fn rebind(&mut self, frame: GlobalRect) {
+        self.map = self.map.moved_to(frame);
+    }
+
     /// Stops emulating and says goodbye.
     pub(super) fn close(mut self) {
         let _ = self.set_emulation(Emulation::Stopped);
@@ -240,6 +245,10 @@ impl Conn {
         match op {
             InputOp::MoveTo(p) => {
                 let GlobalPoint(x, y) = self.map.region_of(*p);
+                // The pointer stays inside the window, not merely inside the output.
+                if !self.map.contains(GlobalPoint(x, y)) {
+                    return Err(SeatError::OutsideLease);
+                }
                 let inside = self.hands.pointer.regions().iter().any(|r| {
                     let (x, y) = (i64::from(x), i64::from(y));
                     x >= i64::from(r.x)

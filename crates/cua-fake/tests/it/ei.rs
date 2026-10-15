@@ -206,6 +206,11 @@ async fn refusals_are_local_and_the_connection_survives() {
             seat.perform(LEASE, &[at(900, 10)]).await.map(|_| ()),
             Err(SeatError::OutsideLease)
         );
+        // Inside the output, but past the 300x200 window.
+        assert_eq!(
+            seat.perform(LEASE, &[at(400, 10)]).await.map(|_| ()),
+            Err(SeatError::OutsideLease)
+        );
         let text = InputOp::Text(TypedText::new("héllo").unwrap());
         assert_eq!(
             seat.perform(LEASE, &[text]).await.map(|_| ()),
@@ -226,6 +231,26 @@ async fn refusals_are_local_and_the_connection_survives() {
     })
     .await;
     assert!(events.contains(&EisEvent::PointerAbsolute { x: 715, y: 149 }));
+}
+
+#[tokio::test]
+async fn a_rebound_window_takes_the_pointer_to_where_it_is_now() {
+    let moved = GlobalRect {
+        x: GlobalCoord(20),
+        y: GlobalCoord(30),
+        w: Px(300),
+        h: Px(200),
+    };
+    let events = run(stock(), |seat, _| async move {
+        seat.rebind(LEASE, moved).await.expect("rebind");
+        seat.perform(LEASE, &[at(5, 5)]).await.expect("perform");
+        seat.detach(LEASE).await.expect("detach");
+    })
+    .await;
+    assert!(
+        events.contains(&EisEvent::PointerAbsolute { x: 25, y: 35 }),
+        "{events:?}"
+    );
 }
 
 #[tokio::test]

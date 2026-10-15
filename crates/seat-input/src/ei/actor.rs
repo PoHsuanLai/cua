@@ -8,7 +8,7 @@ use super::conn::Conn;
 use crate::keymap::Keymap;
 use crate::op::{InputOp, Press};
 use crate::seat::{Emulation, SeatError};
-use cua_desktop::{LeaseGrant, Stamp};
+use cua_desktop::{GlobalRect, LeaseGrant, Stamp};
 use std::os::fd::OwnedFd;
 use std::sync::Arc;
 use std::time::Duration;
@@ -22,6 +22,8 @@ pub(super) enum Cmd {
     /// The ops, the stop generation they were queued under, and the reply.
     Perform(Vec<InputOp>, u64, Reply<Stamp>),
     Emulation(Emulation, Reply<()>),
+    /// The window moved: its frame now.
+    Rebind(GlobalRect, Reply<()>),
     Detach(Reply<()>),
 }
 
@@ -151,6 +153,10 @@ async fn run(
             }
             Cmd::Emulation(state, reply) => {
                 let _ = reply.send(conn.set_emulation(state));
+            }
+            Cmd::Rebind(frame, reply) => {
+                conn.rebind(frame);
+                let _ = reply.send(Ok(()));
             }
             Cmd::Detach(reply) => {
                 conn.close();
