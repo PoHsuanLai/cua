@@ -51,6 +51,13 @@ fn enter() -> CuaAction<WindowSpace> {
     }
 }
 
+fn chord_press(mods: &[cua_action::Modifier], key: keyboard_types::Key) -> CuaAction<WindowSpace> {
+    CuaAction::Key {
+        chord: Chord::new(mods.iter().copied().collect(), key).unwrap(),
+        repeat: Repeat::ONCE,
+    }
+}
+
 fn screen_label() -> Label {
     let space = SpaceId::parse("desktop").unwrap();
     Label {
@@ -213,6 +220,27 @@ fn classify_effect_table() {
                 Effect::UndoableWrite,
                 EffectBasis::WindowClass(WindowClass::PasswordManager),
             ),
+        },
+        Row {
+            name: "Command+C stays an ordinary write",
+            action: chord_press(
+                &[cua_action::Modifier::Super],
+                keyboard_types::Key::Character("c".into()),
+            ),
+            class: Ordinary,
+            want: (Effect::UndoableWrite, EffectBasis::DefaultTable),
+        },
+        Row {
+            name: "Command+Tab leaves the window, so the router asks",
+            action: chord_press(&[cua_action::Modifier::Super], keyboard_types::Key::Tab),
+            class: Ordinary,
+            want: (Effect::Outbound, EffectBasis::DefaultTable),
+        },
+        Row {
+            name: "the desktop's chord is outbound in any window",
+            action: chord_press(&[cua_action::Modifier::Super], keyboard_types::Key::Tab),
+            class: Terminal,
+            want: (Effect::Outbound, EffectBasis::DefaultTable),
         },
         Row {
             name: "a key in an admin tool names the class",

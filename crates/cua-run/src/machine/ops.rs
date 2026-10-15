@@ -1,7 +1,7 @@
 //! The small moves the transition rows are made of: entering a phase, starting a look at the
 //! window, recording a finished action, asking the router about the head action.
 
-use crate::effect_class::classify_effect;
+use crate::effect_class::classify_effect_in;
 use crate::machine::effect::{CuaSignal, HintSource, RunEffect};
 use crate::machine::phase::RunPhase;
 use crate::machine::run::Run;
@@ -254,7 +254,7 @@ pub(crate) fn glow_for(planned: &PlannedAction) -> GlowState {
 pub(crate) fn ask_for(run: &Run, obs: &Observation, action: &CuaAction<WindowSpace>) -> CuaAsk {
     let node = first_target(action).and_then(|t| node_at(obs, &t));
     let class = window_class_in(&obs.window.app, &obs.window.title.value, nodes_of(obs));
-    let (effect, basis) = classify_effect(action, node, class);
+    let (effect, basis) = classify_effect_in(run.env.keys, action, node, class);
     CuaAsk {
         run: run.id.clone(),
         step: obs.step.0,
@@ -283,9 +283,10 @@ pub(crate) fn step_record(
         Some(obs) => {
             let node = first_target(&outcome.action.action).and_then(|t| node_at(obs, &t));
             let class = window_class_in(&obs.window.app, &obs.window.title.value, nodes_of(obs));
-            classify_effect(&outcome.action.action, node, class)
+            classify_effect_in(run.env.keys, &outcome.action.action, node, class)
         }
-        None => classify_effect(
+        None => classify_effect_in(
+            run.env.keys,
             &outcome.action.action,
             None,
             cua_action::WindowClass::Ordinary,

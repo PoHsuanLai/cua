@@ -1,5 +1,6 @@
 //! How much an action matters, before the router sees it.
 
+use crate::chord_scope::{KeyWorld, acts_on_desktop};
 use crate::commit::commit_of;
 use a11y_tree::{A11yNode, TypedHint};
 use cua_action::WindowClass;
@@ -15,8 +16,21 @@ use prov::Effect;
 /// Transfer, Confirm) in a mail compose, payments or bank window, or a click there on a node that
 /// is not known; otherwise the default table
 /// (observing is `Read`, pointer actions and keys `UndoableWrite`). The router makes the ruling;
-/// this only names the effect it is asked about. Pure.
+/// this only names the effect it is asked about. A key chord the desktop acts on itself
+/// (switching apps, the launcher, locking, logging out, Space switches: [`acts_on_desktop`]) is
+/// `Outbound` whatever the window: it leaves the leased window, and the router asks. Pure.
+/// This is [`classify_effect_in`] on our own desktop's keys.
 pub fn classify_effect(
+    action: &CuaAction<WindowSpace>,
+    node: Option<&A11yNode>,
+    class: WindowClass,
+) -> (Effect, EffectBasis) {
+    classify_effect_in(KeyWorld::default(), action, node, class)
+}
+
+/// [`classify_effect`] for the desktop whose key conventions are `world`.
+pub fn classify_effect_in(
+    world: KeyWorld,
     action: &CuaAction<WindowSpace>,
     node: Option<&A11yNode>,
     class: WindowClass,
@@ -27,6 +41,11 @@ pub fn classify_effect(
         }
         ActionClass::Pointer | ActionClass::Keyboard => Effect::UndoableWrite,
     };
+    if let CuaAction::Key { chord, .. } = action
+        && acts_on_desktop(chord, world)
+    {
+        return (Effect::Outbound, EffectBasis::DefaultTable);
+    }
     if let Some(TypedHint::Action(name)) = node.map(|n| &n.typed) {
         return (default, EffectBasis::NodeTypedAction(name.clone()));
     }

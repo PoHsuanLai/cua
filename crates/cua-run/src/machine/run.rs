@@ -1,5 +1,6 @@
 //! The run itself: its state, and the three functions that drive it.
 
+use crate::chord_scope::KeyWorld;
 use crate::config::{Autopause, CuaConfig, SettleLimits};
 use crate::machine::effect::RunEffect;
 use crate::machine::input::RunInput;
@@ -29,6 +30,10 @@ pub struct RunEnv {
     pub autopause: Autopause,
     /// How many tree nodes a snapshot keeps.
     pub tree_max_nodes: NodeBudget,
+    /// The key conventions of the desktop, to tell a chord for the desktop from one for the
+    /// window.
+    #[serde(default)]
+    pub keys: KeyWorld,
 }
 
 impl RunEnv {
@@ -40,7 +45,13 @@ impl RunEnv {
             wait_max: config.wait_max,
             autopause: config.autopause,
             tree_max_nodes: config.tree_max_nodes,
+            keys: KeyWorld::default(),
         }
+    }
+
+    /// The same environment on a desktop with these key conventions.
+    pub fn with_keys(self, keys: KeyWorld) -> RunEnv {
+        RunEnv { keys, ..self }
     }
 }
 

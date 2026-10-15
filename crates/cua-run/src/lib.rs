@@ -51,6 +51,7 @@
 //! assert!(effects.iter().any(|e| matches!(e, RunEffect::Capture { .. })));
 //! ```
 
+mod chord_scope;
 mod commit;
 mod config;
 mod effect_class;
@@ -67,12 +68,13 @@ mod stall;
 mod turn;
 mod window_class;
 
+pub use chord_scope::{KeyWorld, acts_on_desktop};
 pub use commit::{Commit, commit_of};
 pub use config::{
     Autopause, CuaConfig, Days, DefaultMode, Enabled, KeepScreens, SETTING_ROWS, SettingRow,
     SettingValue, SettleLimits,
 };
-pub use effect_class::classify_effect;
+pub use effect_class::{classify_effect, classify_effect_in};
 pub use exec::{Collected, Deadline, Exec, Outlet, Seam, deadline_of};
 pub use lease_book::{LeaseBook, LeaseHeld, Slot, SlotState};
 pub use machine::effect::{CuaSignal, HintSource, RunEffect};
