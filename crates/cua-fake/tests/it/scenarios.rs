@@ -5,7 +5,9 @@ use crate::support::*;
 use cua_action::CuaAction;
 use cua_bus::{BlockedOn, CuaOutcome, CuaRecord, FailReason};
 use cua_desktop::{BackendKind, Suspend};
-use cua_fake::{DesktopCall, FakeA11y, FakeDesktop, FakePdp, SeatEvent, Verdict, run_harness};
+use cua_fake::{
+    DesktopCall, FakeA11y, FakeDesktop, FakePdp, Fixture, SeatEvent, Verdict, run_harness,
+};
 use cua_run::{CuaModelError, CuaSignal, RunPhase};
 use docket_core::{CallRefusal, ConfirmEnd, DenyCode, GateAnswer, GrantAnswer, InboundLine};
 use porter_infer::{NoteFrom, PrevResult, StepNote};
@@ -101,10 +103,11 @@ fn input_goes_only_to_the_window_that_is_focused_and_visible() {
         }),
     ];
     for (name, change) in cases {
-        let mut w = world(
+        let mut w = world_over(
             BackendKind::KwinStock,
             vec![reply(click()), reply(finish())],
             FakePdp::allow_all(),
+            Fixture::Gtk4Dialog,
         );
         let mut window = cua_fake::scene::window();
         change(&mut window);
@@ -123,10 +126,11 @@ fn input_goes_only_to_the_window_that_is_focused_and_visible() {
 
 #[test]
 fn the_seat_is_told_where_the_window_is_before_each_injection() {
-    let mut w = world(
+    let mut w = world_over(
         BackendKind::KwinStock,
         vec![reply(click()), reply(finish())],
         FakePdp::allow_all(),
+        Fixture::Gtk4Dialog,
     );
     block_on(run_harness(started(BackendKind::KwinStock), &mut w)).expect("ends");
     assert_eq!(w.seat.rebinds().len(), 1);

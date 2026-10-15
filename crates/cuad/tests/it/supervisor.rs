@@ -315,7 +315,11 @@ async fn cancel_ends_a_run_whatever_it_is_waiting_on() {
 
 #[tokio::test(start_paused = true)]
 async fn kill_chord_finishes_all_runs() {
-    let mut w = cua_fake::scene::world(STOCK, vec![reply(ask())], FakePdp::allow_all());
+    let mut w = cua_fake::scene::world(
+        STOCK,
+        vec![reply(ask()), reply(ask())],
+        FakePdp::allow_all(),
+    );
     let mut second = window();
     second.ident = cua_desktop::ToplevelIdent::parse("w2").unwrap();
     w.desktop = cua_fake::FakeDesktop::new(STOCK, vec![window(), second]);
@@ -326,8 +330,11 @@ async fn kill_chord_finishes_all_runs() {
     let mut other = task();
     other.target = cua_bus::TaskTarget::Window(cua_desktop::ToplevelIdent::parse("w2").unwrap());
     let second_id = sup.start(CuaCaller::Router, other).await.unwrap();
-    // The second run waits for the model, which the first still holds.
-    until(&sup, &second_id, |p| matches!(p, RunPhase::Thinking(_))).await;
+    // The first run waits for the person and has let the model go, so the second gets it.
+    until(&sup, &second_id, |p| {
+        matches!(p, RunPhase::WaitingForUser(..))
+    })
+    .await;
 
     sup.desktop().raise(DesktopEvent::KillChord);
     for id in [&first, &second_id] {

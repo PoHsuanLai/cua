@@ -168,7 +168,7 @@ impl<S: Seams> Exec<'_, S> {
         };
         let mut hints = self.hints_of(hints);
         let blackout = self.blackout_of(&info);
-        hints.extend(blackout.clone());
+        hints.extend(blackout);
         let Some(held) = self.held.as_mut() else {
             return out.input(RunInput::CaptureFailed(CaptureError::SourceGone));
         };
