@@ -327,3 +327,15 @@ scripts/cloud-eval.sh --accountd <accountd test-keys build> --inferd <inferd tes
 is checked when the set loads); the task in `eval/tasks/<category>.toml` with at least one script
 that passes and, where a slip is plausible, one that makes it; `cargo test -p cua-eval` fails until
 every script reaches the verdict it names.
+
+## 9. Install
+
+`scripts/install.sh` installs cuad, `cuad.service` with its `cuad.service.d/sandbox.conf` drop-in,
+the D-Bus activation files and interface XML, the settings schema, and `dist/cuad-callers.toml` as
+`/etc/quire/cuad-callers.toml`. It checks for the accessibility service (`at-spi2-core` on Fedora,
+Ubuntu and Arch) and says which package is missing. Flags: `--prefix DIR` (default `/usr/local`),
+`--destdir DIR` (for packages), `--user` (under `~/.local`, no root), `--no-build`, `--bin-dir DIR`
+(programs built elsewhere), `--dry-run` (print every action), `--sandbox auto|on|off` and
+`--distro debian|fedora|arch`. Root steps use `$SUDO`, else sudo, doas or pkexec, else they are
+printed. The sandbox keys that need a mount namespace live only in the drop-in; `auto` tests whether
+`systemd --user` can use them and leaves them out where it cannot (Ubuntu 24.04+ by default).
