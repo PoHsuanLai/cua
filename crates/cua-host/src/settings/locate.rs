@@ -1,7 +1,7 @@
 //! Where the settings file is: `$XDG_CONFIG_HOME/cua/settings.toml`, then each of
 //! `$XDG_CONFIG_DIRS` (design/22 section 2). The first file that reads wins.
 
-use super::read::{Loaded, read};
+use super::read::{Fallback, Loaded, Why, read};
 use super::{CuaSettings, SETTINGS_FILE};
 use std::path::{Path, PathBuf};
 
@@ -41,14 +41,30 @@ impl Locator {
     /// The file as it is now over `base`: the first one that reads; no file is `base`, nothing to
     /// report.
     pub fn read(&self, base: &CuaSettings) -> Loaded {
-        let text = self
-            .dirs
-            .iter()
-            .map(|d| d.join(SETTINGS_FILE))
-            .find_map(|path| std::fs::read_to_string(path).ok());
-        match text {
+        let mut unreadable = Vec::new();
+        let mut text = None;
+        for path in self.dirs.iter().map(|d| d.join(SETTINGS_FILE)) {
+            match std::fs::read_to_string(&path) {
+                Ok(found) => {
+                    text = Some(found);
+                    break;
+                }
+                // No file in this directory is the ordinary case.
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+                // A file that is there and cannot be read is not the same as no file: it is
+                // reported, so a sandbox that hides the settings does not fail silently.
+                Err(error) => unreadable.push(Fallback {
+                    key: path.display().to_string(),
+                    why: Why::Unreadable(error.to_string()),
+                }),
+            }
+        }
+        let mut loaded = match text {
             Some(text) => read(&text, base),
             None => Loaded::of(base.clone()),
-        }
+        };
+        unreadable.append(&mut loaded.fallbacks);
+        loaded.fallbacks = unreadable;
+        loaded
     }
 }

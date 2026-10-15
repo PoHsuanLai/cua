@@ -3,6 +3,15 @@
 # accessibility bus, and talks D-Bus to the router, inferd and memoryd. It holds no files and
 # no network. Each sandbox line says what it protects. Computer use is off by default
 # (`cua.enabled`): the unit may be installed and idle.
+#
+# How the settings reach the daemon: cuad reads `cua/settings.toml` from `$XDG_CONFIG_HOME`
+# (under the person's home), then from each of `$XDG_CONFIG_DIRS` (`/etc/xdg` by default). The
+# unit keeps `ProtectHome=yes`, so under it the person's own file is out of reach and the
+# system-wide `/etc/xdg/cua/settings.toml` (readable: `ProtectSystem=strict` only forbids
+# writes) is the one that applies. A file that exists and cannot be read is logged at start
+# and on every change ("settings: <path>: could not be read"), not skipped silently. Until a
+# file lists an app, no app is on (`cua.apps` starts empty), so an installed unit with no
+# settings file does nothing.
 [Unit]
 Description=Quire computer-use daemon (org.quire.Cua1)
 
@@ -10,10 +19,20 @@ Description=Quire computer-use daemon (org.quire.Cua1)
 Type=dbus
 BusName=org.quire.Cua1
 ExecStart=/usr/libexec/quire/cuad --config /etc/quire/cuad.toml
+# A crash is not the end of computer use: systemd starts the daemon again (a run that was in
+# flight is lost, and its lease with it). Bus activation also starts it on the next call.
+Restart=on-failure
+RestartSec=2s
 # The compositor to connect to. The fork offers `quire_agent_manager_v1` (casement-protocols/protocols/quire-agent-v1.xml)
 # only to the client its security context names as this unit; a stock compositor offers
 # ext-image-copy-capture to any client on the session bus.
 PassEnvironment=WAYLAND_DISPLAY
+
+# --- Resources ---
+# Frames live in memory (a few copies of one window: well under 1 GiB even for an 8K output),
+# and a run needs a handful of threads (the bus, capture, the EI connection).
+MemoryMax=2G
+TasksMax=128
 
 # --- Sandbox ---
 # Only Unix sockets: the session bus, the accessibility bus, the Wayland socket, inferd's and

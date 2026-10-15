@@ -35,6 +35,9 @@ pub enum Why {
     NotAnAllow,
     /// A browser asked for `always`; it is asked every run instead.
     BrowserNeverAlways,
+    /// The file is there and could not be read (permissions, a sandbox that hides the home
+    /// directory); the next directory is tried.
+    Unreadable(String),
 }
 
 impl fmt::Display for Why {
@@ -48,6 +51,7 @@ impl fmt::Display for Why {
             Why::NotAnApp => write!(f, "no desktop-entry id in `app`"),
             Why::NotAnAllow => write!(f, "`allow` is not ask, session or always"),
             Why::BrowserNeverAlways => write!(f, "a browser is never `always`; it asks every run"),
+            Why::Unreadable(why) => write!(f, "could not be read: {why}"),
         }
     }
 }
@@ -55,7 +59,8 @@ impl fmt::Display for Why {
 /// A key or row that was refused and fell back.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Fallback {
-    /// The dotted key (`cua.apps[1]` for a row), or `settings.toml` for a file that is not TOML.
+    /// The dotted key (`cua.apps[1]` for a row), `settings.toml` for a file that is not TOML, or
+    /// the path of a settings file that could not be read.
     pub key: String,
     /// Why.
     pub why: Why,

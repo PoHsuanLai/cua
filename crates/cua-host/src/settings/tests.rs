@@ -486,4 +486,18 @@ fn the_locator_reads_the_first_file_of_the_configuration_directories() {
     assert_eq!(value.config.budget.steps, porter_core::Count(40));
     let none = Locator::from_env(&|_: &str| None::<String>);
     assert_eq!(none.read(&base()), Loaded::of(base()));
+    // A settings file that is there and cannot be read (a directory stands in for one) is
+    // reported, and the next directory still answers.
+    let blocked = tempfile::tempdir().unwrap();
+    std::fs::create_dir_all(blocked.path().join(SETTINGS_FILE)).unwrap();
+    let env = |k: &str| match k {
+        "XDG_CONFIG_HOME" => Some(blocked.path().display().to_string()),
+        "XDG_CONFIG_DIRS" => Some(etc.path().display().to_string()),
+        _ => None,
+    };
+    let loaded = Locator::from_env(&env).read(&base());
+    assert_eq!(loaded.value.config.wait_max, cua_desktop::Ms(1900));
+    assert_eq!(loaded.fallbacks.len(), 1);
+    assert!(matches!(loaded.fallbacks[0].why, Why::Unreadable(_)));
+    assert!(loaded.fallbacks[0].key.ends_with(SETTINGS_FILE));
 }
