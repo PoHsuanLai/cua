@@ -126,10 +126,11 @@ fn input_goes_only_to_the_window_that_is_focused_and_visible() {
 
 #[test]
 fn input_that_cannot_be_written_down_ends_the_run() {
-    let mut w = world(
+    let mut w = world_over(
         BackendKind::KwinStock,
         vec![reply(click()), reply(finish())],
         FakePdp::allow_all(),
+        Fixture::Gtk4Dialog,
     );
     w.events.refuse_records();
     let report = block_on(run_harness(started(BackendKind::KwinStock), &mut w)).expect("ends");
