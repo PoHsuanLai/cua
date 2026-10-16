@@ -53,6 +53,8 @@ zbus = { workspace = true }
 futures-util = { workspace = true }
 
 [dev-dependencies]
+# The tests present their processes as a fixture tree, which porter reads only in a test build.
+docket-dbus = { workspace = true, features = ["fixture-callers"] }
 almanac-core = { workspace = true }
 cua-action = { workspace = true }
 cua-fake = { workspace = true }
