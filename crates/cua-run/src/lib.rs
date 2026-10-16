@@ -17,6 +17,10 @@
 //!
 //! The machine is the phase table; [`Exec`] carries a run's effects out against the seams
 //! ([`Seams`]), and a driver (cuad's supervisor, `cua-fake`'s harness) feeds the answers back.
+//! Before the model is shown a screen, the machine asks the screen check ([`ScreenCheck`],
+//! [`PatternCheck`]) whether it holds text aimed at the assistant; a suspicious screen pauses the
+//! run and asks the person ([`ScreenVerdict`]).
+//!
 //! Besides the machine: [`classify_effect`], [`turn`] (the model's turn from an observation, with
 //! the messages that reached the run as notes), [`mode_support`], [`CuaConfig`], [`LeaseBook`] and
 //! [`stalled`].
@@ -61,6 +65,7 @@ mod machine;
 mod mode;
 mod model;
 mod observation;
+mod screen;
 mod seams;
 mod sensitivity;
 mod shortcuts;
@@ -86,6 +91,11 @@ pub use mode::{choose_mode, mode_support};
 pub use model::{CuaModel, CuaModelError, StepEvent, StepSink, ThoughtText};
 pub use observation::{
     ContextObs, CursorObs, Focus, Observation, TreeAbsence, TreeObs, Visibility, WindowInfo,
+};
+pub use screen::{
+    Asking, EXCERPT_CHARS, Excerpt, Family, HiddenKind, MAX_REASONS, MIN_WORDS, PatternCheck,
+    READER_CHARS, ReaderMode, ReaderWait, Reason, ScreenCheck, ScreenRead, ScreenText, ScreenTrack,
+    ScreenVerdict, ScreenView, Suspicion, UnseenWhy, WindowKey,
 };
 pub use seams::{
     Clock, GateCheck, GateEvent, GateLink, LinkError, MessageLink, Parts, RecordSink, Seams,

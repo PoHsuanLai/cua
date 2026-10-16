@@ -41,6 +41,9 @@ fn said_of(outcome: CuaOutcome) -> &'static str {
         CuaOutcome::Blocked(BlockedOn::NeedsCapability) => {
             "This needs something this desktop does not offer yet."
         }
+        CuaOutcome::Blocked(BlockedOn::ScreenSuspicious(_)) => {
+            "Stopped: the screen showed text that looked like instructions for the assistant."
+        }
         CuaOutcome::Cancelled(CancelledBy::KillSwitch) => "Stopped by the kill switch.",
         CuaOutcome::Cancelled(CancelledBy::User | CancelledBy::Planner) => "",
         CuaOutcome::BudgetOut(RunBudgetKind::Steps) => "Ran out of steps.",

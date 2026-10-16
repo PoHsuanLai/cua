@@ -1,6 +1,7 @@
 //! What the machine remembers between inputs beyond the phase: small, typed, and never pixels or
 //! thought text.
 
+use crate::screen::ScreenTrack;
 use crate::sensitivity::WindowSensitivity;
 use cua_bus::{ActionOutcome, AuthorisedBy, FrameNote, ThoughtDigest};
 use cua_desktop::Stamp;
@@ -47,6 +48,12 @@ pub enum Held {
     Nothing,
     /// The head action waits for the person's answer to the question the run asked for it.
     Sensitive(WindowSensitivity),
+    /// The run asked because the screen looks aimed at the assistant (`RunTrack::screen` says
+    /// what was found); the look waits for the answer, and a yes lets the model be called.
+    SuspiciousScreen,
+    /// The head action sends something out or removes something, and the run has seen a
+    /// suspicious screen: the person is asked first, as for a sensitive window.
+    AfterSuspicion,
 }
 
 /// The machine's own notes on the current run.
@@ -75,6 +82,9 @@ pub struct RunTrack {
     /// The id of the last question asked, so that no two questions of a run share one.
     #[serde(default)]
     pub last_question: u64,
+    /// What the screen check found and what the person said of it.
+    #[serde(default)]
+    pub screen: ScreenTrack,
 }
 
 impl RunTrack {
@@ -91,6 +101,7 @@ impl RunTrack {
             proposed: 0,
             held: Held::Nothing,
             last_question: 0,
+            screen: ScreenTrack::default(),
         }
     }
 }

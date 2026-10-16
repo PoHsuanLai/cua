@@ -8,6 +8,7 @@ use crate::machine::phase::{ActionQueue, RunPhase};
 use crate::machine::step;
 use crate::machine::track::RunTrack;
 use crate::observation::Observation;
+use crate::screen::ReaderMode;
 use crate::stall::Repeats;
 use a11y_tree::NodeBudget;
 use cua_bus::{BudgetUse, CuaTask, RunStateSlug};
@@ -39,6 +40,10 @@ pub struct RunEnv {
     /// The supervisor decides it; the caller's task never carries it.
     #[serde(default = "strictest_grant")]
     pub grant_level: Level,
+    /// Whether the screen's text is also read by the quarantined reader. Off unless the daemon
+    /// has a reader to ask.
+    #[serde(default)]
+    pub reader: ReaderMode,
 }
 
 /// The level of a run whose supervisor did not say: ask every time.
@@ -57,6 +62,7 @@ impl RunEnv {
             tree_max_nodes: config.tree_max_nodes,
             keys: KeyWorld::default(),
             grant_level: strictest_grant(),
+            reader: ReaderMode::Off,
         }
     }
 
@@ -66,6 +72,11 @@ impl RunEnv {
             grant_level,
             ..self
         }
+    }
+
+    /// The same environment with the quarantined reader switched `reader`.
+    pub fn with_reader(self, reader: ReaderMode) -> RunEnv {
+        RunEnv { reader, ..self }
     }
 
     /// The same environment on a desktop with these key conventions.

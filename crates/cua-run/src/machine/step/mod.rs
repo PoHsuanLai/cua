@@ -5,12 +5,14 @@ mod act;
 mod authorise;
 mod model;
 mod observe;
+mod screen;
 
 use act::{checked, damaged, inject_failed, injected, settling, state_moved};
 use authorise::{answered, confirming, verdict};
 use model::proceed;
 use model::{model_event, model_failed, model_replied};
 use observe::{capture_failed, observed};
+use screen::screen_read;
 
 use crate::machine::control::{cancel, desktop, hand_back, pause, resume, take_over};
 use crate::machine::effect::RunEffect;
@@ -133,6 +135,7 @@ fn dispatch(run: &mut Run, fx: &mut Vec<RunEffect>, input: RunInput, at: Stamp) 
         RunInput::ModelEvent(event) => model_event(run, fx, event),
         RunInput::ModelReplied(reply) => model_replied(run, fx, at, *reply),
         RunInput::ModelFailed(error) => model_failed(run, fx, error),
+        RunInput::ScreenRead(read) => screen_read(run, fx, read),
         RunInput::Confirming(id) => confirming(run, fx, id),
         RunInput::Verdict(answer) => verdict(run, fx, at, answer),
         RunInput::GateFailed(_) => {

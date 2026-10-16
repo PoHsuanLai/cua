@@ -3,6 +3,7 @@
 
 use crate::model::{CuaModelError, StepEvent};
 use crate::observation::Observation;
+use crate::screen::ScreenRead;
 use crate::seams::LinkError;
 use cua_bus::QuestionId;
 use cua_desktop::{DesktopError, DesktopEvent, LeaseGrant};
@@ -72,6 +73,8 @@ pub enum RunInput {
     ModelReplied(Box<ModelReply>),
     /// The model failed.
     ModelFailed(CuaModelError),
+    /// The quarantined reader's answer about the screen's text (`RunEffect::ReadScreen`).
+    ScreenRead(ScreenRead),
     /// The router will ask the person about the head action (`Progress(Confirming)`).
     Confirming(ConfirmId),
     /// The router's answer for the head action.

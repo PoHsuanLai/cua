@@ -1,14 +1,14 @@
 //! What the machine does with a look at the window: an observation, or a capture that failed.
 
 use super::over_budget;
+use super::screen;
 use crate::machine::effect::{HintSource, RunEffect};
 use crate::machine::finish::finish_plain;
-use crate::machine::ops::{enter, screen_label};
+use crate::machine::ops::screen_label;
 use crate::machine::phase::RunPhase;
 use crate::machine::run::Run;
 use crate::observation::{CursorObs, Observation};
 use crate::stall::Stall;
-use crate::turn::turn;
 use cua_bus::FrameNote;
 use cua_bus::{CuaOutcome, FailReason, RunBudgetKind};
 use maskcap::{FrameDigest, FrameWant, digest};
@@ -44,13 +44,8 @@ pub(super) fn observed(run: &mut Run, fx: &mut Vec<RunEffect>, mut obs: Observat
         finish_plain(run, fx, CuaOutcome::BudgetOut(RunBudgetKind::Steps));
         return;
     }
-    let (request, frame) = turn(&obs);
     run.working = Some(Box::new(obs));
-    enter(run, fx, RunPhase::Thinking(n));
-    fx.push(RunEffect::CallModel {
-        request: Box::new(request),
-        frame,
-    });
+    screen::stage(run, fx, n);
 }
 
 pub(super) fn capture_failed(run: &mut Run, fx: &mut Vec<RunEffect>, error: maskcap::CaptureError) {

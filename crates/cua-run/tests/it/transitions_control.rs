@@ -278,6 +278,7 @@ fn every_input_in_every_phase_has_a_row_and_leaves_a_valid_run() {
             RunInput::ModelEvent(StepEvent::ThoughtDelta(cua_run::ThoughtText("x".into()))),
             RunInput::ModelReplied(reply(vec![click_at(1, 1)])),
             RunInput::ModelFailed(CuaModelError::Transient),
+            RunInput::ScreenRead(cua_run::ScreenRead::Instructions),
             RunInput::Confirming(ConfirmId::parse("c-9").unwrap()),
             RunInput::Verdict(GateAnswer::Run),
             RunInput::GateFailed(cua_run::LinkError::Unavailable),

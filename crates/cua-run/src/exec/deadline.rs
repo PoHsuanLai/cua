@@ -10,6 +10,7 @@ use super::Exec;
 use crate::machine::effect::RunEffect;
 use crate::machine::input::{CheckResult, RunInput};
 use crate::model::CuaModelError;
+use crate::screen::ScreenRead;
 use crate::seams::{LinkError, Seams};
 use cua_desktop::DesktopError;
 use maskcap::CaptureError;
@@ -50,6 +51,7 @@ pub fn deadline_of(effect: &RunEffect) -> Option<Deadline> {
         RunEffect::CallModel { .. } => {
             (MODEL, Some(RunInput::ModelFailed(CuaModelError::Transient)))
         }
+        RunEffect::ReadScreen(_) => (QUICK, Some(RunInput::ScreenRead(ScreenRead::Unavailable))),
         RunEffect::Check(_) => (GATE, Some(RunInput::GateFailed(LinkError::Unavailable))),
         RunEffect::Inject(_) => (
             QUICK,

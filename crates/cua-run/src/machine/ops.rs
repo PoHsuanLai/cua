@@ -7,6 +7,7 @@ use crate::machine::kept::kept_action;
 use crate::machine::phase::RunPhase;
 use crate::machine::run::Run;
 use crate::observation::{Observation, TreeObs};
+use crate::screen::ReaderWait;
 use crate::window_class::window_class_in;
 use a11y_tree::{A11yNode, role_word};
 use cua_action::{Coord, CuaAction, Point, Rect, Size, Target, WindowSpace};
@@ -60,6 +61,8 @@ pub(crate) fn observe(
         hints: HintSource::FromTree,
     });
     run.track.capture = crate::machine::track::CaptureTries::First;
+    // An answer from the reader that arrives for an earlier look is not for this one.
+    run.track.screen.reader = ReaderWait::Idle;
 }
 
 /// The next step's index.
@@ -186,6 +189,8 @@ pub(crate) enum Unaimed {
     Outside,
     /// A node the tree does not have.
     NoSuchNode,
+    /// The window is not the app the run was allowed to drive.
+    OutsideApp,
 }
 
 fn resolve_target(
@@ -249,6 +254,16 @@ pub(crate) fn glow_for(planned: &PlannedAction) -> GlowState {
         },
         None => GlowState::Working,
     }
+}
+
+/// The effect the head action would have, as the router is told it. None when nothing is queued
+/// or the run has no look yet.
+pub(crate) fn head_effect(run: &Run) -> Option<prov::Effect> {
+    let obs = run.working.as_ref()?;
+    let head = run.pending.actions.front()?;
+    let node = first_target(&head.action).and_then(|t| node_at(obs, &t));
+    let class = window_class_in(&obs.window.app, &obs.window.title.value, nodes_of(obs));
+    Some(classify_effect_in(run.env.keys, &head.action, node, class).0)
 }
 
 /// The question to the router about the head action.

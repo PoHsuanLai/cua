@@ -241,6 +241,7 @@ pub fn reply(actions: Vec<CuaAction<WindowSpace>>) -> Box<ModelReply> {
 }
 
 /// A run and the effects its last input produced.
+#[derive(Clone)]
 pub struct Drive {
     pub run: Run,
     pub effects: Vec<RunEffect>,

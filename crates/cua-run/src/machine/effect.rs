@@ -2,6 +2,7 @@
 //! out; the machine never touches the world.
 
 use crate::model::ThoughtText;
+use crate::screen::ScreenText;
 use crate::turn::FrameAttachment;
 use a11y_tree::{NodeBudget, NodeSelector};
 use cua_bus::{
@@ -80,6 +81,10 @@ pub enum RunEffect {
     Snapshot(NodeBudget),
     /// Ask the app for its `Context`.
     FetchContext,
+    /// Ask the quarantined reader whether the screen's text is aimed at an assistant (only when
+    /// the deterministic check found nothing and the reader is on). Answered with
+    /// `RunInput::ScreenRead`.
+    ReadScreen(ScreenText),
     /// Send the model its turn (the request, and the frame beside it).
     CallModel {
         /// The request.

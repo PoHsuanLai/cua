@@ -1,6 +1,7 @@
 //! Authorising the next action: the router's gate, the person's questions and the confirmation.
 
 use super::act::act;
+use super::screen;
 use crate::machine::control::{self, pause};
 use crate::machine::effect::{CuaSignal, RunEffect};
 use crate::machine::finish::{Said, finish, finish_plain};
@@ -34,7 +35,14 @@ pub(super) fn authorise(
         finish_plain(run, fx, CuaOutcome::Failed(FailReason::Capture));
         return;
     };
-    match aim(&obs, &head.action) {
+    // Only the app the person allowed is driven: a window of another app is never aimed at,
+    // whatever the lease said at the start.
+    let aimed = if obs.window.app == run.task.app {
+        aim(&obs, &head.action)
+    } else {
+        Err(crate::machine::ops::Unaimed::OutsideApp)
+    };
+    match aimed {
         Ok(_) => {
             run.track.authorised = AuthorisedBy::Policy;
             enter(run, fx, RunPhase::Authorising(n));
@@ -43,7 +51,8 @@ pub(super) fn authorise(
         Err(why) => {
             run.pending.actions.pop_front();
             let result = match why {
-                crate::machine::ops::Unaimed::Outside => {
+                crate::machine::ops::Unaimed::Outside
+                | crate::machine::ops::Unaimed::OutsideApp => {
                     ActionResult::Refused(Refusal::Local(LocalRefusal::OutsideLease))
                 }
                 crate::machine::ops::Unaimed::NoSuchNode => {
@@ -127,7 +136,13 @@ pub(super) fn ask(run: &mut Run, fx: &mut Vec<RunEffect>, n: StepIndex, head: Ta
 
 /// Puts a question to the person and waits for the answer: the model's own, or the one a
 /// sensitive window forces.
-fn raise(run: &mut Run, fx: &mut Vec<RunEffect>, n: StepIndex, question: &str, choices: &[&str]) {
+pub(super) fn raise(
+    run: &mut Run,
+    fx: &mut Vec<RunEffect>,
+    n: StepIndex,
+    question: &str,
+    choices: &[&str],
+) {
     // The step's index, or the one after the last question when a step asks twice (a forced
     // question, then the model's own).
     let id = QuestionId(u64::from(n.0).max(run.track.last_question.saturating_add(1)));
@@ -227,9 +242,16 @@ pub(super) fn answered(
     if question != asked {
         return;
     }
-    if run.track.held != Held::Nothing {
-        held_answer(run, fx, at, n, &answer);
-        return;
+    match run.track.held {
+        Held::Nothing => {}
+        Held::SuspiciousScreen => {
+            screen::answered(run, fx, n, &answer);
+            return;
+        }
+        Held::Sensitive(_) | Held::AfterSuspicion => {
+            held_answer(run, fx, at, n, &answer);
+            return;
+        }
     }
     let action = run
         .pending
@@ -293,6 +315,9 @@ pub(super) fn verdict(run: &mut Run, fx: &mut Vec<RunEffect>, at: Stamp, answer:
                 run.track.authorised = AuthorisedBy::User;
             } else if let Some(why) = sensitive_head(run) {
                 hold(run, fx, n, why);
+                return;
+            } else if let Some(effect) = screen::suspicious_head(run) {
+                screen::hold_after_suspicion(run, fx, n, effect);
                 return;
             }
             act(run, fx, at, n);

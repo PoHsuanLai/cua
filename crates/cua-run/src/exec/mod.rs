@@ -15,6 +15,8 @@ mod session;
 
 use crate::machine::effect::{CuaSignal, RunEffect};
 use crate::machine::input::RunInput;
+use crate::model::CuaModel;
+use crate::screen::ScreenRead;
 use crate::seams::{
     Clock, GateCheck, GateEvent, GateLink, LinkError, MessageLink, Parts, RecordSink, Seams,
 };
@@ -177,7 +179,10 @@ impl<'a, S: Seams> Exec<'a, S> {
 
     /// Whether `effect` talks to the model, and so needs it handed in.
     pub fn needs_model(effect: &RunEffect) -> bool {
-        matches!(effect, RunEffect::CallModel { .. })
+        matches!(
+            effect,
+            RunEffect::CallModel { .. } | RunEffect::ReadScreen(_)
+        )
     }
 
     /// The next change of the screen, from the capture session; `None` when it has none to
@@ -221,6 +226,13 @@ impl<'a, S: Seams> Exec<'a, S> {
                 Some(model) => self.call_model(model, *request, frame, out).await,
                 None => out.input(RunInput::ModelFailed(crate::model::CuaModelError::Fatal)),
             },
+            RunEffect::ReadScreen(text) => {
+                let read = match model {
+                    Some(model) => model.classify_screen(&text).await,
+                    None => ScreenRead::Unavailable,
+                };
+                out.input(RunInput::ScreenRead(read));
+            }
             RunEffect::CancelModel | RunEffect::CancelSettle | RunEffect::WatchSettle { .. } => {}
             RunEffect::Check(ask) => self.check(*ask, out).await,
             RunEffect::Proceed => self.proceed(out).await,

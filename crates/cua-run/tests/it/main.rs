@@ -1,8 +1,10 @@
 mod machine;
+mod screen;
 mod support;
 mod tables;
 mod transitions;
 mod transitions_control;
+mod transitions_screen;
 mod turn;
 
 /// Every module file next to this one must be declared above, or its tests never run.

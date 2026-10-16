@@ -3,7 +3,7 @@
 use super::cost::reply_cost;
 use super::fit::{Fit, fit_of};
 use super::{Exec, ModelSession, Outlet};
-use crate::machine::input::{ModelReply, RunInput};
+use crate::machine::input::{ModelReply, Moved, RunInput};
 use crate::model::{CuaModel, CuaModelError, StepEvent, StepSink};
 use crate::seams::{GateCheck, Seams};
 use crate::turn::FrameAttachment;
@@ -104,6 +104,11 @@ impl<S: Seams> Exec<'_, S> {
         };
         if fit_of(&now, planned.window, self.seam.seat.caps().isolation) != Fit::Ready {
             return out.input(RunInput::InjectFailed(SeatError::OutsideLease));
+        }
+        // Only the app the person allowed is driven: the same window id under another app is
+        // not the window that was leased.
+        if now.app != self.task.app {
+            return out.input(RunInput::StateMoved(Moved::Identity));
         }
         // Not what the aim was made against (moved, another owner, the focus gone elsewhere):
         // nothing is injected and the run looks again.

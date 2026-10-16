@@ -183,6 +183,7 @@ fn is_work(effect: &RunEffect) -> bool {
             | RunEffect::Snapshot(_)
             | RunEffect::FetchContext
             | RunEffect::CallModel { .. }
+            | RunEffect::ReadScreen(_)
             | RunEffect::Check(_)
             | RunEffect::Proceed
             | RunEffect::Inject(_)

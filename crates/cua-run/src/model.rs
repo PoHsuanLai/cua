@@ -1,5 +1,6 @@
 //! The seam a run reaches its model through: inferd in cuad, a script in tests.
 
+use crate::screen::{ScreenRead, ScreenText};
 use crate::turn::FrameAttachment;
 use cua_action::{CuaAction, WindowSpace};
 use porter_infer::{
@@ -100,6 +101,16 @@ pub trait CuaModel: Send {
 
     /// Which account and model answered, once inferd has routed the session.
     fn served(&self) -> Option<ServedBy>;
+
+    /// Asks the quarantined reader whether `text`, read off the screen, is aimed at an assistant.
+    /// The reader reads untrusted text under a closed task, has no tools and answers one of
+    /// three words; nothing it says becomes text in the run. By default the model has no reader
+    /// to ask, and the answer is [`ScreenRead::Unavailable`]: the deterministic check stands
+    /// alone.
+    fn classify_screen(&mut self, text: &ScreenText) -> impl Future<Output = ScreenRead> + Send {
+        let _ = text;
+        async { ScreenRead::Unavailable }
+    }
 }
 
 #[cfg(test)]
