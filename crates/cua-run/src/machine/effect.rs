@@ -59,7 +59,7 @@ pub enum RunEffect {
         /// The Space.
         space: SpaceId,
         /// The consent level the person set for the app.
-        level: docket_core::limit::Level,
+        level: docket_core::Level,
     },
     /// Ask the desktop for the window.
     AcquireLease(LeaseRequest),

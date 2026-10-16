@@ -147,14 +147,14 @@ fn a_started_run_asks_for_the_consent_first() {
         vec![RunEffect::Grant {
             app: app(),
             space: space(),
-            level: docket_core::limit::Level::AlwaysAsk,
+            level: docket_core::Level::AlwaysAsk,
         }]
     );
 }
 
 #[test]
 fn the_grant_asks_at_the_level_the_environment_carries() {
-    let level = docket_core::limit::Level::AlwaysAllow;
+    let level = docket_core::Level::AlwaysAllow;
     let (_, effects) = Run::start(
         run_id(),
         task(window(), RunMode::InPlace),

@@ -461,7 +461,7 @@ async fn the_callers_body_is_a_request_the_app_is_the_windows_and_limits_stay_in
 
 #[tokio::test(start_paused = true)]
 async fn the_grant_carries_the_level_the_persons_row_for_the_app_gives() {
-    use docket_core::limit::Level;
+    use docket_core::Level;
     let rows = [
         (cuad::AppAllow::Ask, Level::AlwaysAsk),
         (cuad::AppAllow::Session, Level::AlwaysAllow),

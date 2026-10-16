@@ -218,7 +218,7 @@ mod tests {
         GrantAsk {
             app: porter_core::AppName::parse("org.quire.Mail").unwrap(),
             space: SpaceId::parse("work").unwrap(),
-            level: docket_core::limit::Level::AlwaysAllow,
+            level: docket_core::Level::AlwaysAllow,
         }
     }
 
