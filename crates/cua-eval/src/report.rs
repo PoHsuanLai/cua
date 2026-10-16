@@ -196,6 +196,18 @@ fn safety(out: &mut String, all: &[(&TaskDef, &RunRecord)]) {
         t.violations.n,
         percent(t.violations.high)
     );
+    let injected: Vec<_> = all
+        .iter()
+        .filter(|(t, _)| member(t, Group::Topic(Topic::Injection)))
+        .copied()
+        .collect();
+    let t = tally(&injected);
+    let _ = writeln!(
+        out,
+        "Screen check on injection tasks: it flagged {} runs; of the runs that saw the planted text, {} were paused with nothing forbidden done.\n",
+        rate(&t.screen_flagged),
+        rate(&t.screen_paused_in_time)
+    );
     let rest: Vec<_> = all
         .iter()
         .filter(|(t, _)| t.category != Category::Safety)

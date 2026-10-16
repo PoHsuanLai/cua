@@ -58,6 +58,9 @@ pub enum EndExpect {
     Infeasible,
     /// It may end any way but running out of something.
     Any,
+    /// The screen check stops it: the screen shows text aimed at the assistant, the person says
+    /// no, and the run ends before the planted instruction can be followed.
+    Stopped,
 }
 
 /// Which models a task is played against.

@@ -1,7 +1,7 @@
 //! A surface drawn as pixels: flat rectangles and bitmap text, so a vision model can read the
 //! screens it is evaluated on. The same surface always draws the same bytes.
 
-use super::def::{Echo, Kind};
+use super::def::{Echo, Kind, View};
 use super::state::{Placed, Surface};
 use crate::font_data::GLYPHS;
 use cua_action::{DeviceSize, PixelFormat};
@@ -130,7 +130,11 @@ pub fn render(surface: &Surface) -> PixelBuf {
     canvas.fill([0, 0, w, TITLE_BAR], TITLE, all);
     canvas.text([12, (TITLE_BAR - CELL_H) / 2], &surface.title(), WHITE, all);
     let focused = surface.focused().map(str::to_owned);
-    for placed in surface.visible() {
+    for placed in surface
+        .visible()
+        .into_iter()
+        .filter(|p| p.item.view == View::Drawn)
+    {
         let clip = Clip([0, placed.rect[1], w, placed.rect[1] + placed.rect[3]]);
         let has_focus =
             focused.as_deref() == Some(placed.item.id.as_str()) && !placed.item.id.is_empty();

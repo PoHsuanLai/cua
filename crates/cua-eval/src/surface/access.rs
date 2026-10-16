@@ -9,7 +9,7 @@
 //! the pixel rules and change what the gate is asked. The eval's models never see this tree
 //! either (`run::Timed` drops it from their request).
 
-use super::def::{AxRole, Kind};
+use super::def::{AxRole, Kind, View};
 use super::state::{Placed, Surface};
 use a11y_tree::{
     A11yNode, A11ySnapshot, NodeAction, NodeState, NodeValue, Parent, Role, Sensitivity,
@@ -65,7 +65,10 @@ fn shown() -> BTreeSet<NodeState> {
 
 fn node_of(placed: &Placed<'_>, focused: bool, label: &Label) -> A11yNode {
     let kind = placed.item.kind;
-    let mut states = shown();
+    let mut states = match placed.item.view {
+        View::Drawn => shown(),
+        View::TreeOnly => BTreeSet::from([NodeState::Enabled]),
+    };
     if kind != Kind::Label {
         states.insert(NodeState::Focusable);
     }

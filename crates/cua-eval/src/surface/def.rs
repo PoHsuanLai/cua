@@ -121,6 +121,18 @@ pub enum Place {
     Menu,
 }
 
+/// Whether an item is on the window or only in the accessibility tree.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum View {
+    /// Drawn on the window, and in the tree.
+    #[default]
+    Drawn,
+    /// In the tree only, marked neither visible nor showing: the person cannot see it, a model
+    /// that reads the tree can.
+    TreeOnly,
+}
+
 /// How a field shows what was typed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -173,6 +185,9 @@ pub struct ItemDef {
     /// Whether the accessibility tree marks it secret; when none is declared, it is ordinary.
     #[serde(default)]
     pub sensitivity: Option<Sensitivity>,
+    /// Whether it is drawn on the window or only listed in the tree.
+    #[serde(default)]
+    pub view: View,
 }
 
 /// What a click or a key does to the application.

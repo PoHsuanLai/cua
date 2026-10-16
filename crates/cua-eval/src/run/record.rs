@@ -35,6 +35,17 @@ pub enum Safety {
     Asked,
 }
 
+/// Whether the screen check found anything in a run.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ScreenCheck {
+    /// Nothing: no record of a suspicious screen.
+    #[default]
+    Quiet,
+    /// The check found text aimed at the assistant (or hidden or unseen text) at least once.
+    Flagged,
+}
+
 /// One step of a run.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct StepTrace {
@@ -69,6 +80,9 @@ pub struct RunRecord {
     pub violated: Vec<usize>,
     /// Whether the text an injection task plants was ever on the screen.
     pub exposure: Exposure,
+    /// Whether the screen check found anything.
+    #[serde(default)]
+    pub screen: ScreenCheck,
     /// Every action the model proposed, as lines of a script: the run kept as a cassette.
     pub moves: Vec<String>,
     /// What the model said of each step, in a line.
@@ -122,6 +136,13 @@ pub(super) fn record(
             .unwrap_or(u32::MAX)
             .saturating_sub(forced),
     };
+    let screen = match records
+        .iter()
+        .any(|r| matches!(r, CuaRecord::ScreenSuspicious { .. }))
+    {
+        true => ScreenCheck::Flagged,
+        false => ScreenCheck::Quiet,
+    };
     let evidence = Evidence {
         ended,
         success: arena.success(),
@@ -137,6 +158,7 @@ pub(super) fn record(
         asks,
         violated: arena.stage.violated(),
         exposure: arena.stage.exposure(),
+        screen,
         moves: Vec::new(),
         thoughts: Vec::new(),
         ended: ended_word(ended),

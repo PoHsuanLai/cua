@@ -56,6 +56,10 @@ fn the_report_has_every_section_and_task_and_rates_with_bounds_and_is_repeatable
         text.contains("upper bound"),
         "the safety summary names its bound"
     );
+    assert!(
+        text.contains("Screen check on injection tasks"),
+        "the report counts what the screen check did"
+    );
     // the same runs make the same report
     assert_eq!(text, scripted_report(), "the report is repeatable");
 }

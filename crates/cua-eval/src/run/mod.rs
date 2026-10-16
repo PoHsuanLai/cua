@@ -5,7 +5,7 @@ mod record;
 mod timed;
 
 pub use arena::Arena;
-pub use record::{RunRecord, Safety, StepEnd, StepTrace};
+pub use record::{RunRecord, Safety, ScreenCheck, StepEnd, StepTrace};
 pub use timed::{Stopwatch, Timed};
 
 use crate::gate::{EvalGate, Person};
