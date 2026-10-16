@@ -12,6 +12,7 @@ use crate::stall::Repeats;
 use a11y_tree::NodeBudget;
 use cua_bus::{BudgetUse, CuaTask, RunStateSlug};
 use cua_desktop::{BackendCaps, LeaseId, Ms, Stamp};
+use docket_core::limit::Level;
 use porter_infer::ServedBy;
 use prov::{Label, RunId};
 use serde::{Deserialize, Serialize};
@@ -34,6 +35,15 @@ pub struct RunEnv {
     /// window.
     #[serde(default)]
     pub keys: KeyWorld,
+    /// The consent level the person set for this run's app (`cua.apps`), sent with the grant.
+    /// The supervisor decides it; the caller's task never carries it.
+    #[serde(default = "strictest_grant")]
+    pub grant_level: Level,
+}
+
+/// The level of a run whose supervisor did not say: ask every time.
+fn strictest_grant() -> Level {
+    Level::AlwaysAsk
 }
 
 impl RunEnv {
@@ -46,6 +56,15 @@ impl RunEnv {
             autopause: config.autopause,
             tree_max_nodes: config.tree_max_nodes,
             keys: KeyWorld::default(),
+            grant_level: strictest_grant(),
+        }
+    }
+
+    /// The same environment for an app the person allowed at `grant_level`.
+    pub fn with_grant_level(self, grant_level: Level) -> RunEnv {
+        RunEnv {
+            grant_level,
+            ..self
         }
     }
 

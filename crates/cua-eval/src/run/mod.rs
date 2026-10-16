@@ -88,6 +88,7 @@ async fn drive<M: CuaModel + 'static>(
     let mut effects: VecDeque<RunEffect> = VecDeque::from([RunEffect::Grant {
         app: run.task.app.clone(),
         space: run.task.space.clone(),
+        level: run.env.grant_level,
     }]);
     let mut run = run;
     let mut out = Collected::default();

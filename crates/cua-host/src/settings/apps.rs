@@ -1,5 +1,6 @@
 //! `cua.apps`: which apps computer use may drive and how it asks for each.
 
+use docket_core::limit::Level;
 use porter_core::AppName;
 
 /// How computer use is allowed for one app (design/22 section 3.29, QUESTIONS S9).
@@ -24,6 +25,19 @@ impl AppAllow {
             "session" => Some(AppAllow::Session),
             "always" => Some(AppAllow::Always),
             _ => None,
+        }
+    }
+}
+
+impl AppAllow {
+    /// The consent level the router is asked for under this allow.
+    ///
+    /// `Session` maps to `AlwaysAllow` because docket's level has no per-session form: the
+    /// router's own store and its own question cover the rest, and it can only be stricter.
+    pub fn grant_level(self) -> Level {
+        match self {
+            AppAllow::Ask => Level::AlwaysAsk,
+            AppAllow::Session | AppAllow::Always => Level::AlwaysAllow,
         }
     }
 }

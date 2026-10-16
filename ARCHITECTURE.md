@@ -107,7 +107,7 @@ only; the pure set never reaches an effect crate; `wayland-client` is behind the
 | the gate vocabulary `RunMode`, `WindowTrust`, `WindowClass` | stoker `cua-action`; `cua-desktop` re-exports `RunMode` and `WindowTrust` |
 | the gate contract (`CuaAsk`, `GateAnswer`, `EffectBasis`, `GrantAsk`, `MessageDraft`) | docket `docket-core` |
 | the confirmation | the router's, through `Confirm1`; cua only stops its input (`RunEffect::SuspendLease(Consent)`, then `Proceed`) |
-| the per-app consent | docket's `ActionGrant` with caller Cua, asked through `Gate.Grant` |
+| the per-app consent | docket's `ActionGrant` with caller Cua, asked through `Gate.Grant` at the level the person's `cua.apps` row gives (`RunEnv::grant_level`) |
 | desktop vocabulary, units (`Stamp`, `Ms`, `Digest32`), leases, backend capabilities | `cua-desktop` |
 | frames, masks, digests, settling | `maskcap` |
 | input operations, the plan, the keymap, the EI region map | `seat-input` (the region map is `seat_input::region`; nothing else names a global position) |
@@ -144,7 +144,7 @@ machine state, input and effect, every record and body.
 ```
 Cua1.Manager.Start (router or planner only; Disabled while cua.enabled = off)
   -> Run::start: mode_support(caps, mode)        Unsupported  -> Finished(Blocked(ModeUnsupported))
-  Granting     Gate.Grant(app, space)            Refused      -> Finished(Blocked(ConsentDenied))
+  Granting     Gate.Grant(app, space, level)     Refused/Never -> Finished(Blocked(ConsentDenied))
   Leasing      LeaseControl::lease (one run per window; a Shell window is never leasable)
   loop per step:
     Observing  capture (masked: by cuad on stock, by the compositor on the fork) + a11y snapshot

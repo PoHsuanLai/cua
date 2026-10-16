@@ -242,9 +242,9 @@ impl<S: Drivable> Supervisor<S> {
     ) -> Result<RunId, ControlRefusal> {
         guard(caller, CuaMember::Start, self.settings().enabled)?;
         // Computer use is on per app (`cua.apps`): an app the person has not listed is not on.
-        if self.apps().rule_for(&task.app).is_none() {
+        let Some(allow) = self.apps().rule_for(&task.app) else {
             return Err(ControlRefusal::Disabled);
-        }
+        };
         let caps = self.shared.desktop.caps();
         if let ModeSupport::Unsupported(_) = mode_support(&caps, task.mode) {
             return Err(ControlRefusal::ModeUnsupported);
@@ -272,7 +272,7 @@ impl<S: Drivable> Supervisor<S> {
         if caller == CuaCaller::Companion {
             task = untrusted_from_planner(task);
         }
-        let env = RunEnv::new(&self.settings(), caps);
+        let env = RunEnv::new(&self.settings(), caps).with_grant_level(allow.grant_level());
         let (control, inbox) = mpsc::unbounded_channel();
         let id = {
             let mut state = self.shared.state();

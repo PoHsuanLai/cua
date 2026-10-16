@@ -379,10 +379,14 @@ section 9.2). cua's covers the `cua.*` keys of section 3.29 that cuad reads, and
    `Supervisor::start` answers `Disabled` for it ("off by default and on per app"). A supervisor built in
    code (every existing test) is `Apps::Unrestricted`, so no test needed a list. A row with a bad `app` or
    `allow` is dropped and logged (`cua.apps[1]`); a browser (by its id: `is_browser`) asked for `always` is
-   made `ask` and logged (QUESTIONS S9). **`allow` is read and checked but not yet acted on beyond that:**
-   `session` and `always` do not skip the router's consent question, because consent lives in docket's
-   `Gate.Grant` and its `GrantScope`. Interface ask for docket: `GrantAsk` gains the person's
-   pre-approval (`allow`) so the router can answer a listed app without asking.
+   made `ask` and logged (QUESTIONS S9). **`allow` reaches the router as the grant's level (audit
+   CUA-14, cua half done):** the supervisor maps the app's row with `AppAllow::grant_level` (`ask` ->
+   `Level::AlwaysAsk`; `session` and `always` -> `Level::AlwaysAllow`, since docket's level has no
+   per-session form and the router's store and its own question cover the rest; `Apps::Unrestricted`
+   is `ask`) and the run carries it in `RunEnv::grant_level`, so the caller's task never chooses it.
+   `Gate.Grant` sends `GrantAsk { app, space, level }`. The router may only be stricter: a
+   `GrantAnswer::Never` (the person's or an administrator's "never") ends the run
+   `Blocked(ConsentDenied)` with no lease.
 6. **The provider's manifest follows `cua.enabled` at start only.** `CuaProvider::manifest` returns a
    reference, so `reach` (`Hidden` or `Offered`) is fixed when `serve_on` runs; the guard that refuses a
    `Start` is live. Closes when docket-client's provider seam can change its manifest after start.

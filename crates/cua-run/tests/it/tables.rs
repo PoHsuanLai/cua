@@ -119,6 +119,7 @@ fn effects_that_talk_to_a_neighbour_have_a_deadline_and_the_ones_that_wait_on_th
     let waits_on_the_person = RunEffect::Grant {
         app: AppName::parse("org.gnome.Calculator").expect("an app"),
         space: SpaceId::parse("desktop").expect("a space"),
+        level: docket_core::limit::Level::AlwaysAsk,
     };
     assert_eq!(deadline_of(&waits_on_the_person), None);
     assert_eq!(deadline_of(&RunEffect::Proceed), None);

@@ -104,6 +104,7 @@ pub async fn run_harness_answering(
         effects.push_back(RunEffect::Grant {
             app: run.task.app.clone(),
             space: run.task.space.clone(),
+            level: run.env.grant_level,
         });
     }
     let mut run = run;

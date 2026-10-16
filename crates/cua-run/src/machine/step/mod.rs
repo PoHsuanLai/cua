@@ -77,6 +77,7 @@ pub(crate) fn start(id: RunId, task: CuaTask, env: RunEnv, at: Stamp) -> (Run, V
         fx.push(RunEffect::Grant {
             app: run.task.app.clone(),
             space: run.task.space.clone(),
+            level: run.env.grant_level,
         });
     }
     (run, fx)
@@ -164,7 +165,10 @@ fn granted(run: &mut Run, fx: &mut Vec<RunEffect>, answer: GrantAnswer) {
         (GrantAnswer::Granted, None) => {
             finish_plain(run, fx, CuaOutcome::Blocked(BlockedOn::NeedsCapability));
         }
-        (GrantAnswer::Refused(_), _) => {
+        // The person's or an administrator's "never" covers the app: refused without asking, so
+        // no lease is taken. The bus has no separate word for it: to a reader it is a consent
+        // that was not given.
+        (GrantAnswer::Refused(_) | GrantAnswer::Never, _) => {
             finish_plain(run, fx, CuaOutcome::Blocked(BlockedOn::ConsentDenied));
         }
     }

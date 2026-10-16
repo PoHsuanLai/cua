@@ -146,8 +146,44 @@ fn a_started_run_asks_for_the_consent_first() {
         effects,
         vec![RunEffect::Grant {
             app: app(),
-            space: space()
+            space: space(),
+            level: docket_core::limit::Level::AlwaysAsk,
         }]
+    );
+}
+
+#[test]
+fn the_grant_asks_at_the_level_the_environment_carries() {
+    let level = docket_core::limit::Level::AlwaysAllow;
+    let (_, effects) = Run::start(
+        run_id(),
+        task(window(), RunMode::InPlace),
+        env(BackendKind::KwinStock).with_grant_level(level),
+        Stamp(0),
+    );
+    assert!(matches!(
+        effects.as_slice(),
+        [RunEffect::Grant { level: asked, .. }] if *asked == level
+    ));
+}
+
+#[test]
+fn a_never_answer_blocks_the_run_on_consent_and_takes_no_lease() {
+    let (run, _) = Run::start(
+        run_id(),
+        task(window(), RunMode::InPlace),
+        env(BackendKind::KwinStock),
+        Stamp(0),
+    );
+    let (run, effects) = run.step(RunInput::Granted(GrantAnswer::Never), Stamp(10));
+    assert_eq!(
+        run.phase,
+        RunPhase::Finished(CuaOutcome::Blocked(BlockedOn::ConsentDenied))
+    );
+    assert!(
+        !effects
+            .iter()
+            .any(|e| matches!(e, RunEffect::AcquireLease(_)))
     );
 }
 

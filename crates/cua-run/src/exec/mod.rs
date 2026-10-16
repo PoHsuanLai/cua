@@ -203,8 +203,8 @@ impl<'a, S: Seams> Exec<'a, S> {
             self.seam.events.open(&self.run, &self.task).await;
         }
         match effect {
-            RunEffect::Grant { app, space } => {
-                let answer = self.seam.gate.grant(GrantAsk { app, space }).await;
+            RunEffect::Grant { app, space, level } => {
+                let answer = self.seam.gate.grant(GrantAsk { app, space, level }).await;
                 out.input(match answer {
                     Ok(answer) => RunInput::Granted(answer),
                     Err(error) => RunInput::GrantFailed(error),

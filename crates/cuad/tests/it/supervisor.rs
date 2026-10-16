@@ -458,3 +458,30 @@ async fn the_callers_body_is_a_request_the_app_is_the_windows_and_limits_stay_in
     );
     sup.stop_all(CuaCaller::Shell).await.unwrap();
 }
+
+#[tokio::test(start_paused = true)]
+async fn the_grant_carries_the_level_the_persons_row_for_the_app_gives() {
+    use docket_core::limit::Level;
+    let rows = [
+        (cuad::AppAllow::Ask, Level::AlwaysAsk),
+        (cuad::AppAllow::Session, Level::AlwaysAllow),
+        (cuad::AppAllow::Always, Level::AlwaysAllow),
+    ];
+    for (allow, level) in rows {
+        let refused = docket_core::GrantAnswer::Refused(docket_core::ConfirmEnd::Refused);
+        let sup = supervisor(STOCK, vec![], FakePdp::scripted(vec![refused], vec![]));
+        sup.apply_settings(&cuad::CuaSettings {
+            config: sup.settings(),
+            apps: cuad::Apps::Listed(vec![cuad::AppRule {
+                app: cua_fake::scene::app(),
+                allow,
+            }]),
+        });
+        let mut events = sup.subscribe();
+        let id = sup.start(CuaCaller::Router, task()).await.unwrap();
+        ended(&mut events, &id).await;
+        let asks = sup.gate().grant_asks();
+        assert_eq!(asks.len(), 1);
+        assert_eq!(asks[0].level, level, "{allow:?}");
+    }
+}
