@@ -20,7 +20,7 @@ dependencies = [
 [[package]]
 name = "action-review"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=e1e5802168c756dc5c04d5b609b2947d1a36bc27#e1e5802168c756dc5c04d5b609b2947d1a36bc27"
+source = "git+https://github.com/PoHsuanLai/docket?rev=c67929dd060609ce5c039ce87ff0f43507c935a6#c67929dd060609ce5c039ce87ff0f43507c935a6"
 dependencies = [
  "docket-core",
  "model-provider",
@@ -517,7 +517,7 @@ checksum = "fc652a48c352aef3ea3aed32080501cf3ef6ed5da78602a020c991775b0aff04"
 [[package]]
 name = "casement-protocols"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/casement-protocols?rev=4906b775502f14738bbfd0e553792f9310ead017#4906b775502f14738bbfd0e553792f9310ead017"
+source = "git+https://github.com/PoHsuanLai/casement-protocols?rev=8cebc9b498e4e5d5b9ec1b1d7b52e2641d5c094b#8cebc9b498e4e5d5b9ec1b1d7b52e2641d5c094b"
 dependencies = [
  "bitflags 2.13.2",
  "serde",
@@ -672,7 +672,7 @@ dependencies = [
 [[package]]
 name = "companion-wire"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=e1e5802168c756dc5c04d5b609b2947d1a36bc27#e1e5802168c756dc5c04d5b609b2947d1a36bc27"
+source = "git+https://github.com/PoHsuanLai/docket?rev=c67929dd060609ce5c039ce87ff0f43507c935a6#c67929dd060609ce5c039ce87ff0f43507c935a6"
 dependencies = [
  "almanac-core",
  "docket-core",
@@ -1136,7 +1136,7 @@ dependencies = [
 [[package]]
 name = "docket-checkpoint"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=e1e5802168c756dc5c04d5b609b2947d1a36bc27#e1e5802168c756dc5c04d5b609b2947d1a36bc27"
+source = "git+https://github.com/PoHsuanLai/docket?rev=c67929dd060609ce5c039ce87ff0f43507c935a6#c67929dd060609ce5c039ce87ff0f43507c935a6"
 dependencies = [
  "docket-core",
  "porter-core",
@@ -1148,7 +1148,7 @@ dependencies = [
 [[package]]
 name = "docket-checkpoint-git"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=e1e5802168c756dc5c04d5b609b2947d1a36bc27#e1e5802168c756dc5c04d5b609b2947d1a36bc27"
+source = "git+https://github.com/PoHsuanLai/docket?rev=c67929dd060609ce5c039ce87ff0f43507c935a6#c67929dd060609ce5c039ce87ff0f43507c935a6"
 dependencies = [
  "docket-checkpoint",
  "docket-core",
@@ -1162,7 +1162,7 @@ dependencies = [
 [[package]]
 name = "docket-client"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=e1e5802168c756dc5c04d5b609b2947d1a36bc27#e1e5802168c756dc5c04d5b609b2947d1a36bc27"
+source = "git+https://github.com/PoHsuanLai/docket?rev=c67929dd060609ce5c039ce87ff0f43507c935a6#c67929dd060609ce5c039ce87ff0f43507c935a6"
 dependencies = [
  "docket-core",
  "docket-dbus",
@@ -1178,7 +1178,7 @@ dependencies = [
 [[package]]
 name = "docket-core"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=e1e5802168c756dc5c04d5b609b2947d1a36bc27#e1e5802168c756dc5c04d5b609b2947d1a36bc27"
+source = "git+https://github.com/PoHsuanLai/docket?rev=c67929dd060609ce5c039ce87ff0f43507c935a6#c67929dd060609ce5c039ce87ff0f43507c935a6"
 dependencies = [
  "almanac-core",
  "cua-action",
@@ -1193,7 +1193,7 @@ dependencies = [
 [[package]]
 name = "docket-dbus"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=e1e5802168c756dc5c04d5b609b2947d1a36bc27#e1e5802168c756dc5c04d5b609b2947d1a36bc27"
+source = "git+https://github.com/PoHsuanLai/docket?rev=c67929dd060609ce5c039ce87ff0f43507c935a6#c67929dd060609ce5c039ce87ff0f43507c935a6"
 dependencies = [
  "docket-core",
  "porter-client",
@@ -1211,7 +1211,7 @@ dependencies = [
 [[package]]
 name = "docket-fake"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=e1e5802168c756dc5c04d5b609b2947d1a36bc27#e1e5802168c756dc5c04d5b609b2947d1a36bc27"
+source = "git+https://github.com/PoHsuanLai/docket?rev=c67929dd060609ce5c039ce87ff0f43507c935a6#c67929dd060609ce5c039ce87ff0f43507c935a6"
 dependencies = [
  "action-review",
  "almanac-core",
@@ -1229,9 +1229,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "docket-log"
+version = "0.1.0"
+source = "git+https://github.com/PoHsuanLai/docket?rev=c67929dd060609ce5c039ce87ff0f43507c935a6#c67929dd060609ce5c039ce87ff0f43507c935a6"
+dependencies = [
+ "tracing",
+]
+
+[[package]]
 name = "docket-memory"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=e1e5802168c756dc5c04d5b609b2947d1a36bc27#e1e5802168c756dc5c04d5b609b2947d1a36bc27"
+source = "git+https://github.com/PoHsuanLai/docket?rev=c67929dd060609ce5c039ce87ff0f43507c935a6#c67929dd060609ce5c039ce87ff0f43507c935a6"
 dependencies = [
  "almanac-client",
  "almanac-core",
@@ -1246,7 +1254,7 @@ dependencies = [
 [[package]]
 name = "docket-models"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=e1e5802168c756dc5c04d5b609b2947d1a36bc27#e1e5802168c756dc5c04d5b609b2947d1a36bc27"
+source = "git+https://github.com/PoHsuanLai/docket?rev=c67929dd060609ce5c039ce87ff0f43507c935a6#c67929dd060609ce5c039ce87ff0f43507c935a6"
 dependencies = [
  "action-review",
  "docket-core",
@@ -1261,7 +1269,7 @@ dependencies = [
 [[package]]
 name = "docket-router"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=e1e5802168c756dc5c04d5b609b2947d1a36bc27#e1e5802168c756dc5c04d5b609b2947d1a36bc27"
+source = "git+https://github.com/PoHsuanLai/docket?rev=c67929dd060609ce5c039ce87ff0f43507c935a6#c67929dd060609ce5c039ce87ff0f43507c935a6"
 dependencies = [
  "action-review",
  "almanac-core",
@@ -1285,7 +1293,7 @@ dependencies = [
 [[package]]
 name = "docket-session"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=e1e5802168c756dc5c04d5b609b2947d1a36bc27#e1e5802168c756dc5c04d5b609b2947d1a36bc27"
+source = "git+https://github.com/PoHsuanLai/docket?rev=c67929dd060609ce5c039ce87ff0f43507c935a6#c67929dd060609ce5c039ce87ff0f43507c935a6"
 dependencies = [
  "companion-wire",
  "docket-core",
@@ -1299,7 +1307,7 @@ dependencies = [
 [[package]]
 name = "docket-settings"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=e1e5802168c756dc5c04d5b609b2947d1a36bc27#e1e5802168c756dc5c04d5b609b2947d1a36bc27"
+source = "git+https://github.com/PoHsuanLai/docket?rev=c67929dd060609ce5c039ce87ff0f43507c935a6#c67929dd060609ce5c039ce87ff0f43507c935a6"
 dependencies = [
  "docket-core",
  "porter-core",
@@ -1312,7 +1320,7 @@ dependencies = [
 [[package]]
 name = "docket-skills"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=e1e5802168c756dc5c04d5b609b2947d1a36bc27#e1e5802168c756dc5c04d5b609b2947d1a36bc27"
+source = "git+https://github.com/PoHsuanLai/docket?rev=c67929dd060609ce5c039ce87ff0f43507c935a6#c67929dd060609ce5c039ce87ff0f43507c935a6"
 dependencies = [
  "docket-core",
  "porter-core",
@@ -1906,7 +1914,7 @@ dependencies = [
 [[package]]
 name = "intentd"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=e1e5802168c756dc5c04d5b609b2947d1a36bc27#e1e5802168c756dc5c04d5b609b2947d1a36bc27"
+source = "git+https://github.com/PoHsuanLai/docket?rev=c67929dd060609ce5c039ce87ff0f43507c935a6#c67929dd060609ce5c039ce87ff0f43507c935a6"
 dependencies = [
  "action-review",
  "almanac-client",
@@ -1915,6 +1923,7 @@ dependencies = [
  "docket-client",
  "docket-core",
  "docket-dbus",
+ "docket-log",
  "docket-memory",
  "docket-models",
  "docket-router",
@@ -2654,7 +2663,7 @@ dependencies = [
 [[package]]
 name = "policy-point"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=e1e5802168c756dc5c04d5b609b2947d1a36bc27#e1e5802168c756dc5c04d5b609b2947d1a36bc27"
+source = "git+https://github.com/PoHsuanLai/docket?rev=c67929dd060609ce5c039ce87ff0f43507c935a6#c67929dd060609ce5c039ce87ff0f43507c935a6"
 dependencies = [
  "cedar-policy",
  "docket-core",

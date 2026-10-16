@@ -40,7 +40,7 @@ cua-eval              = { path = "crates/cua-eval" }
 cua-eval-cloud        = { path = "crates/cua-eval-cloud" }
 
 # The one home of every quire_*_v1 protocol: the XML, the vocabulary, the bindings (by git at a pinned rev; a local checkout overrides it through a [patch], FINDINGS.md).
-casement-protocols    = { git = "https://github.com/PoHsuanLai/casement-protocols", rev = "4906b775502f14738bbfd0e553792f9310ead017" }
+casement-protocols    = { git = "https://github.com/PoHsuanLai/casement-protocols", rev = "8cebc9b498e4e5d5b9ec1b1d7b52e2641d5c094b" }
 
 # stoker's frozen interfaces, by git at a pinned rev (quire
 # CONSUMING.md section 1). stoker has no cua dependency, so there is no cycle.
@@ -76,16 +76,16 @@ almanac-client  = { git = "https://github.com/PoHsuanLai/almanac", rev = "1963cb
 # docket's frozen interfaces: the gate contract (`CuaAsk`, `GateAnswer`, `RunMode`,
 # `WindowTrust`), the message draft and the provider trait. docket sits below cua and has no cua
 # dependency.
-docket-core     = { git = "https://github.com/PoHsuanLai/docket", rev = "e1e5802168c756dc5c04d5b609b2947d1a36bc27" }
-docket-client   = { git = "https://github.com/PoHsuanLai/docket", rev = "e1e5802168c756dc5c04d5b609b2947d1a36bc27", default-features = false }
+docket-core     = { git = "https://github.com/PoHsuanLai/docket", rev = "c67929dd060609ce5c039ce87ff0f43507c935a6" }
+docket-client   = { git = "https://github.com/PoHsuanLai/docket", rev = "c67929dd060609ce5c039ce87ff0f43507c935a6", default-features = false }
 # Who is calling a daemon: porter's process identity (`Identity`, `Standing`, the callers table), the one way every daemon of the agent tier asks.
-docket-dbus     = { git = "https://github.com/PoHsuanLai/docket", rev = "e1e5802168c756dc5c04d5b609b2947d1a36bc27" }
+docket-dbus     = { git = "https://github.com/PoHsuanLai/docket", rev = "c67929dd060609ce5c039ce87ff0f43507c935a6" }
 
 # Dev-dependencies of cuad's tests only: a real intentd on a private bus over docket's fakes, and
 # a real memory service over almanac's fakes. Nothing outside `[dev-dependencies]` names them.
-intentd         = { git = "https://github.com/PoHsuanLai/docket", rev = "e1e5802168c756dc5c04d5b609b2947d1a36bc27" }
-docket-fake     = { git = "https://github.com/PoHsuanLai/docket", rev = "e1e5802168c756dc5c04d5b609b2947d1a36bc27" }
-docket-router   = { git = "https://github.com/PoHsuanLai/docket", rev = "e1e5802168c756dc5c04d5b609b2947d1a36bc27" }
+intentd         = { git = "https://github.com/PoHsuanLai/docket", rev = "c67929dd060609ce5c039ce87ff0f43507c935a6" }
+docket-fake     = { git = "https://github.com/PoHsuanLai/docket", rev = "c67929dd060609ce5c039ce87ff0f43507c935a6" }
+docket-router   = { git = "https://github.com/PoHsuanLai/docket", rev = "c67929dd060609ce5c039ce87ff0f43507c935a6" }
 almanac-fake    = { git = "https://github.com/PoHsuanLai/almanac", rev = "1963cb55d4ba90a54460ee510b5aabddceeedbb4" }
 almanac-service = { git = "https://github.com/PoHsuanLai/almanac", rev = "1963cb55d4ba90a54460ee510b5aabddceeedbb4" }
 
