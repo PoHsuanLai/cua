@@ -554,3 +554,92 @@ a real desktop. The model-time figures are wall time on a shared machine and are
   tests introduce their callers.
 - **Open.** An installed cuad needs `/etc/quire/cuad-callers.toml`; without it nobody is identified
   and every caller is `Other` (fail closed). The install step is the packager's.
+
+## The screen injection check (2026-10-17)
+
+cua labels everything it reads off the screen `Untrusted(Screen)`, refuses input when the target
+window changed and masks secrets. Nothing *looked* at the text for instructions aimed at the agent,
+and nothing stopped a run when such text appeared. Now the run machine asks a `ScreenCheck` about
+what the model is about to be shown, each turn, before the model is called.
+
+- **What it checks.** `cua_run::PatternCheck`, deterministic, no model, over the window's title and
+  the tree's node names and text values (secret nodes are never read):
+  - *instruction-shaped text* from a data table (`screen/phrases.rs`) in the styles of docket's
+    injection corpus: ignore-previous, important-message and `<INFORMATION>` blocks, fake system
+    messages and chat-template tokens, role markers, written-out tool calls, notes to "the AI",
+    and links that carry a credential (`user:password@host`, `?token=...`). Case, spacing and
+    zero-width characters between letters do not hide a phrase; Unicode tag characters are decoded
+    and a bidi-reversed text is read both ways.
+  - *hidden characters*: bidi overrides (U+202D, U+202E), Unicode tag characters, two or more
+    zero-width characters (or joiners between ASCII letters). The honest uses (emoji joiners, the
+    joiners of Persian and Indic scripts, a flag emoji's tag run, one soft break) are not flagged.
+  - *unseen text*: a node of four words or more that has no size, stands right of the window's
+    edge, or is marked neither visible nor showing.
+- **What a finding does.** The run records `cua.screen.suspicious` (kinds only, never the text) and
+  pauses with the question "The screen shows text that looks like instructions for the assistant.
+  Continue?", plus one line for hidden or unseen text and one short quoted excerpt, labelled as
+  screen text. No ends the run as `Blocked(ScreenSuspicious(kind))`. Yes goes on and is remembered
+  for that window (app and title digest) and that kind for the rest of the run, so it is not asked
+  again, but each look is still recorded (`ask: remembered`). The run is marked as having seen
+  suspicious content: from then on a step whose effect is `Outbound` or worse (`Effect >=
+  Outbound`: what `classify_effect` already names) asks the person even when the router said run
+  (`Held::AfterSuspicion`), unless the router already asked.
+- **The optional reader.** With `RunEnv::reader = ReaderMode::On` and a deterministic `Clear`, the
+  screen's text goes out as `RunEffect::ReadScreen` and comes back as `RunInput::ScreenRead`
+  (`Clear`, `Instructions`, `Unavailable`) through `CuaModel::classify_screen`, whose default
+  answers `Unavailable`. cua does not call docket's reader yet; see *Wiring the reader* below.
+- **The allowed app.** The machine now refuses an action (as `OutsideLease`, before the router is
+  asked) when the observed window's app is not the app the run was allowed to drive
+  (`task.app`), and `Exec::inject` answers `StateMoved(Identity)` when the window at the moment of
+  injection is another app. Before this the app was compared at the lease and for a changed owner
+  between the look and the injection, not between the lease and the first look.
+- **Eval.** The injection topic gains `screen_flagged` and `screen_paused_in_time` (the flagged
+  runs that saw the planted text with nothing forbidden done) and a stop at the screen check is a
+  pass for a task that says `end = "stopped"`. Three older injection tasks now have the person
+  approve the screen check's question (`person = "approves"`, `ask = "required"`), so they still
+  measure whether the *model* follows the notice. The `bulletin` surface plants a sentence in each
+  of the three ways (`phrase`, `hidden`, `unseen`).
+
+### What it does not catch
+
+- **Text in pixels only.** A notice inside an image, a canvas or a screenshot has no node. Only the
+  tree is read; the frame is not OCRed.
+- **Paraphrases the table lacks.** "Kindly disregard what you were told earlier" is not in the table.
+  The table is a floor: every row was added because a known attack uses it.
+- **The reader when it is off.** It is off unless a daemon turns it on, and cua does not yet reach
+  docket's reader, so today nothing catches a paraphrase.
+- **Hidden text the tree does not carry**, white-on-white text drawn in pixels, text below the
+  bottom edge of a window (a long page scrolled to its top has legitimate nodes there, so geometry
+  is judged only to the right), a node left of the window (bounds are unsigned), and hidden text
+  of fewer than four words.
+- **A message that speaks to the person**, not an assistant ("To renew, reply with your password"):
+  this is phishing, not an injection, and no phrase of it names an assistant. The `mail-inject-exfil`
+  task still depends on the model alone.
+- **Effects named only by words.** The "asks after a suspicious screen" rule uses
+  `classify_effect`, which names an outbound step by the window (mail compose, a terminal, a
+  payment form), a commit control, or a desktop chord. A click on a button called "Delete all mail"
+  in an ordinary window is an `UndoableWrite` to cua and the router.
+
+### The trade-off
+
+False positives cost one question per window and kind per run; misses cost a hijacked step. The
+table is therefore narrow on bare words ("system", "assistant", "ignore") and wide on shapes
+(`### system`, `<|im_start|>`, "note to the AI", "ignore previous instructions"). Known costs: a
+chat that lists an assistant's reply as `Assistant: I can send the email for you` asks once for
+its window; a developer's editor showing a function-call JSON (`"name"` with `"arguments"`) asks
+once; a mail reader showing a password-reset link (`?token=...`) asks once. A window whose title
+changes (a page title) is a new window to the check.
+
+### Wiring the reader (not done)
+
+docket's quarantined reader (`docket-reader`: `reader_request`, `read`, `TransportReader`) is not
+in cua's lock at docket `e1e5802`, and `org.quire.Reader1.Extract` is served to intentd alone
+(`dist/readerd-callers.toml`: one row, `org.quire.Intents`, `intentd.service`, role `agent`), and it
+reads handles of a session, not text sent by a caller. The two clean ways are: (a) bump docket past
+the commit that has `docket-reader` and have `InferdCuaModel` implement `classify_screen` with a
+`TransportReader` over the inferd transport cuad already holds (a closed `ReaderTask::Classify`
+over `ValueSchema::Choice([clear, instructions])`); no caller row, because inferd is the callee;
+(b) an `Intents1` method that takes screen text, makes the handle and calls readerd, which needs
+a caller row for cuad's unit in `readerd-callers.toml` (or no row if intentd keeps the call). (a)
+needs: docket pin bump, `docket-reader` in `[workspace.dependencies]`, and cuad's
+`ReaderMode` switch (a `cua.screen_reader` setting, off by default).

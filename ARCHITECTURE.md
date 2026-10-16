@@ -87,8 +87,8 @@ only; the pure set never reaches an effect crate; `wayland-client` is behind the
 | `maskcap` | `pixels`, `mask`, `digest`, `settle`, `frame`, `capture`, `wayland/{state, shm, session}` |
 | `seat-input` | `op`, `keymap`, `caps`, `plan`, `receipt`, `seat`, `region`, `ei/` (`conn`: the reis connection, `actor`: the thread that owns it) |
 | `a11y-tree` | `model`, `selector`, `ops`, `source`, `atspi/` |
-| `cua-bus` | `ids`, `budget`, `state`, `action`, `task`, `report`, `record`, `bodies`, `control` |
-| `cua-run` | `config`, `observation`, `effect_class`, `window_class`, `mode`, `turn`, `lease_book`, `stall`, `model`, `seams`, `machine/{phase, input, effect, run, track, step, control, finish, ops}`, `exec/{observe, session}` |
+| `cua-bus` | `ids`, `budget`, `state`, `action`, `task`, `report`, `record`, `bodies`, `control`, `screen` |
+| `cua-run` | `config`, `observation`, `effect_class`, `window_class`, `mode`, `turn`, `lease_book`, `stall`, `model`, `seams`, `screen/{phrases, hidden, unseen, link, excerpt, reader, track}`, `machine/{phase, input, effect, run, track, step, control, finish, ops}` (`step/screen`: the screen check's rows), `exec/{observe, session}` |
 | `cua-dbus` | `names`, `error`, `manager`, `run`, `introspect` |
 | `cua-fake` | `clock`, `seat`, `eis`, `capture`, `desktop`, `a11y`, `model`, `gate`, `events`, `harness`, `scene` |
 | `cua-eval` | `surface/{def, state, render, access}`, `keys`, `stage`, `world`, `gate`, `script`, `task`, `corpus`, `verdict`, `run/{arena, timed, record}`, `eval`, `metrics`, `report`, `live`, `main` |
@@ -114,6 +114,7 @@ only; the pure set never reaches an effect crate; `wayland-client` is behind the
 | the accessibility tree, selectors | `a11y-tree` |
 | run states and slugs, outcomes, `ModeSupport`/`ModeGap`, the log records, `RunBudget`, control refusals and who may call which member | `cua-bus` |
 | the machine, the phase table, effects, `mode_support`, `classify_effect` | `cua-run` |
+| the screen check: the phrase table, hidden and unseen text, the verdict and its reasons | `cua_run::screen` (`PatternCheck`, `ScreenVerdict`, `Reason`); the closed kinds the log keeps are `cua_bus::ScreenKind` |
 | the proposed values | `cua_run::CuaConfig` and `SETTING_ROWS`; the keys are sill's |
 | the D-Bus interface | `cua-dbus` and `dbus/org.quire.Cua1.xml` |
 | the Wayland protocol | `quire-agent-v1.xml` in `~/casement-protocols` (the one home), used by cua-desktop and maskcap (feature `wayland`); the server side is the fork's, later casement's |
@@ -133,6 +134,7 @@ only; the pure set never reaches an effect crate; `wayland-client` is behind the
 | `GateLink`, `GateCheck` | `cua-run` | `IntentsGate`, `FakePdp` |
 | `RecordSink` (`record`, and `open` by default nothing), `MessageLink` | `cua-run` | `DaemonLinks`, `MemoryEvents` |
 | `Clock` | `cua-run` | `SystemClock`, `FixedClock` |
+| `ScreenCheck` | `cua-run` | `PatternCheck` (deterministic; the machine's own); the optional reader answers through `CuaModel::classify_screen` |
 | `Seams` | `cua-run` | `SystemSeams`, `FakeSeams` |
 | `IntentProvider` | docket `docket-client` | `CuaProvider` |
 
@@ -148,6 +150,14 @@ Cua1.Manager.Start (router or planner only; Disabled while cua.enabled = off)
   Leasing      LeaseControl::lease (one run per window; a Shell window is never leasable)
   loop per step:
     Observing  capture (masked: by cuad on stock, by the compositor on the fork) + a11y snapshot
+    Screening  (inside Observing, before the model) ScreenCheck over the title and the tree:
+               Clear -> Thinking.  Suspicious -> Record(cua.screen.suspicious), then, unless the
+               person already said to go on for this window and kind, WaitingForUser ("The screen
+               shows text that looks like instructions for the assistant. Continue?"):
+                 no  -> Finished(Blocked(ScreenSuspicious(kind)))
+                 yes -> Thinking; remembered per run (window + kind); from then on a step that
+                        sends out or removes asks even when the router says run (Held::AfterSuspicion)
+               With the reader on and the check Clear: RunEffect::ReadScreen -> RunInput::ScreenRead
     Thinking   CuaStep -> CuaStepReply, points in WindowSpace
     Authorising  classify_effect -> Gate.Check(CuaAsk)  (screen label always Untrusted)
        Confirming(id)  router will ask the person: stock stops its own input (SuspendLease(Consent)),
@@ -189,6 +199,13 @@ XML) and, for a signal, its line in `cuad::serve`'s relay.
 **Add a record.** A `CuaRecord` variant with `#[serde(rename = "cua.<name>")]`, its row in
 `tests/it/wire.rs` (the slugs are pinned), and its production in the machine. `cuad::record_of`
 needs no change: the slug is the kind tag.
+
+**Add a phrase or a style to the screen check.** A phrase goes into its group in
+`cua-run/src/screen/phrases.rs` (lower case, single spaces, straight quotes; `Anywhere` for a phrase
+that is a threat wherever it stands, `Addressed` for one that needs an assistant named in the same
+text, `Opening` for a role marker), with a row in `tests/it/screen.rs` that finds it and, if it
+could be ordinary text, a row that must stay clear. A new style is a `Family` and a group. A new
+kind of finding is a `Reason`, its `cua_bus::ScreenKind` and a row in the bus's wire test.
 
 **Add a setting.** A field of `CuaConfig` with its default, a row in `SETTING_ROWS` and an arm of
 `CuaConfig::value`; the test that pins the rows to the defaults fails until all three agree. The
