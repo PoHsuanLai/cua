@@ -1,6 +1,7 @@
 //! Where a run is, how it ended, and what each run mode needs of the backend.
 
 use crate::budget::RunBudgetKind;
+use crate::screen::ScreenKind;
 use cua_action::RunMode;
 use cua_desktop::BackendKind;
 use prov::ReportStatus;
@@ -77,6 +78,9 @@ pub enum BlockedOn {
     ModeUnsupported(RunMode),
     /// The backend or the model lacks a capability the task needs.
     NeedsCapability,
+    /// The screen showed text that looked like instructions for the assistant, and the person
+    /// said to stop. The kind is the first thing the check found.
+    ScreenSuspicious(ScreenKind),
 }
 
 /// Who cancelled a run.
@@ -272,6 +276,10 @@ mod tests {
             (
                 CuaOutcome::Blocked(BlockedOn::ModeUnsupported(RunMode::NestedSession)),
                 r#"{"kind":"blocked","v":{"kind":"mode_unsupported","v":"nested_session"}}"#,
+            ),
+            (
+                CuaOutcome::Blocked(BlockedOn::ScreenSuspicious(ScreenKind::Instruction)),
+                r#"{"kind":"blocked","v":{"kind":"screen_suspicious","v":"instruction"}}"#,
             ),
             (
                 CuaOutcome::Cancelled(CancelledBy::KillSwitch),

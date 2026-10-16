@@ -18,6 +18,7 @@ mod control;
 mod ids;
 mod record;
 mod report;
+mod screen;
 mod state;
 mod task;
 
@@ -30,6 +31,7 @@ pub use record::{
     AuthorisedBy, ConfirmBy, CuaRecord, FrameNote, ThoughtDigest, ThumbRef, cua_actor,
 };
 pub use report::{ReportDelivery, RunEnd, report_draft};
+pub use screen::{ScreenAsk, ScreenKind};
 pub use state::{
     BlockedOn, CancelledBy, CuaOutcome, FailReason, ModeGap, ModeSupport, RunStateSlug,
     backend_wire, modes_wire,

@@ -171,6 +171,15 @@ fn every_record() -> Vec<(CuaRecord, &'static str)> {
             },
             "cua.procedure.learned",
         ),
+        (
+            CuaRecord::ScreenSuspicious {
+                run: run(),
+                n: step,
+                kinds: vec![ScreenKind::Instruction, ScreenKind::HiddenCharacters],
+                ask: ScreenAsk::Asked,
+            },
+            "cua.screen.suspicious",
+        ),
     ]
 }
 
@@ -185,6 +194,15 @@ fn record_kind_slugs_are_stable_and_every_variant_round_trips() {
             "{json}"
         );
     }
+}
+
+#[test]
+fn a_screen_record_keeps_kinds_and_never_text() {
+    let (record, _) = every_record().remove(9);
+    assert_eq!(
+        serde_json::to_string(&record).unwrap(),
+        r#"{"kind":"cua.screen.suspicious","v":{"run":"r-17","n":3,"kinds":["instruction","hidden_characters"],"ask":"asked"}}"#
+    );
 }
 
 #[test]

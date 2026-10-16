@@ -10,6 +10,7 @@
 use crate::action::{ActionResult, TargetedAction};
 use crate::budget::RunBudget;
 use crate::ids::{ProcedureId, QuestionId};
+use crate::screen::{ScreenAsk, ScreenKind};
 use crate::state::CuaOutcome;
 use almanac_core::EventRef;
 use cua_action::DeviceSize;
@@ -193,6 +194,20 @@ pub enum CuaRecord {
         /// The run it came from.
         from: RunId,
     },
+    /// The screen check found something before the model was shown the screen. Only the kinds
+    /// are kept, never the text. A yes from the person follows as `cua.confirmed`; a no ends the
+    /// run as `Blocked(ScreenSuspicious(..))`.
+    #[serde(rename = "cua.screen.suspicious")]
+    ScreenSuspicious {
+        /// The run.
+        run: RunId,
+        /// Which step.
+        n: StepIndex,
+        /// What was found, each kind once.
+        kinds: Vec<ScreenKind>,
+        /// Whether the person was asked.
+        ask: ScreenAsk,
+    },
 }
 
 impl CuaRecord {
@@ -211,7 +226,8 @@ impl CuaRecord {
             | CuaRecord::Confirmed { run, .. }
             | CuaRecord::TakenOver { run, .. }
             | CuaRecord::HandedBack { run, .. }
-            | CuaRecord::Finished { run, .. } => run,
+            | CuaRecord::Finished { run, .. }
+            | CuaRecord::ScreenSuspicious { run, .. } => run,
             CuaRecord::ProcedureLearned { from, .. } => from,
         }
     }
