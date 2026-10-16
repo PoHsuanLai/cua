@@ -338,4 +338,4 @@ Ubuntu and Arch) and says which package is missing. Flags: `--prefix DIR` (defau
 (programs built elsewhere), `--dry-run` (print every action), `--sandbox auto|on|off` and
 `--distro debian|fedora|arch`. Root steps use `$SUDO`, else sudo, doas or pkexec, else they are
 printed. The sandbox keys that need a mount namespace live only in the drop-in; `auto` tests whether
-`systemd --user` can use them and leaves them out where it cannot (Ubuntu 24.04+ by default).
+`systemd --user` can use them and leaves them out where it cannot (Ubuntu 24.04+ by default). The build runs from `/` with `--manifest-path` and the pinned toolchain, so it is linked by the system's own linker; clang and mold (the repo's `.cargo/config.toml`) are for working on the code, and an install never needs them.
