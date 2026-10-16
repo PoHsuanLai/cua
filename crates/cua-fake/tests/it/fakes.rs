@@ -118,6 +118,7 @@ fn the_fake_gate_answers_from_its_table_and_remembers_what_it_was_asked() {
     let grant = GrantAsk {
         app: app(),
         space: space(),
+        level: docket_core::limit::Level::AlwaysAllow,
     };
     assert_eq!(
         ready(pdp.grant(grant.clone())),
