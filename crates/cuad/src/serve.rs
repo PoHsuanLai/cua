@@ -3,7 +3,8 @@
 
 use crate::bus::{MANAGER_PATH, ManagerObject, RunObject, enveloped};
 use crate::callers::shell_owner;
-use crate::provider::{CuaProvider, ModeChoice, StartRequest};
+use crate::provider::{CuaProvider, ModeChoice, StartRefusal, StartRequest};
+use crate::reasons::words_of;
 use cua_bus::{
     AskBody, ControlRefusal, CuaCaller, CuaTask, ProcedureUse, ReportRoute, RunOrigin,
     SuccessCheck, TaskTarget,
@@ -138,6 +139,12 @@ async fn starts<S: Drivable>(
             Ok(task) => supervisor.start(CuaCaller::Router, task).await,
             Err(refusal) => Err(refusal),
         };
+        // The person's setting now says what a refusal because of it means.
+        let enabled = supervisor.settings().enabled;
+        let started = started.map_err(|why| StartRefusal {
+            why,
+            words: words_of(why, enabled),
+        });
         let _ = request.reply.send(started);
     }
 }

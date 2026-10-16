@@ -5,8 +5,9 @@ use cua_desktop::ToplevelIdent;
 use cua_run::Enabled;
 use docket_client::IntentProvider;
 use docket_core::{
-    AgentReach, AppRefusal, EntityRef, Follow, Hit, Invocation, Manifest, ManifestError, Outcome,
-    ParamName, Preview, SuggestAsk, UndoFault, UndoToken, Undoable, ValidManifest, Value, validate,
+    AgentReach, AppRefusal, EntityRef, FailText, Follow, Hit, Invocation, Manifest, ManifestError,
+    Outcome, ParamName, Preview, SuggestAsk, UndoFault, UndoToken, Undoable, ValidManifest, Value,
+    validate,
 };
 use porter_core::AppName;
 use prov::{Actor, AgentRef, EntityId, Label, Labelled, RunId, SessionId, SpaceId};
@@ -55,6 +56,15 @@ pub enum ModeChoice {
     AgentWorkspace,
 }
 
+/// Why a start was refused: the refusal, and the sentence that says it to the person.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct StartRefusal {
+    /// The refusal.
+    pub why: ControlRefusal,
+    /// What to tell the person: what is wrong and where to put it right.
+    pub words: &'static str,
+}
+
 /// What `cua.run.start` asked for, as the daemon needs it to make a [`cua_bus::CuaTask`].
 #[derive(Debug)]
 pub struct StartRequest {
@@ -73,7 +83,7 @@ pub struct StartRequest {
     /// Who asked, so the report goes back to them.
     pub from: AgentRef,
     /// Where the answer goes: the run's id, or why there is none.
-    pub reply: oneshot::Sender<Result<RunId, ControlRefusal>>,
+    pub reply: oneshot::Sender<Result<RunId, StartRefusal>>,
 }
 
 /// cuad's provider.
@@ -135,13 +145,7 @@ fn requester(actor: &Actor) -> Option<(SessionId, AgentRef)> {
 /// The start the invocation asks for.
 fn start_of(
     inv: &Invocation,
-) -> Result<
-    (
-        StartRequest,
-        oneshot::Receiver<Result<RunId, ControlRefusal>>,
-    ),
-    AppRefusal,
-> {
+) -> Result<(StartRequest, oneshot::Receiver<Result<RunId, StartRefusal>>), AppRefusal> {
     let goal = match param(inv, "goal") {
         Some(Labelled {
             value: Value::Text(text),
@@ -191,18 +195,12 @@ fn start_of(
     ))
 }
 
-/// What a refused start is in the words of the app's refusals.
-fn refusal_of(why: ControlRefusal) -> AppRefusal {
-    match why {
+/// What a refused start is in the words of the app's refusals: a busy window is `Busy`, and every
+/// other refusal carries its sentence, so the planner is told why and does not ask again blind.
+fn refusal_of(refused: StartRefusal) -> AppRefusal {
+    match refused.why {
         ControlRefusal::LeaseHeld => AppRefusal::Busy,
-        ControlRefusal::WindowUnknown | ControlRefusal::BadTask => needs("window"),
-        ControlRefusal::NotPermitted
-        | ControlRefusal::WrongState
-        | ControlRefusal::UnknownQuestion
-        | ControlRefusal::Disabled
-        | ControlRefusal::ModeUnsupported => AppRefusal::Unsupported,
-        // A refusal this build does not know is still a refusal.
-        _ => AppRefusal::Unsupported,
+        _ => AppRefusal::Failed(FailText(refused.words.to_owned())),
     }
 }
 
@@ -265,6 +263,7 @@ impl IntentProvider for CuaProvider {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::reasons::words_of;
     use docket_core::{ArgSink, Lasting};
     use prov::Effect;
 
@@ -290,6 +289,22 @@ mod tests {
                 .find(|p| p.name.as_str() == "goal")
                 .expect("goal");
             assert_eq!(goal.sink, ArgSink::Body);
+        }
+    }
+
+    #[test]
+    fn a_refused_start_tells_the_planner_why_except_a_busy_window() {
+        for why in ControlRefusal::ALL {
+            let words = words_of(why, Enabled::On);
+            let refused = refusal_of(StartRefusal { why, words });
+            match why {
+                ControlRefusal::LeaseHeld => assert_eq!(refused, AppRefusal::Busy),
+                _ => assert_eq!(
+                    refused,
+                    AppRefusal::Failed(FailText(words.to_owned())),
+                    "{why:?}"
+                ),
+            }
         }
     }
 

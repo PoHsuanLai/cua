@@ -31,6 +31,7 @@ mod frame_fd;
 mod keymap;
 mod model;
 mod provider;
+mod reasons;
 mod serve;
 mod system;
 mod watch;
@@ -50,7 +51,9 @@ pub use desktop::{SystemA11y, SystemDesktop};
 pub use frame_fd::{FrameFdError, frame_fd};
 pub use keymap::desktop_keymap;
 pub use model::InferdCuaModel;
-pub use provider::{CuaProvider, ModeChoice, ProviderError, StartRequest, manifest_for};
+pub use provider::{
+    CuaProvider, ModeChoice, ProviderError, StartRefusal, StartRequest, manifest_for,
+};
 pub use serve::{ServeError, Serving, serve, serve_on, serve_on_with};
 pub use system::{SystemSeams, WaylandPair};
 pub use watch::{DEBOUNCE, SettingsWatch, WatchState};
