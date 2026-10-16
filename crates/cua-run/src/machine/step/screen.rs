@@ -160,7 +160,7 @@ pub(super) fn answered(
             n,
             by: ConfirmBy::ShellPrompt,
         })));
-        for asked in asking {
+        if let Some(asked) = asking {
             for kind in asked.kinds {
                 run.track.screen.allowed.push((asked.window.clone(), kind));
             }
