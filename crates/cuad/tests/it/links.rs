@@ -141,6 +141,7 @@ impl Desk {
                 parent: None,
                 cwd: None,
                 external: None,
+                helper: None,
                 started_from: None,
             })
             .await
@@ -153,6 +154,7 @@ impl Desk {
                 parent: None,
                 cwd: None,
                 external: None,
+                helper: None,
                 started_from: None,
             })
             .await

@@ -118,6 +118,7 @@ impl<T: Transport + 'static> GateLink for IntentsGate<T> {
             // started from a terminal.
             cwd: None,
             external: None,
+            helper: None,
             started_from: None,
         };
         Intents::over(Shared(self.transport.clone()))
@@ -457,6 +458,7 @@ mod tests {
                 parent: None,
                 cwd: None,
                 external: None,
+                helper: None,
                 started_from: None,
             })]
         );
