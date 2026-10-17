@@ -24,11 +24,13 @@ pub enum ControlRefusal {
     ModeUnsupported,
     /// The task body is malformed or in a vocabulary this build does not read.
     BadTask,
+    /// No computer-use model can serve a run: the chosen one is not installed or has no engine.
+    ModelUnavailable,
 }
 
 impl ControlRefusal {
     /// Every refusal.
-    pub const ALL: [ControlRefusal; 8] = [
+    pub const ALL: [ControlRefusal; 9] = [
         ControlRefusal::NotPermitted,
         ControlRefusal::WrongState,
         ControlRefusal::UnknownQuestion,
@@ -37,6 +39,7 @@ impl ControlRefusal {
         ControlRefusal::LeaseHeld,
         ControlRefusal::ModeUnsupported,
         ControlRefusal::BadTask,
+        ControlRefusal::ModelUnavailable,
     ];
 
     /// The D-Bus error name.
@@ -50,6 +53,7 @@ impl ControlRefusal {
             ControlRefusal::LeaseHeld => "org.quire.Cua1.Error.LeaseHeld",
             ControlRefusal::ModeUnsupported => "org.quire.Cua1.Error.ModeUnsupported",
             ControlRefusal::BadTask => "org.quire.Cua1.Error.BadTask",
+            ControlRefusal::ModelUnavailable => "org.quire.Cua1.Error.ModelUnavailable",
         }
     }
 }
@@ -233,7 +237,8 @@ mod tests {
                 | ControlRefusal::WindowUnknown
                 | ControlRefusal::LeaseHeld
                 | ControlRefusal::ModeUnsupported
-                | ControlRefusal::BadTask => 1,
+                | ControlRefusal::BadTask
+                | ControlRefusal::ModelUnavailable => 1,
             };
         }
         for member in CuaMember::ALL {

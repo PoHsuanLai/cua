@@ -1,15 +1,17 @@
 //! The computer-use model over inferd.
 
 use crate::frame_fd::frame_fd;
-use cua_run::{CuaModel, CuaModelError, FrameAttachment, StepEvent, StepSink, ThoughtText};
-use porter_client::{Transport, TransportError};
+use cua_run::{
+    CuaModel, CuaModelError, FrameAttachment, ModelReach, StepEvent, StepSink, ThoughtText,
+};
+use porter_client::{OpenOptions, Transport, TransportError};
 use porter_core::capability::CuaEnv;
 use porter_core::need::CuaNeed;
 use porter_core::{DataClass, Need, Tier, Tokens};
 use porter_infer::{
     AttachIndex, ClientFrame, CuaBegin, CuaStepFailure, CuaStepReply, CuaStepRequest, FrameLayout,
-    ImageSource, InferEvent, InferRefusal, InferReply, InferRequest, InferSession, ServedBy,
-    SessionError, TokenUsage,
+    ImageSource, InferEvent, InferRefusal, InferReply, InferRequest, InferSession, Readiness,
+    ServedBy, SessionError, TokenUsage,
 };
 use std::collections::BTreeSet;
 
@@ -91,6 +93,21 @@ fn zero() -> TokenUsage {
 }
 
 impl<T: Transport> CuaModel for InferdCuaModel<T> {
+    /// Asks inferd (`Prepare`, which also warms the model) whether the engine for a desktop
+    /// run can be had. Only `Unavailable` is a no: loading, downloading, an inferd that does
+    /// not answer and a refusal are left to the run, which reports why if it cannot go on.
+    async fn reach(&mut self) -> ModelReach {
+        let need = need_for(CuaEnv::Desktop);
+        let asked = self
+            .transport
+            .prepare(&need, DataClass::Screen, self.tier, &OpenOptions::default())
+            .await;
+        match asked {
+            Ok(Readiness::Unavailable) => ModelReach::Missing,
+            _ => ModelReach::Serves,
+        }
+    }
+
     async fn begin(&mut self, begin: CuaBegin) -> Result<(), CuaModelError> {
         let need = need_for(begin.env);
         let mut session = self

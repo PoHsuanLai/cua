@@ -10,8 +10,8 @@ use cua_bus::{
 };
 use cua_desktop::Desktop;
 use cua_run::{
-    Clock, CuaConfig, GateLink, LeaseBook, Parts, Run, RunEnv, RunInput, RunPhase, Seams,
-    mode_support,
+    Clock, CuaConfig, CuaModel, GateLink, LeaseBook, ModelReach, Parts, Run, RunEnv, RunInput,
+    RunPhase, Seams, mode_support,
 };
 use prov::{Integrity, Labelled, ModelRole, RunId, Source};
 use std::sync::Arc;
@@ -234,6 +234,15 @@ impl<S: Seams> Supervisor<S> {
 }
 
 impl<S: Drivable> Supervisor<S> {
+    /// Whether a model can serve a new run. A model a run is working with is plainly there, so
+    /// only an idle one is asked.
+    async fn model_reach(&self) -> ModelReach {
+        match self.shared.model.try_lock() {
+            Ok(mut model) => model.reach().await,
+            Err(_) => ModelReach::Serves,
+        }
+    }
+
     /// Starts a run for `task` (`guard` first; one run per window; the mode must be supported).
     pub async fn start(
         &self,
@@ -248,6 +257,11 @@ impl<S: Drivable> Supervisor<S> {
         let caps = self.shared.desktop.caps();
         if let ModeSupport::Unsupported(_) = mode_support(&caps, task.mode) {
             return Err(ControlRefusal::ModeUnsupported);
+        }
+        // A run needs a model that can serve it: refused here, in words, instead of failing
+        // later where the person cannot see it.
+        if self.model_reach().await == ModelReach::Missing {
+            return Err(ControlRefusal::ModelUnavailable);
         }
         if let TaskTarget::Window(ident) = &task.target {
             let known = self

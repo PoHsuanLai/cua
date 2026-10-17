@@ -24,7 +24,9 @@ fn said_of(outcome: CuaOutcome) -> &'static str {
     match outcome {
         CuaOutcome::Done => "",
         CuaOutcome::Failed(FailReason::WindowGone) => "The window went away.",
-        CuaOutcome::Failed(FailReason::Model) => "The model could not carry on.",
+        CuaOutcome::Failed(FailReason::Model) => {
+            "The on-screen model isn't available. You can choose one in Settings."
+        }
         CuaOutcome::Failed(FailReason::Capture) => "The window could not be seen.",
         CuaOutcome::Failed(FailReason::Input) => "The window could not be controlled.",
         CuaOutcome::Failed(FailReason::CheckFailed) => "The result did not check out.",

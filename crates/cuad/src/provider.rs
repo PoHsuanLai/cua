@@ -309,6 +309,21 @@ mod tests {
     }
 
     #[test]
+    fn a_start_the_model_cannot_serve_says_so_in_one_plain_sentence() {
+        let words = words_of(ControlRefusal::ModelUnavailable, Enabled::On);
+        let refused = refusal_of(StartRefusal {
+            why: ControlRefusal::ModelUnavailable,
+            words,
+        });
+        assert_eq!(
+            refused,
+            AppRefusal::Failed(FailText(
+                "The on-screen model isn't available. You can choose one in Settings.".to_owned()
+            ))
+        );
+    }
+
+    #[test]
     fn the_action_is_hidden_from_agents_until_computer_use_is_on() {
         let reach = |enabled| manifest_for(enabled).unwrap().manifest().actions[0].reach;
         assert_eq!(reach(Enabled::Off), AgentReach::Hidden);

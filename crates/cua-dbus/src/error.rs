@@ -25,6 +25,8 @@ pub enum CuaError {
     ModeUnsupported(String),
     /// The task body is malformed or in a vocabulary this build does not read.
     BadTask(String),
+    /// No computer-use model can serve a run.
+    ModelUnavailable(String),
 }
 
 impl CuaError {
@@ -40,6 +42,7 @@ impl CuaError {
             CuaError::LeaseHeld(_) => Some(ControlRefusal::LeaseHeld),
             CuaError::ModeUnsupported(_) => Some(ControlRefusal::ModeUnsupported),
             CuaError::BadTask(_) => Some(ControlRefusal::BadTask),
+            CuaError::ModelUnavailable(_) => Some(ControlRefusal::ModelUnavailable),
         }
     }
 }
@@ -56,6 +59,7 @@ impl From<ControlRefusal> for CuaError {
             ControlRefusal::LeaseHeld => CuaError::LeaseHeld(text),
             ControlRefusal::ModeUnsupported => CuaError::ModeUnsupported(text),
             ControlRefusal::BadTask => CuaError::BadTask(text),
+            ControlRefusal::ModelUnavailable => CuaError::ModelUnavailable(text),
             // A refusal this build does not know stays a refusal, and the strictest one.
             _ => CuaError::NotPermitted(text),
         }

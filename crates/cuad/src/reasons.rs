@@ -22,6 +22,9 @@ pub(crate) fn words_of(why: ControlRefusal, enabled: Enabled) -> &'static str {
             "This computer can't do on-screen control that way."
         }
         (ControlRefusal::BadTask, _) => "On-screen control needs a window or an app to work in.",
+        (ControlRefusal::ModelUnavailable, _) => {
+            "The on-screen model isn't available. You can choose one in Settings."
+        }
         (ControlRefusal::WrongState | ControlRefusal::UnknownQuestion, _) => {
             "On-screen control isn't ready for that."
         }
@@ -49,5 +52,9 @@ mod tests {
             words_of(ControlRefusal::Disabled, Enabled::Off).contains("turn it on in Settings")
         );
         assert!(words_of(ControlRefusal::Disabled, Enabled::On).contains("allow it in Settings"));
+        assert_eq!(
+            words_of(ControlRefusal::ModelUnavailable, Enabled::On),
+            "The on-screen model isn't available. You can choose one in Settings."
+        );
     }
 }

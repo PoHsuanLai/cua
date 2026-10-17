@@ -88,7 +88,7 @@ pub use machine::phase::{ActionQueue, RunPhase};
 pub use machine::run::{Run, RunEnv};
 pub use machine::track::{CaptureTries, Held, RunTrack, SettleWatch};
 pub use mode::{choose_mode, mode_support};
-pub use model::{CuaModel, CuaModelError, StepEvent, StepSink, ThoughtText};
+pub use model::{CuaModel, CuaModelError, ModelReach, StepEvent, StepSink, ThoughtText};
 pub use observation::{
     ContextObs, CursorObs, Focus, Observation, TreeAbsence, TreeObs, Visibility, WindowInfo,
 };

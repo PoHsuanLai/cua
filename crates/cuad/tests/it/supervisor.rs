@@ -152,6 +152,19 @@ async fn start_refused_for_non_planner_caller_and_while_disabled_or_unaimed() {
 }
 
 #[tokio::test(start_paused = true)]
+async fn a_start_the_model_cannot_serve_is_refused_before_it_takes_an_id_or_a_window() {
+    let mut parts = cua_fake::scene::world(STOCK, vec![], FakePdp::allow_all());
+    parts.model = cua_fake::ScriptedModel::new(vec![]).missing();
+    let sup = Supervisor::new(parts, enabled());
+    assert_eq!(
+        sup.start(CuaCaller::Router, task()).await,
+        Err(ControlRefusal::ModelUnavailable)
+    );
+    assert_eq!(sup.started(), 0, "no id was used");
+    assert_eq!(sup.lease_book(), cua_run::LeaseBook::default());
+}
+
+#[tokio::test(start_paused = true)]
 async fn a_window_has_one_run_at_a_time() {
     let sup = supervisor(
         STOCK,

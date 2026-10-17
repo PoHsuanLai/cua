@@ -83,8 +83,26 @@ impl From<CuaStepFailure> for CuaModelError {
     }
 }
 
+/// Whether a model can serve a run, asked before the run is accepted so a start the model could
+/// not serve is refused with its reason instead of failing out of sight.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ModelReach {
+    /// A model can serve (or nothing says it cannot).
+    Serves,
+    /// No model can serve: the chosen one is not installed or has no engine.
+    Missing,
+}
+
 /// A computer-use model for one run.
 pub trait CuaModel: Send {
+    /// Whether a model can serve a run now. Only a model that is plainly not there is
+    /// [`ModelReach::Missing`]; one that is loading, downloadable or not reachable is left to
+    /// the run, which says why if it cannot go on. By default a model serves.
+    fn reach(&mut self) -> impl Future<Output = ModelReach> + Send {
+        async { ModelReach::Serves }
+    }
+
     /// Starts the run's session with the goal and hints.
     fn begin(&mut self, begin: CuaBegin) -> impl Future<Output = Result<(), CuaModelError>> + Send;
 

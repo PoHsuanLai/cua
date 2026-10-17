@@ -6,7 +6,7 @@ use cua_action::{
     Button, ClickCount, Coord, CuaAction, DeviceSize, PixelFormat, Point, Scale120, Size, Target,
     WindowSpace,
 };
-use cua_run::{CuaModel, CuaModelError, FrameAttachment, StepEvent, StepSink};
+use cua_run::{CuaModel, CuaModelError, FrameAttachment, ModelReach, StepEvent, StepSink};
 use cuad::InferdCuaModel;
 use maskcap::PixelBuf;
 use porter_client::{Transport, TransportError};
@@ -17,8 +17,8 @@ use porter_core::{
 use porter_infer::{
     AttachIndex, ClientFrame, CuaBegin, CuaStepReply, CuaStepRequest, FrameImage, FrameLayout,
     ImageSource, InferEvent, InferRefusal, InferReply, InferRequest, InferSession, MaskedRegions,
-    ModelError, NoteFrom, OpenOptions, ServedBy, SessionError, StepIndex, StepNote, TokenUsage,
-    TreeText, WindowGeometry,
+    ModelError, NoteFrom, OpenOptions, Readiness, ServedBy, SessionError, StepIndex, StepNote,
+    TokenUsage, TreeText, WindowGeometry,
 };
 use rustix::fs::{SealFlags, fcntl_get_seals};
 use std::collections::{BTreeSet, VecDeque};
@@ -44,6 +44,8 @@ struct Scripted {
     down: bool,
     /// inferd refuses the caller, with this text.
     denied: Option<String>,
+    /// What `Prepare` answers; none is an inferd that does not.
+    readiness: Option<Readiness>,
 }
 
 struct Session {
@@ -60,6 +62,7 @@ impl Scripted {
             log: log.clone(),
             down: false,
             denied: None,
+            readiness: None,
         };
         (scripted, log)
     }
@@ -70,6 +73,7 @@ impl Scripted {
             log: Arc::default(),
             down: true,
             denied: None,
+            readiness: None,
         }
     }
 
@@ -79,6 +83,14 @@ impl Scripted {
             log: Arc::default(),
             down: false,
             denied: Some(why.to_owned()),
+            readiness: None,
+        }
+    }
+
+    fn preparing(readiness: Readiness) -> Self {
+        Self {
+            readiness: Some(readiness),
+            ..Self::unreachable()
         }
     }
 }
@@ -124,6 +136,16 @@ impl Transport for Scripted {
 
     async fn call(&self, _request: AccountsRequest) -> Result<AccountsReply, TransportError> {
         Err(TransportError::Unreachable)
+    }
+
+    async fn prepare(
+        &self,
+        _need: &Need,
+        _class: DataClass,
+        _tier: Tier,
+        _options: &OpenOptions,
+    ) -> Result<Readiness, TransportError> {
+        self.readiness.ok_or(TransportError::Unreachable)
     }
 
     async fn open_with(
@@ -435,6 +457,29 @@ async fn a_model_failure_leaves_the_session_usable_and_a_closed_one_does_not() {
         Err(CuaModelError::Fatal),
         "and the history is gone"
     );
+}
+
+#[tokio::test]
+async fn only_a_model_that_is_plainly_not_there_is_missing_before_a_run_starts() {
+    let rows = [
+        (Some(Readiness::Unavailable), ModelReach::Missing),
+        (Some(Readiness::Ready), ModelReach::Serves),
+        (Some(Readiness::Loadable), ModelReach::Serves),
+        (Some(Readiness::Downloadable), ModelReach::Serves),
+        // An inferd that does not answer is the run's to find out.
+        (None, ModelReach::Serves),
+    ];
+    for (readiness, want) in rows {
+        let transport = match readiness {
+            Some(readiness) => Scripted::preparing(readiness),
+            None => Scripted::unreachable(),
+        };
+        assert_eq!(
+            InferdCuaModel::over(transport).reach().await,
+            want,
+            "{readiness:?}"
+        );
+    }
 }
 
 #[tokio::test]
