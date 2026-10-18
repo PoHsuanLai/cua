@@ -72,13 +72,14 @@ async fn named(fx: &Fixture, who: Who) -> Connection {
 async fn fixture(
     script: Vec<Result<porter_infer::CuaStepReply, cua_run::CuaModelError>>,
 ) -> Fixture {
+    fixture_in(world(BackendKind::KwinStock, script, FakePdp::allow_all())).await
+}
+
+async fn fixture_in(world: cua_fake::World) -> Fixture {
     let dir = tempfile::tempdir().expect("scratch");
     let bus = PrivateBus::start(dir.path());
     let daemon = bus.connect().await;
-    let supervisor = Arc::new(Supervisor::new(
-        world(BackendKind::KwinStock, script, FakePdp::allow_all()),
-        enabled(),
-    ));
+    let supervisor = Arc::new(Supervisor::new(world, enabled()));
     // The fixture tree is empty: nobody is identified but whom a test introduces.
     let who = Arc::new(Identity::on_fixture(
         daemon.clone(),
@@ -560,4 +561,93 @@ async fn a_program_that_took_the_shells_name_is_not_the_shell() {
         .stop_all(cua_bus::CuaCaller::Shell)
         .await
         .unwrap();
+}
+
+/// A desktop with the lamp page's browser (focused, unless `focus` says otherwise) and a drawing
+/// app, whose titles hold private text.
+async fn two_windows(focus: Option<&str>) -> Fixture {
+    use cua_desktop::{ToplevelIdent, ToplevelState, WindowTitle};
+    let open = |ident: &str, app: &str, title: &str| {
+        let mut window = cua_fake::scene::window();
+        window.ident = ToplevelIdent::parse(ident).unwrap();
+        window.app = porter_core::AppName::parse(app).unwrap();
+        window.title = WindowTitle(title.to_owned());
+        window.state = if focus == Some(ident) {
+            std::collections::BTreeSet::from([ToplevelState::Activated])
+        } else {
+            std::collections::BTreeSet::new()
+        };
+        window
+    };
+    let mut shell = open("launcher", "org.quire.Shell", "Launcher");
+    shell.trust = cua_action::WindowTrust::Shell;
+    shell.state = std::collections::BTreeSet::from([ToplevelState::Activated]);
+    let windows = vec![
+        open("w-browser", "app.zen_browser.zen", "secret lamp order"),
+        open("w-draw", "org.example.Draw", "secret sketch"),
+        shell,
+    ];
+    let mut world = world(
+        BackendKind::KwinStock,
+        vec![reply(ask())],
+        FakePdp::allow_all(),
+    );
+    world.desktop = cua_fake::FakeDesktop::new(BackendKind::KwinStock, windows);
+    fixture_in(world).await
+}
+
+async fn start_with(
+    fx: &Fixture,
+    app: Option<&str>,
+) -> Result<docket_core::Outcome, docket_core::AppRefusal> {
+    let router = named(fx, Who::Router).await;
+    let mut args = vec![("goal", docket_core::Value::Text("draw the lamp".to_owned()))];
+    if let Some(app) = app {
+        args.push(("app", docket_core::Value::Text(app.to_owned())));
+    }
+    perform(&router, &invocation(&args, planner_actor()))
+        .await
+        .expect("a reply")
+}
+
+#[tokio::test]
+async fn an_app_that_is_not_open_is_refused_with_the_open_apps_by_id_and_never_a_title() {
+    let fx = two_windows(None).await;
+    let Err(docket_core::AppRefusal::NeedsParam { param, options }) =
+        start_with(&fx, Some("org.quire.Desktop")).await
+    else {
+        panic!("a refusal with choices");
+    };
+    assert_eq!(param.as_str(), "app");
+    let ids: Vec<&str> = options.iter().map(|o| o.id.key.as_str()).collect();
+    assert_eq!(
+        ids,
+        ["app.zen_browser.zen", "org.example.Draw"],
+        "sorted, once each, and not the shell's own"
+    );
+    let said = format!("{options:?}");
+    assert!(!said.contains("secret"), "{said}");
+}
+
+#[tokio::test]
+async fn no_app_means_the_window_the_person_is_in_and_a_known_app_still_starts() {
+    let fx = two_windows(Some("w-draw")).await;
+    start_with(&fx, None).await.expect("the focused window");
+    let view = fx.supervisor.view(&"r-1".parse_run()).expect("a live run");
+    assert_eq!(view.task.app.as_str(), "org.example.Draw");
+
+    let fx = two_windows(None).await;
+    start_with(&fx, Some("app.zen_browser.zen"))
+        .await
+        .expect("an open app starts");
+}
+
+#[tokio::test]
+async fn no_app_and_no_focus_gives_the_choices_even_when_the_shell_has_it() {
+    let fx = two_windows(None).await;
+    let refused = start_with(&fx, None).await;
+    assert!(
+        matches!(refused, Err(docket_core::AppRefusal::NeedsParam { ref options, .. }) if options.len() == 2),
+        "{refused:?}"
+    );
 }

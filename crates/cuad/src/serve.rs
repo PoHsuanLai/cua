@@ -6,12 +6,13 @@ use crate::callers::shell_owner;
 use crate::provider::{CuaProvider, ModeChoice, StartRefusal, StartRequest};
 use crate::reach::ReachObject;
 use crate::reasons::words_of;
+use cua_action::WindowTrust;
 use cua_bus::{
     AskBody, ControlRefusal, CuaCaller, CuaTask, ProcedureUse, ReportRoute, RunOrigin,
     SuccessCheck, TaskTarget,
 };
 use cua_dbus::{CUA_BUS, CUA_PATH, run_path};
-use cua_desktop::{Desktop, RunMode};
+use cua_desktop::{Desktop, RunMode, ToplevelInfo, ToplevelState};
 use cua_host::Drivable;
 use cua_host::Supervisor;
 use cua_host::SupervisorEvent;
@@ -81,13 +82,54 @@ impl SummonTarget for NoSummon {
     }
 }
 
-/// The task a `cua.run.start` asks for: the window it names (its app is the window's) or the
-/// app alone, the mode with `auto` resolved by the setting and the backend, the settings'
-/// budget, and a report back to the requester.
+/// Why a start has no task: a refusal of the control surface, or the open apps to choose from.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum TaskRefusal {
+    /// A refusal the control surface already has a word for.
+    Control(ControlRefusal),
+    /// No app was named that is open, and none could be chosen for the person: these are open
+    /// (ids only, never titles), in a stable order.
+    NeedsApp(Vec<AppName>),
+}
+
+impl From<ControlRefusal> for TaskRefusal {
+    fn from(why: ControlRefusal) -> Self {
+        TaskRefusal::Control(why)
+    }
+}
+
+/// A window a run may work in: the desktop's own surfaces (the launcher, bar and dock) are not.
+fn usable(window: &ToplevelInfo) -> bool {
+    window.trust != WindowTrust::Shell
+}
+
+/// The apps with a usable window open, once each, in a stable order.
+fn open_apps(windows: &[ToplevelInfo]) -> BTreeSet<AppName> {
+    windows
+        .iter()
+        .filter(|w| usable(w))
+        .map(|w| w.app.clone())
+        .collect()
+}
+
+/// The refusal that lists the open apps; with none open there is nothing to choose from.
+fn choose_app(windows: &[ToplevelInfo]) -> TaskRefusal {
+    let apps: Vec<AppName> = open_apps(windows).into_iter().collect();
+    if apps.is_empty() {
+        TaskRefusal::Control(ControlRefusal::BadTask)
+    } else {
+        TaskRefusal::NeedsApp(apps)
+    }
+}
+
+/// The task a `cua.run.start` asks for: the window it names (its app is the window's), the app
+/// alone when one of its windows is open, or the window the person is in when it names neither;
+/// the mode with `auto` resolved by the setting and the backend, the settings' budget, and a
+/// report back to the requester.
 pub(crate) async fn task_for<S: Drivable>(
     supervisor: &Supervisor<S>,
     request: &StartRequest,
-) -> Result<CuaTask, ControlRefusal> {
+) -> Result<CuaTask, TaskRefusal> {
     let caps = supervisor.desktop().caps();
     let mode = match request.mode {
         ModeChoice::InPlace => RunMode::InPlace,
@@ -95,21 +137,35 @@ pub(crate) async fn task_for<S: Drivable>(
         ModeChoice::Auto => choose_mode(supervisor.settings().default_mode, &caps)
             .ok_or(ControlRefusal::ModeUnsupported)?,
     };
+    let windows = supervisor.desktop().windows().await;
     let (target, app) = match (&request.window, &request.app) {
         (Some(ident), _) => {
-            let windows = supervisor
-                .desktop()
-                .windows()
-                .await
-                .map_err(|_| ControlRefusal::WindowUnknown)?;
             let window = windows
+                .map_err(|_| ControlRefusal::WindowUnknown)?
                 .into_iter()
                 .find(|w| &w.ident == ident)
                 .ok_or(ControlRefusal::WindowUnknown)?;
             (TaskTarget::Window(ident.clone()), window.app)
         }
-        (None, Some(app)) => (TaskTarget::App(app.clone()), app.clone()),
-        (None, None) => return Err(ControlRefusal::BadTask),
+        (None, Some(app)) => {
+            // A desktop that cannot list its windows cannot say the app is not open.
+            if let Ok(windows) = &windows
+                && !open_apps(windows).contains(app)
+            {
+                return Err(choose_app(windows));
+            }
+            (TaskTarget::App(app.clone()), app.clone())
+        }
+        (None, None) => {
+            let windows = windows.map_err(|_| ControlRefusal::BadTask)?;
+            let focused = windows
+                .iter()
+                .find(|w| usable(w) && w.state.contains(&ToplevelState::Activated));
+            match focused {
+                Some(window) => (TaskTarget::Window(window.ident.clone()), window.app.clone()),
+                None => return Err(choose_app(&windows)),
+            }
+        }
     };
     Ok(CuaTask {
         app,
@@ -138,14 +194,20 @@ async fn starts<S: Drivable>(
 ) {
     while let Some(request) = queue.recv().await {
         let started = match task_for(&supervisor, &request).await {
-            Ok(task) => supervisor.start(CuaCaller::Router, task).await,
+            Ok(task) => supervisor
+                .start(CuaCaller::Router, task)
+                .await
+                .map_err(TaskRefusal::from),
             Err(refusal) => Err(refusal),
         };
         // The person's setting now says what a refusal because of it means.
         let enabled = supervisor.settings().enabled;
-        let started = started.map_err(|why| StartRefusal {
-            why,
-            words: words_of(why, enabled),
+        let started = started.map_err(|refusal| match refusal {
+            TaskRefusal::Control(why) => StartRefusal::Control {
+                why,
+                words: words_of(why, enabled),
+            },
+            TaskRefusal::NeedsApp(apps) => StartRefusal::NeedsApp(apps),
         });
         let _ = request.reply.send(started);
     }

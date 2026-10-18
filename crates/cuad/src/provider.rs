@@ -10,7 +10,9 @@ use docket_core::{
     validate,
 };
 use porter_core::AppName;
-use prov::{Actor, AgentRef, EntityId, Label, Labelled, RunId, SessionId, SpaceId};
+use prov::{
+    Actor, AgentRef, EntityId, EntityKey, EntityKind, Label, Labelled, RunId, SessionId, SpaceId,
+};
 use tokio::sync::{mpsc, oneshot};
 
 /// The shipped manifest (`manifests/org.quire.Cua.toml`).
@@ -56,13 +58,19 @@ pub enum ModeChoice {
     AgentWorkspace,
 }
 
-/// Why a start was refused: the refusal, and the sentence that says it to the person.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct StartRefusal {
-    /// The refusal.
-    pub why: ControlRefusal,
-    /// What to tell the person: what is wrong and where to put it right.
-    pub words: &'static str,
+/// Why a start was refused.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum StartRefusal {
+    /// A refusal, and the sentence that says it to the person: what is wrong and where to put
+    /// it right.
+    Control {
+        /// The refusal.
+        why: ControlRefusal,
+        /// What to tell the person.
+        words: &'static str,
+    },
+    /// The app is not open, or none was named and none has the focus: these are open, by id.
+    NeedsApp(Vec<AppName>),
 }
 
 /// What `cua.run.start` asked for, as the daemon needs it to make a [`cua_bus::CuaTask`].
@@ -72,7 +80,7 @@ pub struct StartRequest {
     pub goal: Labelled<String>,
     /// The window to work in, when the planner named one.
     pub window: Option<ToplevelIdent>,
-    /// The app, when it named that instead.
+    /// The app, when it named that instead. With neither, the window the person is in.
     pub app: Option<AppName>,
     /// Where to run.
     pub mode: ModeChoice,
@@ -167,9 +175,6 @@ fn start_of(
         }) => Some(AppName::parse(text).map_err(|_| needs("app"))?),
         _ => None,
     };
-    if window.is_none() && app.is_none() {
-        return Err(needs("window"));
-    }
     let mode = match param(inv, "mode").map(|p| &p.value) {
         Some(Value::Choice(choice)) => match choice.as_str() {
             "in_place" => ModeChoice::InPlace,
@@ -195,12 +200,35 @@ fn start_of(
     ))
 }
 
-/// What a refused start is in the words of the app's refusals: a busy window is `Busy`, and every
-/// other refusal carries its sentence, so the planner is told why and does not ask again blind.
+/// An open app as a choice for the `app` parameter: its id, which is also what to pass back.
+fn app_option(app: AppName) -> Option<EntityRef> {
+    let id = EntityId {
+        app: AppName::parse("org.quire.Cua").ok()?,
+        kind: EntityKind::parse("desktop.app").ok()?,
+        key: EntityKey::parse(app.as_str()).ok()?,
+    };
+    let say = |text: &str| Labelled::new(text.to_owned(), Label::trusted_user());
+    Some(EntityRef {
+        id,
+        title: say(app.as_str()),
+        subtitle: say(""),
+    })
+}
+
+/// What a refused start is in the words of the app's refusals: a busy window is `Busy`, no open
+/// app of that name is `NeedsParam` with the open apps as options, and every other refusal
+/// carries its sentence, so the planner is told why and does not ask again blind.
 fn refusal_of(refused: StartRefusal) -> AppRefusal {
-    match refused.why {
-        ControlRefusal::LeaseHeld => AppRefusal::Busy,
-        _ => AppRefusal::Failed(FailText(refused.words.to_owned())),
+    match refused {
+        StartRefusal::Control {
+            why: ControlRefusal::LeaseHeld,
+            ..
+        } => AppRefusal::Busy,
+        StartRefusal::Control { words, .. } => AppRefusal::Failed(FailText(words.to_owned())),
+        StartRefusal::NeedsApp(apps) => AppRefusal::NeedsParam {
+            param: ParamName::parse("app").expect("a parameter name"),
+            options: apps.into_iter().filter_map(app_option).collect(),
+        },
     }
 }
 
@@ -296,7 +324,7 @@ mod tests {
     fn a_refused_start_tells_the_planner_why_except_a_busy_window() {
         for why in ControlRefusal::ALL {
             let words = words_of(why, Enabled::On);
-            let refused = refusal_of(StartRefusal { why, words });
+            let refused = refusal_of(StartRefusal::Control { why, words });
             match why {
                 ControlRefusal::LeaseHeld => assert_eq!(refused, AppRefusal::Busy),
                 _ => assert_eq!(
@@ -311,7 +339,7 @@ mod tests {
     #[test]
     fn a_start_the_model_cannot_serve_says_so_in_one_plain_sentence() {
         let words = words_of(ControlRefusal::ModelUnavailable, Enabled::On);
-        let refused = refusal_of(StartRefusal {
+        let refused = refusal_of(StartRefusal::Control {
             why: ControlRefusal::ModelUnavailable,
             words,
         });
