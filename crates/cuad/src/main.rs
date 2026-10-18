@@ -9,7 +9,8 @@
 
 use cuad::{
     Apps, CuaSettings, CuadConfig, Links, Locator, ServeError, SettingsWatch, Supervisor,
-    SystemClock, SystemSeams, WatchState, WaylandPair, follow_settings, read_callers, serve_on,
+    SystemClock, SystemSeams, WatchState, WaylandPair, caller_identity, follow_settings,
+    read_callers, serve_on_as,
 };
 use futures_util::StreamExt;
 use std::path::PathBuf;
@@ -117,7 +118,8 @@ async fn run() -> Result<(), Fatal> {
     // Who is calling is the process behind the connection, named by the callers table: the
     // system's `cuad-callers.toml` with the person's laid over it.
     let table = read_callers(&env).map_err(|e| Fatal::Config(e.to_string()))?;
-    let _serving = serve_on(&connection, supervisor, table).await?;
+    let who = caller_identity(connection.clone(), table, &env);
+    let _serving = serve_on_as(&connection, supervisor, who).await?;
 
     let mut terminate =
         signal(SignalKind::terminate()).map_err(|e| Fatal::Signal(e.to_string()))?;

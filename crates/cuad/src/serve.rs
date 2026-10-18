@@ -439,6 +439,22 @@ pub async fn serve_on<S: Drivable>(
     serve_as(connection, supervisor, who, Answering::IntentdOnly).await
 }
 
+/// [`serve_on`] with callers named by `who`, the provider still answering intentd's unit alone:
+/// the daemon's way in, where `who` reads the system's `/proc` (or a test build's fixture tree).
+pub async fn serve_on_as<S: Drivable>(
+    connection: &zbus::Connection,
+    supervisor: Arc<Supervisor<S>>,
+    who: Identity,
+) -> Result<Serving, ServeError> {
+    serve_as(
+        connection,
+        supervisor,
+        Arc::new(who),
+        Answering::IntentdOnly,
+    )
+    .await
+}
+
 /// [`serve_on`] with callers named by `who` (a test's fixture proc root and introductions), which
 /// also says who the provider takes for intentd.
 pub async fn serve_on_with<S: Drivable>(

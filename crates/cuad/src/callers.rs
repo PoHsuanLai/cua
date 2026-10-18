@@ -7,9 +7,10 @@
 
 use cua_bus::CuaCaller;
 use docket_dbus::callers::{
-    Caller, CallerFileError, CallerTable, Callers, INTENTD, Role, SHELL, Standing, read_table,
-    table_from_toml,
+    Caller, CallerFileError, CallerTable, Callers, INTENTD, Identity, Role, SHELL, Standing,
+    read_table, table_from_toml,
 };
+use std::path::PathBuf;
 
 /// The file name, under `/etc/quire` and the person's configuration directory.
 pub const FILE: &str = "cuad-callers.toml";
@@ -40,7 +41,36 @@ pub fn shipped() -> CallerTable {
 
 /// The table of this machine: `/etc/quire/cuad-callers.toml` with the person's file over it.
 pub fn read(env: &impl Fn(&str) -> Option<String>) -> Result<CallerTable, CallerFileError> {
+    #[cfg(feature = "fixture-callers")]
+    if let Some(system) = env(SYSTEM_CALLERS_VAR) {
+        return docket_dbus::callers::read_table_at(std::path::Path::new(&system), FILE, env);
+    }
     read_table(FILE, env)
+}
+
+/// The test build's callers file in place of the system's (`fixture-callers` only).
+#[cfg(feature = "fixture-callers")]
+pub const SYSTEM_CALLERS_VAR: &str = "CUAD_TEST_SYSTEM_CALLERS";
+
+/// The test build's process tree in place of `/proc` and the unit manager (`fixture-callers` only).
+#[cfg(feature = "fixture-callers")]
+pub const PROC_ROOT_VAR: &str = "CUAD_TEST_PROC_ROOT";
+
+/// Who is calling over `connection`: the system's `/proc`, or in a test build the fixture tree
+/// the harness names.
+pub fn identity(
+    connection: zbus::Connection,
+    table: CallerTable,
+    env: &impl Fn(&str) -> Option<String>,
+) -> Identity {
+    #[cfg(feature = "fixture-callers")]
+    let fixture = env(PROC_ROOT_VAR).map(PathBuf::from);
+    #[cfg(not(feature = "fixture-callers"))]
+    let fixture: Option<PathBuf> = {
+        let _ = env;
+        None
+    };
+    Identity::on(connection, table, fixture.as_deref())
 }
 
 /// Which class `caller` is: the first whose standing it holds; `Other` when it holds none.

@@ -21,6 +21,10 @@ path = "src/main.rs"
 # model is told. On for the daemon; off, only the platform's conventions apply.
 default = ["keycap"]
 keycap = ["dep:keycap-client"]
+# A test build only: callers are read from a fixture process tree and a callers file the harness
+# names (`CUAD_TEST_PROC_ROOT`, `CUAD_TEST_SYSTEM_CALLERS`) in place of `/proc` and `/etc/quire`.
+# Never on in a shipped build.
+fixture-callers = ["docket-dbus/fixture-callers"]
 
 [dependencies]
 cua-desktop = { workspace = true }

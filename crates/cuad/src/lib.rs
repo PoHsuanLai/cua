@@ -39,7 +39,8 @@ mod watch;
 
 pub use backend::{CaptureBackend, CaptureKind, CaptureSessionKind, SeatBackend, capture_kind};
 pub use callers::{
-    FILE as CALLERS_FILE, SHELL_BUS, classify, read as read_callers, shipped as shipped_callers,
+    FILE as CALLERS_FILE, SHELL_BUS, classify, identity as caller_identity, read as read_callers,
+    shipped as shipped_callers,
 };
 pub use connect::Links;
 pub use cua_host::{
@@ -56,6 +57,6 @@ pub use provider::{
     CuaProvider, ModeChoice, ProviderError, StartRefusal, StartRequest, manifest_for,
 };
 pub use reach::{follow_settings, reach_json};
-pub use serve::{ServeError, Serving, serve, serve_on, serve_on_with};
+pub use serve::{ServeError, Serving, serve, serve_on, serve_on_as, serve_on_with};
 pub use system::{SystemSeams, WaylandPair};
 pub use watch::{DEBOUNCE, SettingsWatch, WatchState};
