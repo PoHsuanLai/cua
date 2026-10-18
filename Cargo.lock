@@ -644,8 +644,17 @@ dependencies = [
 [[package]]
 name = "chordkit"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/chordkit.git?rev=934a2d71f6516bee5919ee29278003702a4ea5e1#934a2d71f6516bee5919ee29278003702a4ea5e1"
+source = "git+https://github.com/PoHsuanLai/chordkit.git?rev=7b80eddb86559909eeb63b882d5563d36f5bad37#7b80eddb86559909eeb63b882d5563d36f5bad37"
 dependencies = [
+ "thiserror",
+]
+
+[[package]]
+name = "chordkit-file"
+version = "0.1.0"
+source = "git+https://github.com/PoHsuanLai/chordkit.git?rev=7b80eddb86559909eeb63b882d5563d36f5bad37#7b80eddb86559909eeb63b882d5563d36f5bad37"
+dependencies = [
+ "libc",
  "thiserror",
 ]
 
@@ -2062,9 +2071,10 @@ dependencies = [
 [[package]]
 name = "keycap-client"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/keycap?rev=b04bf0696a7af0b2086d5930bf821b092e34cd6d#b04bf0696a7af0b2086d5930bf821b092e34cd6d"
+source = "git+https://github.com/PoHsuanLai/keycap?rev=52c66c7c768eac3b9ad6749f22ec3a43b08bd48f#52c66c7c768eac3b9ad6749f22ec3a43b08bd48f"
 dependencies = [
  "chordkit",
+ "chordkit-file",
  "keycap-protocol",
  "rustix",
 ]
@@ -2072,7 +2082,7 @@ dependencies = [
 [[package]]
 name = "keycap-protocol"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/keycap?rev=b04bf0696a7af0b2086d5930bf821b092e34cd6d#b04bf0696a7af0b2086d5930bf821b092e34cd6d"
+source = "git+https://github.com/PoHsuanLai/keycap?rev=52c66c7c768eac3b9ad6749f22ec3a43b08bd48f#52c66c7c768eac3b9ad6749f22ec3a43b08bd48f"
 dependencies = [
  "serde",
  "serde_json",
