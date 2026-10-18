@@ -130,6 +130,37 @@ for edge in "${EDGES[@]}"; do
   fi
 done
 
+# cuad's `fixture-callers` is a security switch: with it on, cuad takes who is calling from a
+# process tree and callers file the harness names. Built as the installer builds it (`-p` each
+# installed package, no dev-dependencies), no shipped package turns it on.
+for pkg in cuad; do
+  # Each package's enabled features (`{f}`): `-e features` elides the edge a package's own feature makes.
+  if cargo tree -p "$pkg" -e normal,build --prefix none --format '{p} {f}' 2>/dev/null \
+    | grep -qE 'fixture-callers|test-proc-root'; then
+    echo "TEST SWITCH: $pkg's build turns on the fixture tree"
+    fail=1
+  else
+    echo "fixture tree off in $pkg's build"
+  fi
+done
+
+# No shipped source names the harness's variables, apart from the two constants, each behind
+# `#[cfg(feature = "fixture-callers")]` on the line before.
+leaks=$(grep -rnE 'CUAD_TEST_|PROC_ROOT' crates --include='*.rs' --exclude-dir=tests \
+  | grep -vE '^crates/cuad/src/callers.rs:[0-9]+:pub const (SYSTEM_CALLERS_VAR|PROC_ROOT_VAR): &str = "CUAD_TEST_(SYSTEM_CALLERS|PROC_ROOT)";$' \
+  | grep -vE '^crates/cuad/src/callers.rs:[0-9]+:.*env\(PROC_ROOT_VAR\)' || true)
+for line in $(grep -nE '^pub const (SYSTEM_CALLERS_VAR|PROC_ROOT_VAR)' crates/cuad/src/callers.rs | cut -d: -f1); do
+  sed -n "$((line - 1))p" crates/cuad/src/callers.rs | grep -qx '#\[cfg(feature = "fixture-callers")\]' \
+    || leaks="$leaks"$'\n'"crates/cuad/src/callers.rs:$line: not behind the fixture-callers cfg"
+done
+if [ -n "${leaks//$'\n'/}" ]; then
+  echo "TEST SWITCH: a shipped crate names a harness switch:"
+  echo "$leaks"
+  fail=1
+else
+  echo "no shipped crate names a harness switch outside its cfg-gated constants"
+fi
+
 # Every workspace member has a row above, so a new crate cannot slip in unchecked.
 for member in $(sed -n 's#^  "crates/\(.*\)",$#\1#p' Cargo.toml); do
   printf '%s\n' "${EDGES[@]}" | grep -q "^$member:" || { echo "ERROR: $member has no row in EDGES"; fail=1; }
