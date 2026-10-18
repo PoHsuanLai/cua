@@ -5,6 +5,10 @@ use crate::CaptureError;
 use cua_action::{Coord, PixelFormat, Point, Rect, Size, WindowSpace};
 use std::collections::BTreeMap;
 use cua_desktop::{ObjectKey as Key, Rounds, SyncTag};
+use super::lease::LeaseRec;
+use casement_protocols::client::quire_agent_v1::quire_agent_manager_v1::{
+    self, QuireAgentManagerV1,
+};
 use wayland_client::protocol::wl_buffer::{self, WlBuffer};
 use wayland_client::protocol::wl_callback::{self, WlCallback};
 use wayland_client::protocol::wl_registry::{self, WlRegistry};
@@ -34,9 +38,9 @@ use wayland_protocols::ext::image_copy_capture::v1::client::ext_image_copy_captu
 };
 
 #[derive(Debug)]
-struct Top {
-    handle: ExtForeignToplevelHandleV1,
-    ident: Option<String>,
+pub(super) struct Top {
+    pub(super) handle: ExtForeignToplevelHandleV1,
+    pub(super) ident: Option<String>,
 }
 
 /// What the session has said of its buffer constraints.
@@ -92,13 +96,15 @@ pub(crate) struct SessionRec {
 /// Everything the handlers record.
 #[derive(Debug)]
 pub(crate) struct CapState {
-    qh: QueueHandle<CapState>,
+    pub(super) qh: QueueHandle<CapState>,
     connection: Connection,
     list: Option<ExtForeignToplevelListV1>,
     sources: Option<ExtForeignToplevelImageCaptureSourceManagerV1>,
-    copy: Option<ExtImageCopyCaptureManagerV1>,
+    pub(super) copy: Option<ExtImageCopyCaptureManagerV1>,
     shm: Option<WlShm>,
-    toplevels: BTreeMap<Key, Top>,
+    pub(super) agent: Option<QuireAgentManagerV1>,
+    pub(super) leases: BTreeMap<Key, LeaseRec>,
+    pub(super) toplevels: BTreeMap<Key, Top>,
     pub sessions: BTreeMap<Key, SessionRec>,
     rounds: Rounds,
 }
@@ -113,6 +119,8 @@ impl CapState {
             sources: None,
             copy: None,
             shm: None,
+            agent: None,
+            leases: BTreeMap::new(),
             toplevels: BTreeMap::new(),
             sessions: BTreeMap::new(),
             rounds: Rounds::default(),
@@ -151,8 +159,13 @@ impl CapState {
             .ok_or(CaptureError::SourceGone)?;
         let source = sources.create_source(&top.handle, &self.qh, ());
         let proxy = copy.create_session(&source, Options::empty(), &self.qh, ());
-        let key = Key::of(&proxy);
         source.destroy();
+        Ok(self.track(proxy))
+    }
+
+    /// Starts the record of a capture session just created.
+    pub(super) fn track(&mut self, proxy: ExtImageCopyCaptureSessionV1) -> Key {
+        let key = Key::of(&proxy);
         self.sessions.insert(
             key,
             SessionRec {
@@ -167,7 +180,7 @@ impl CapState {
                 damage: Vec::new(),
             },
         );
-        Ok(key)
+        key
     }
 
     /// Asks for one frame into `buffer`.
@@ -230,6 +243,7 @@ impl Dispatch<WlRegistry, ()> for CapState {
             "ext_image_copy_capture_manager_v1" => {
                 state.copy = Some(registry.bind(name, 1, qh, ()))
             }
+            "quire_agent_manager_v1" => state.agent = Some(registry.bind(name, 1, qh, ())),
             "wl_shm" => state.shm = Some(registry.bind(name, 1, qh, ())),
             _ => {}
         }
@@ -319,6 +333,7 @@ ignore_events! {
     ExtImageCaptureSourceV1, ext_image_capture_source_v1::Event, ();
     ExtForeignToplevelImageCaptureSourceManagerV1, ext_foreign_toplevel_image_capture_source_manager_v1::Event, ();
     ExtImageCopyCaptureManagerV1, ext_image_copy_capture_manager_v1::Event, ();
+    QuireAgentManagerV1, quire_agent_manager_v1::Event, ();
 }
 
 impl Dispatch<ExtImageCopyCaptureSessionV1, ()> for CapState {

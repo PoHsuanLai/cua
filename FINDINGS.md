@@ -6,7 +6,7 @@ Open items and standing facts. An entry names the condition that closes it. `cua
 
 ## Stubs behind frozen interfaces
 
-At the f4-cua-capture fill (2026-10-06) **2 `todo!()` bodies** are left (12 after f4-cua-seat, 18 at the w4-cua fill of 2026-10-03) in library and daemon
+At the f4-cua-capture fill (2026-10-06) **1 `todo!()` body** is left (12 after f4-cua-seat, 18 at the w4-cua fill of 2026-10-03) in library and daemon
 code (lines that begin with `todo!(`); the tests contain none. All of them are the backends that
 need a compositor or a bus that cannot be had in a test; every behaviour over fakes is built. Two tests are `#[ignore]`d on purpose: they regenerate fixture
 files (`a11y-tree` fixtures and golden renders).
@@ -14,9 +14,8 @@ files (`a11y-tree` fixtures and golden renders).
 | Where | Count | Closes when |
 | --- | --- | --- |
 | a11y-tree `AtspiSource::snapshot` (feature `atspi`) | 1 | Spike E, and a pid: stock's protocols name no process (`ToplevelInfo.pid` is 0), so "find the window by pid and title" has nothing to match on. Plan: a zbus fake of `org.a11y.Bus` and a registry with one fake app (`org.a11y.atspi.Accessible`, `Component`, `Action`) on a private bus tests the walk; match windows by title, size and the app's bus-name pid (`GetConnectionUnixProcessID`) once the pid exists |
-| maskcap `QuireMaskedCapture::open` (feature `wayland`) | 1 | casement's agent socket (P2-Q2, `Compositor1.Connect("agent")`) exists: `lease.get_capture_source`, `create_session`, `set_mask_hints` before each frame |
 
-Per crate: a11y-tree 1, maskcap 1; total 2. cua-desktop has none: the stock half is built, and the casement half (`Backend::Casement`, `quire_agent_v1` leases, suspend, resume and glow in the compositor, the agent workspace) is P4-Z-cua. There is no `BackendKind` for it yet, so no arm could hold a `todo!()` that is reachable; KWin (`KwinStock`) refuses every lease with `ModeUnsupported` until Spike B. (`EiSeat`, `FakeEis::serve` and `ScriptedModel::from_cassette` are built: see "The f4-cua-seat fill".)
+Per crate: a11y-tree 1; total 1. `maskcap::QuireMaskedCapture::open` is built over a lease (`create_lease`, `get_capture_source`, `create_session`, `set_mask_hints` before each frame) and tested against a fake `quire_agent_manager_v1`; casement master does not serve that global yet, so against it `open` answers `BackendUnavailable`. cua-desktop has none: the stock half is built, and the casement half (`Backend::Casement`, `quire_agent_v1` leases, suspend, resume and glow in the compositor, the agent workspace) is P4-Z-cua. There is no `BackendKind` for it yet, so no arm could hold a `todo!()` that is reachable; KWin (`KwinStock`) refuses every lease with `ModeUnsupported` until Spike B. (`EiSeat`, `FakeEis::serve` and `ScriptedModel::from_cassette` are built: see "The f4-cua-seat fill".)
 
 What is built, not stubbed (all behind the frozen signatures): `BackendCaps::of`, `LeaseRequest::check`,
 glow, revoke, suspend and mode wire codes (pinned against the generated protocol enums under the

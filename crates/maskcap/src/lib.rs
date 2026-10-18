@@ -7,8 +7,8 @@
 //! [`CaptureSession`]).
 //!
 //! Pure by default. The `wayland` feature is the backend: ext-image-copy-capture over
-//! wayland-client, in `wayland`: the stock toplevel source is built; the quire masked source
-//! waits for casement's agent socket.
+//! wayland-client, in `wayland`: the stock toplevel source, and the quire masked source over an
+//! agent lease (`quire_agent_manager_v1`, which the compositor must advertise).
 
 mod capture;
 mod digest;

@@ -1,11 +1,12 @@
 //! ext-image-copy-capture over a wayland connection: the stock toplevel source (masking in
-//! cuad) and the quire masked source (masking in the compositor, not built yet).
+//! cuad) and the quire masked source (masking in the compositor, over an agent lease).
 //!
 //! Stock frames are unmasked and not damage-gated (Spike A): `frame` applies the caller's mask
 //! hints with [`apply_masks`] and `damage` is a pixel diff between consecutive frames. Capture
 //! asks for an 8-bit shm format and reads the buffer back through its memfd, so nothing here
 //! maps memory.
 
+mod lease;
 mod session;
 mod shm;
 mod state;
@@ -13,8 +14,9 @@ mod state;
 pub use session::{StampClock, WaylandSession};
 
 use crate::{CaptureError, WindowCapture};
-use cua_desktop::{LeaseGrant, Pump};
-use session::SinceStart;
+use cua_desktop::{LeaseGrant, ObjectKey as Key, Pump};
+use lease::Standing;
+use session::{Masking, SinceStart};
 use state::CapState;
 use std::sync::Arc;
 use wayland_client::Connection;
@@ -31,11 +33,14 @@ pub struct StockToplevelCapture {
 }
 
 /// Capture through the lease's `get_capture_source`: the compositor masks before the buffer
-/// leaves. Not built: it needs casement's agent socket (P2-Q2, `Compositor1.Connect("agent")`),
-/// which does not exist yet; `open` answers [`CaptureError::BackendUnavailable`] until then.
+/// leaves, so frames are reported as masked by the compositor and the hints go to it. Needs
+/// the agent connection (`Compositor1.Connect("agent")`); a compositor that does not advertise
+/// `quire_agent_manager_v1` (casement master does not yet) makes `open` answer
+/// [`CaptureError::BackendUnavailable`].
 #[derive(Debug)]
 pub struct QuireMaskedCapture {
-    connection: Connection,
+    pump: Arc<Pump<CapState>>,
+    clock: Arc<dyn StampClock>,
 }
 
 impl StockToplevelCapture {
@@ -64,14 +69,26 @@ impl StockToplevelCapture {
 }
 
 impl QuireMaskedCapture {
-    /// Captures over an open connection.
+    /// Captures over an open agent connection. Nothing is asked of the compositor until `open`.
     pub fn over(connection: Connection) -> Self {
-        Self { connection }
+        let queue = connection.new_event_queue::<CapState>();
+        let state = CapState::new(&connection, queue.handle());
+        Self {
+            pump: Arc::new(Pump::new(connection, queue, state)),
+            clock: Arc::new(SinceStart::now()),
+        }
+    }
+
+    /// Stamps frames and damage with `clock` instead of milliseconds since construction.
+    #[must_use]
+    pub fn with_clock(mut self, clock: Arc<dyn StampClock>) -> Self {
+        self.clock = clock;
+        self
     }
 
     /// The connection.
     pub fn connection(&self) -> &Connection {
-        &self.connection
+        self.pump.connection()
     }
 }
 
@@ -79,27 +96,32 @@ fn lost(_: cua_desktop::PumpError) -> CaptureError {
     CaptureError::SourceGone
 }
 
+/// Brings a fresh connection to rest: the registry is read and what it offers is bound.
+async fn settle(pump: &Pump<CapState>) -> Result<(), CaptureError> {
+    for _ in 0..SETTLE_ROUNDS {
+        let mut asked = None;
+        pump.drive(|st| {
+            let n = *asked.get_or_insert_with(|| st.sync());
+            st.synced(n).then_some(())
+        })
+        .await
+        .map_err(lost)?;
+    }
+    Ok(())
+}
+
 impl WindowCapture for StockToplevelCapture {
     type Session = WaylandSession;
 
     async fn open(&self, lease: &LeaseGrant) -> Result<WaylandSession, CaptureError> {
-        for _ in 0..SETTLE_ROUNDS {
-            let mut asked = None;
-            self.pump
-                .drive(|st| {
-                    let n = *asked.get_or_insert_with(|| st.sync());
-                    st.synced(n).then_some(())
-                })
-                .await
-                .map_err(lost)?;
-        }
+        settle(&self.pump).await?;
         let ident = lease.window.ident.as_str();
         let key = self
             .pump
             .drive(|st| Some(st.open_session(ident)))
             .await
             .map_err(lost)??;
-        WaylandSession::start(self.pump.clone(), self.clock.clone(), key).await
+        WaylandSession::start(self.pump.clone(), self.clock.clone(), key, Masking::Cuad).await
     }
 }
 
@@ -107,10 +129,48 @@ impl WindowCapture for QuireMaskedCapture {
     type Session = WaylandSession;
 
     async fn open(&self, lease: &LeaseGrant) -> Result<WaylandSession, CaptureError> {
-        // Not built: needs casement's agent socket (P2-Q2): lease.get_capture_source,
-        // create_session over it, set_mask_hints before each frame.
-        let _ = (lease, &self.connection);
-        Err(CaptureError::BackendUnavailable)
+        settle(&self.pump).await?;
+        let ident = lease.window.ident.as_str();
+        let held = self
+            .pump
+            .drive(|st| Some(st.open_lease(ident)))
+            .await
+            .map_err(lost)??;
+        let answered = self
+            .pump
+            .drive(|st| match st.standing(held) {
+                Standing::Asked => None,
+                other => Some(other),
+            })
+            .await
+            .map_err(lost);
+        let opened = match answered {
+            Ok(Standing::Revoked(ended)) => Err(ended.error()),
+            Ok(_) => self.start(held).await,
+            Err(e) => Err(e),
+        };
+        if opened.is_err() {
+            self.pump.try_with(|st| st.close_lease(held));
+        }
+        opened
+    }
+}
+
+impl QuireMaskedCapture {
+    /// The session on a granted lease. The session owns the lease from here.
+    async fn start(&self, held: Key) -> Result<WaylandSession, CaptureError> {
+        let key = self
+            .pump
+            .drive(|st| Some(st.open_masked_session(held)))
+            .await
+            .map_err(lost)??;
+        WaylandSession::start(
+            self.pump.clone(),
+            self.clock.clone(),
+            key,
+            Masking::Compositor(held),
+        )
+        .await
     }
 }
 

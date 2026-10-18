@@ -42,12 +42,22 @@ const LOGICAL: Scale120 = Scale120(120);
 /// The pause between two looks at a window that has not changed.
 const PACE: Duration = Duration::from_millis(50);
 
+/// Who blacks the regions of a frame.
+#[derive(Debug, Clone, Copy)]
+pub(crate) enum Masking {
+    /// cuad does, on the unmasked frame (stock).
+    Cuad,
+    /// The compositor does, before the buffer leaves; the hints go to this lease.
+    Compositor(Key),
+}
+
 /// A session over a source of either kind.
 #[derive(Debug)]
 pub struct WaylandSession {
     pump: Arc<Pump<CapState>>,
     clock: Arc<dyn StampClock>,
     key: Key,
+    masking: Masking,
     buffer: Shared,
     /// The last unmasked frame, what the next pixel diff compares with.
     last: Option<PixelBuf>,
@@ -71,12 +81,14 @@ impl WaylandSession {
         pump: Arc<Pump<CapState>>,
         clock: Arc<dyn StampClock>,
         key: Key,
+        masking: Masking,
     ) -> Result<Self, CaptureError> {
         let buffer = Self::buffer_for(&pump, key, 0).await?;
         Ok(Self {
             pump,
             clock,
             key,
+            masking,
             buffer,
             last: None,
             seq: 0,
@@ -172,6 +184,19 @@ impl CaptureSession for WaylandSession {
         want: FrameWant,
         hints: &[MaskRegion],
     ) -> Result<Frame, CaptureError> {
+        if let Masking::Compositor(lease) = self.masking {
+            let mut sent = false;
+            self.pump
+                .drive(|st| {
+                    if !sent {
+                        st.set_hints(lease, hints);
+                        sent = true;
+                    }
+                    Some(())
+                })
+                .await
+                .map_err(lost)?;
+        }
         let (raw, damage) = match want {
             FrameWant::AfterDamage => {
                 let limit = Duration::from_millis(AFTER_DAMAGE_LIMIT_MS);
@@ -198,7 +223,14 @@ impl CaptureSession for WaylandSession {
             }
         };
         let logical = Size::new(Coord(raw.size.w), Coord(raw.size.h));
-        let (pixels, regions) = apply_masks(raw, LOGICAL, hints);
+        let (pixels, regions, applied_by) = match self.masking {
+            Masking::Cuad => {
+                let (pixels, regions) = apply_masks(raw, LOGICAL, hints);
+                (pixels, regions, MaskWhere::Cuad)
+            }
+            // Already black where the compositor was told to; the hints are what was asked.
+            Masking::Compositor(_) => (raw, hints.to_vec(), MaskWhere::Compositor),
+        };
         self.seq += 1;
         Ok(Frame {
             seq: FrameSeq(self.seq),
@@ -208,7 +240,7 @@ impl CaptureSession for WaylandSession {
             scale: LOGICAL,
             damage,
             masks: MaskReport {
-                applied_by: MaskWhere::Cuad,
+                applied_by,
                 whole: WholeMask::None,
                 regions,
             },
@@ -228,9 +260,14 @@ impl CaptureSession for WaylandSession {
 impl Drop for WaylandSession {
     fn drop(&mut self) {
         self.buffer.destroy();
-        let key = self.key;
+        let (key, masking) = (self.key, self.masking);
         // If another task has the pump mid-turn the session's objects stay until the
         // connection closes: a drop cannot wait.
-        self.pump.try_with(|st| st.close_session(key));
+        self.pump.try_with(|st| {
+            st.close_session(key);
+            if let Masking::Compositor(lease) = masking {
+                st.close_lease(lease);
+            }
+        });
     }
 }

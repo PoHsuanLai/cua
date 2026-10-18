@@ -1,5 +1,9 @@
 //! The fake compositor's state and its dispatch.
 
+mod agent;
+
+pub use agent::Stance;
+
 use rustix::event::{PollFd, PollFlags, poll};
 use rustix::io::pwrite;
 use std::os::fd::OwnedFd;
@@ -28,6 +32,7 @@ use wayland_protocols::ext::image_copy_capture::v1::server::ext_image_copy_captu
 use wayland_protocols::ext::image_copy_capture::v1::server::ext_image_copy_capture_session_v1::{
     self, ExtImageCopyCaptureSessionV1,
 };
+use casement_protocols::server::quire_agent_v1::quire_agent_manager_v1::QuireAgentManagerV1;
 use wayland_server::backend::ClientData;
 use wayland_server::protocol::wl_buffer::{self, WlBuffer};
 use wayland_server::protocol::wl_shm::{self, Format, WlShm};
@@ -88,6 +93,8 @@ pub struct Compositor {
     session_toplevel: Vec<usize>,
     offered: Vec<Format>,
     pub frames_served: usize,
+    stance: Stance,
+    hints: Vec<Vec<u8>>,
 }
 
 struct Anyone;
@@ -108,6 +115,15 @@ pub struct FakeCompositor {
 impl FakeCompositor {
     /// A compositor offering the capture globals, with `windows` already on screen.
     pub fn start(windows: Vec<Window>) -> Self {
+        Self::start_with(windows, None)
+    }
+
+    /// The same, also offering `quire_agent_manager_v1`, answering leases as `stance` says.
+    pub fn start_with_agent(windows: Vec<Window>, stance: Stance) -> Self {
+        Self::start_with(windows, Some(stance))
+    }
+
+    fn start_with(windows: Vec<Window>, agent: Option<Stance>) -> Self {
         let (client, server) = UnixStream::pair().expect("socketpair");
         let (bell, ring) = UnixStream::pair().expect("doorbell");
         ring.set_nonblocking(true).expect("nonblocking");
@@ -118,6 +134,9 @@ impl FakeCompositor {
         dh.create_global::<Compositor, ExtForeignToplevelImageCaptureSourceManagerV1, _>(1, ());
         dh.create_global::<Compositor, ExtImageCopyCaptureManagerV1, _>(1, ());
         dh.create_global::<Compositor, WlShm, _>(1, ());
+        if agent.is_some() {
+            dh.create_global::<Compositor, QuireAgentManagerV1, _>(1, ());
+        }
         dh.insert_client(server, Arc::new(Anyone)).expect("client");
         let n = windows.len();
         let state = Compositor {
@@ -135,6 +154,8 @@ impl FakeCompositor {
                 Format::Abgr8888,
             ],
             frames_served: 0,
+            stance: agent.unwrap_or(Stance::Grant),
+            hints: Vec::new(),
         };
         let thread = std::thread::spawn(move || serve(display, state, queue, ring));
         Self {
@@ -191,6 +212,11 @@ impl FakeCompositor {
     /// Only these shm formats are offered from now on (to sessions made later).
     pub fn offer(&self, formats: Vec<Format>) {
         self.call(move |c| c.offered = formats);
+    }
+
+    /// The `set_mask_hints` arrays received so far, in order.
+    pub fn hints(&self) -> Vec<Vec<u8>> {
+        self.call(|c| c.hints.clone())
     }
 
     /// How many frames have been served.

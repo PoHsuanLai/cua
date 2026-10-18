@@ -1,16 +1,18 @@
 #![cfg(feature = "wayland")]
-//! The stock capture backend against an in-process compositor (wayland-server, a socketpair):
-//! formats, frames, masks, pixel-diff damage, resizes and a window that goes away.
+//! The stock and masked capture backends against an in-process compositor (wayland-server, a socketpair):
+//! formats, frames, masks, pixel-diff damage, resizes, a window that goes away and a lease that is
+//! granted or refused.
 
-use crate::support::{FakeCompositor, Window};
+use crate::support::{FakeCompositor, Stance, Window};
+use casement_protocols::server::quire_agent_v1::quire_agent_lease_v1::RevokeReason;
 use cua_action::{Coord, DeviceSize, PixelFormat, Point, Rect, Scale120, Size, WindowSpace};
 use cua_desktop::{
     EiOrigin, GlobalCoord, GlobalRect, LeaseGrant, LeaseId, Pid, SeatIsolation, Stamp,
     ToplevelIdent, ToplevelInfo, WindowTitle, WindowTrust, WorkspaceRef, WorkspaceShown,
 };
 use maskcap::{
-    CaptureError, CaptureSession, DamageSource, FrameWant, MaskReason, MaskRegion, StampClock,
-    StockToplevelCapture, WholeMask, WindowCapture,
+    CaptureError, CaptureSession, DamageSource, FrameWant, MaskReason, MaskRegion,
+    QuireMaskedCapture, StampClock, StockToplevelCapture, WholeMask, WindowCapture,
 };
 use porter_core::{AppName, Px};
 use std::collections::BTreeSet;
@@ -268,14 +270,53 @@ async fn two_sessions_share_one_connection() {
     assert_eq!(fb.unwrap().pixels.size, DeviceSize { w: 2, h: 2 });
 }
 
+fn masked(server: &mut FakeCompositor) -> QuireMaskedCapture {
+    QuireMaskedCapture::over(Connection::from_socket(server.client()).expect("connect"))
+}
+
 #[tokio::test]
-async fn the_compositor_masked_path_answers_unavailable_until_it_is_built() {
-    let mut server = FakeCompositor::start(Vec::new());
-    let masked = maskcap::QuireMaskedCapture::over(
-        Connection::from_socket(server.client()).expect("connect"),
-    );
+async fn a_compositor_without_the_agent_global_makes_the_masked_path_unavailable() {
+    let mut server = FakeCompositor::start(vec![Window::solid("w1", (4, 3), RED)]);
     assert_eq!(
-        masked.open(&grant("w1")).await.err(),
+        masked(&mut server).open(&grant("w1")).await.err(),
         Some(CaptureError::BackendUnavailable)
     );
+}
+
+#[tokio::test]
+async fn a_masked_frame_is_the_compositors_and_the_hints_go_to_it() {
+    let window = Window::solid("w1", (4, 3), RED);
+    let mut server = FakeCompositor::start_with_agent(vec![window.clone()], Stance::Grant);
+    let capture = masked(&mut server);
+    let mut session = capture.open(&grant("w1")).await.expect("open");
+    let frame = session
+        .frame(FrameWant::Now, &[region(1, 0, 2, 1)])
+        .await
+        .expect("frame");
+    // The fake compositor masks nothing: cuad did not either.
+    assert_eq!(&*frame.pixels.data, &window.pixels[..]);
+    assert_eq!(frame.masks.applied_by, cua_desktop::MaskWhere::Compositor);
+    assert_eq!(frame.masks.regions, vec![region(1, 0, 2, 1)]);
+    let words: Vec<u8> = [1u32, 0, 2, 1, 0]
+        .into_iter()
+        .flat_map(u32::to_le_bytes)
+        .collect();
+    assert_eq!(server.hints(), vec![words]);
+}
+
+#[tokio::test]
+async fn a_refused_lease_ends_the_open_with_the_reason() {
+    for (reason, want) in [
+        (RevokeReason::Compositor, CaptureError::Refused),
+        (RevokeReason::WindowClosed, CaptureError::SourceGone),
+    ] {
+        let mut server = FakeCompositor::start_with_agent(
+            vec![Window::solid("w1", (4, 3), RED)],
+            Stance::Refuse(reason),
+        );
+        assert_eq!(
+            masked(&mut server).open(&grant("w1")).await.err(),
+            Some(want)
+        );
+    }
 }

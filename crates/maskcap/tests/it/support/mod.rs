@@ -7,4 +7,4 @@
 
 mod server;
 
-pub use server::{FakeCompositor, Window};
+pub use server::{FakeCompositor, Stance, Window};

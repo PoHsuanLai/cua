@@ -28,6 +28,8 @@ serde_json = { workspace = true }
 porter-core = { workspace = true }
 tokio = { workspace = true }
 wayland-server = { workspace = true }
+# The compositor side of quire-agent-v1, for the fake compositor in the tests.
+casement-protocols = { workspace = true, features = ["server"] }
 wayland-protocols = { workspace = true, features = ["server"] }
 rustix = { workspace = true, features = ["event"] }
 
