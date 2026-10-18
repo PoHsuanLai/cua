@@ -18,10 +18,10 @@ use porter_core::{
 };
 use porter_infer::{
     AttachIndex, ClientFrame, CuaBegin, CuaStepReply, CuaStepRequest, Declined, DeclinedBecause,
-    FrameImage, FrameLayout,
-    ImageSource, InferEvent, InferRefusal, InferReply, InferRequest, InferSession, MaskedRegions,
-    ModelError, ModelRef, NoteFrom, OpenOptions, PlaceId, PlaceModel, PlaceRow, PlaceState, Readiness, ServedBy, SessionError, StepIndex, StepNote,
-    Takes, TokenUsage, TreeText, WindowGeometry,
+    FrameImage, FrameLayout, ImageSource, InferEvent, InferRefusal, InferReply, InferRequest,
+    InferSession, MaskedRegions, ModelError, ModelRef, NoteFrom, OpenOptions, PlaceId, PlaceModel,
+    PlaceRow, PlaceState, Readiness, ServedBy, SessionError, StepIndex, StepNote, Takes,
+    TokenUsage, TreeText, WindowGeometry,
 };
 use rustix::fs::{SealFlags, fcntl_get_seals};
 use std::collections::{BTreeSet, VecDeque};
@@ -559,7 +559,10 @@ async fn a_chosen_model_that_cannot_read_images_is_told_by_name_and_not_retried(
         InferEvent::Finished(InferReply::Refused(InferRefusal::Unavailable)),
     ]]);
     let mut model = InferdCuaModel::over(transport);
-    assert_eq!(model.begin(begin()).await, Err(CuaModelError::CannotSeeScreen));
+    assert_eq!(
+        model.begin(begin()).await,
+        Err(CuaModelError::CannotSeeScreen)
+    );
     assert_eq!(
         model.cannot_see_words(),
         Some(porter_infer::cannot_see_screen("qwen-text"))
@@ -572,7 +575,10 @@ async fn no_model_that_reads_images_says_porters_sentence() {
         InferRefusal::NoModelSeesScreen,
     ))]]);
     let mut model = InferdCuaModel::over(transport);
-    assert_eq!(model.begin(begin()).await, Err(CuaModelError::CannotSeeScreen));
+    assert_eq!(
+        model.begin(begin()).await,
+        Err(CuaModelError::CannotSeeScreen)
+    );
     assert_eq!(
         model.cannot_see_words().as_deref(),
         Some(porter_infer::NO_MODEL_SEES_SCREEN)
@@ -604,10 +610,22 @@ fn place(models: &[Takes], state: PlaceState) -> PlaceRow {
 async fn only_models_all_known_not_to_read_images_make_the_screen_blind() {
     let ready = PlaceState::Ready;
     let rows = [
-        (vec![place(&[Takes::TextOnly, Takes::TextAndAudio], ready)], ModelSight::Blind),
-        (vec![place(&[Takes::TextOnly, Takes::TextAndImages], ready)], ModelSight::MaySee),
-        (vec![place(&[Takes::TextOnly, Takes::Unknown], ready)], ModelSight::MaySee),
-        (vec![place(&[Takes::TextOnly], PlaceState::NotReady)], ModelSight::MaySee),
+        (
+            vec![place(&[Takes::TextOnly, Takes::TextAndAudio], ready)],
+            ModelSight::Blind,
+        ),
+        (
+            vec![place(&[Takes::TextOnly, Takes::TextAndImages], ready)],
+            ModelSight::MaySee,
+        ),
+        (
+            vec![place(&[Takes::TextOnly, Takes::Unknown], ready)],
+            ModelSight::MaySee,
+        ),
+        (
+            vec![place(&[Takes::TextOnly], PlaceState::NotReady)],
+            ModelSight::MaySee,
+        ),
         (vec![], ModelSight::MaySee),
     ];
     for (places, want) in rows {
@@ -615,5 +633,9 @@ async fn only_models_all_known_not_to_read_images_make_the_screen_blind() {
         assert_eq!(model.sight().await, want, "{places:?}");
     }
     let mut silent = InferdCuaModel::over(Scripted::unreachable());
-    assert_eq!(silent.sight().await, ModelSight::MaySee, "no answer is no warning");
+    assert_eq!(
+        silent.sight().await,
+        ModelSight::MaySee,
+        "no answer is no warning"
+    );
 }

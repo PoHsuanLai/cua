@@ -6,6 +6,9 @@
 # switch computer use on for itself. The rows design/22 section 5 puts on the Intelligence page are
 # Computer use's four; the others are Advanced. Not here, because nothing reads them yet:
 # `cua.screens.keep` and `cua.screens.keep_days` (FINDINGS).
+# The schema carries no live note, so the warning that no model reads images while computer use
+# is on is cuad's `SightNote` property (org.quire.Cua1.Manager), which the shell shows beside
+# `cua.enabled`.
 app = "cua"
 file = "cua/settings.toml"
 version = 1

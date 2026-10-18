@@ -178,8 +178,16 @@ async fn computer_use_on_with_no_model_that_reads_images_says_so_beside_the_sett
         Supervisor::new(parts, config).sight_note().await
     };
     assert_eq!(note(true, true).await, Some(cua_run::NO_SIGHT_NOTE));
-    assert_eq!(note(false, true).await, None, "a model that may see is no warning");
-    assert_eq!(note(true, false).await, None, "computer use is off: nothing to warn of");
+    assert_eq!(
+        note(false, true).await,
+        None,
+        "a model that may see is no warning"
+    );
+    assert_eq!(
+        note(true, false).await,
+        None,
+        "computer use is off: nothing to warn of"
+    );
 }
 
 #[tokio::test(start_paused = true)]

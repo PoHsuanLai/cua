@@ -75,7 +75,12 @@ pub(super) fn model_blind(run: &mut Run, fx: &mut Vec<RunEffect>, words: Option<
         summary: summary(&text),
         extracted: Vec::new(),
     };
-    finish(run, fx, CuaOutcome::Failed(FailReason::CannotSeeScreen), said);
+    finish(
+        run,
+        fx,
+        CuaOutcome::Failed(FailReason::CannotSeeScreen),
+        said,
+    );
 }
 
 pub(super) fn model_replied(
