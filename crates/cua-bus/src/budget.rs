@@ -39,11 +39,15 @@ pub struct RunBudget {
 }
 
 impl RunBudget {
-    /// The proposed defaults (design/22 `cua.budget.*`): 40 steps, 600 s active, 3 stall
+    /// The most active time any run may have (two hours), whatever the caller or the settings
+    /// ask: a render or an export may take long, a run may not take forever.
+    pub const ACTIVE_CEILING: Ms = Ms(7_200_000);
+
+    /// The proposed defaults (design/22 `cua.budget.*`): 40 steps, 1800 s active, 3 stall
     /// frames, 60 actions a minute, 2 model failures, no spend.
     pub const PROPOSED: RunBudget = RunBudget {
         steps: Count(40),
-        active: Ms(600_000),
+        active: Ms(1_800_000),
         stall_frames: Count(3),
         actions_per_min: Count(60),
         model_failures: Count(2),
@@ -68,7 +72,7 @@ impl RunBudget {
         };
         RunBudget {
             steps: lesser(self.steps, cap.steps),
-            active: lesser(self.active, cap.active),
+            active: lesser(lesser(self.active, cap.active), Self::ACTIVE_CEILING),
             stall_frames,
             actions_per_min: lesser(self.actions_per_min, cap.actions_per_min),
             model_failures: lesser(self.model_failures, cap.model_failures),
@@ -115,7 +119,7 @@ mod tests {
         let json = serde_json::to_string(&RunBudget::PROPOSED).unwrap();
         assert_eq!(
             json,
-            r#"{"steps":40,"active":600000,"stall_frames":3,"actions_per_min":60,"model_failures":2,"spend":0}"#
+            r#"{"steps":40,"active":1800000,"stall_frames":3,"actions_per_min":60,"model_failures":2,"spend":0}"#
         );
         assert_eq!(
             serde_json::from_str::<RunBudget>(&json).unwrap(),
@@ -139,6 +143,15 @@ mod tests {
             ..RunBudget::PROPOSED
         };
         assert_eq!(modest.capped_by(RunBudget::PROPOSED).steps, Count(5));
+        let huge_cap = RunBudget {
+            active: Ms(u32::MAX),
+            ..RunBudget::PROPOSED
+        };
+        assert_eq!(
+            greedy.capped_by(huge_cap).active,
+            RunBudget::ACTIVE_CEILING,
+            "no run passes the ceiling, whatever the cap allows"
+        );
     }
 
     #[test]

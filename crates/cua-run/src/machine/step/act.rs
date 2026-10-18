@@ -8,14 +8,14 @@ use crate::machine::ops::{
 };
 use crate::machine::phase::RunPhase;
 use crate::machine::run::Run;
-use crate::machine::track::SettleWatch;
+use crate::machine::track::{DamageWanted, SettleWatch, Waited};
 use crate::observation::CursorObs;
 use cua_action::{CuaAction, Point, WindowSpace};
 use cua_bus::{
     ActionOutcome, ActionResult, CuaOutcome, FailReason, LocalRefusal, Refusal, RunBudgetKind,
     TargetedAction,
 };
-use cua_desktop::Stamp;
+use cua_desktop::{Ms, Stamp};
 use maskcap::{DamageAt, FrameWant, Settle, settle};
 use porter_core::Count;
 use porter_infer::StepIndex;
@@ -63,6 +63,7 @@ pub(super) fn injected(run: &mut Run, fx: &mut Vec<RunEffect>, at: Stamp, receip
         return;
     };
     run.track.acted.push(at);
+    run.track.waited = Waited::No;
     let Some(head) = run.pending.actions.pop_front() else {
         finish_plain(run, fx, CuaOutcome::Failed(FailReason::Input));
         return;
@@ -177,16 +178,47 @@ fn end_head(
 }
 
 pub(super) fn damaged(run: &mut Run, fx: &mut Vec<RunEffect>, at: Stamp, damage: DamageAt) {
-    if let SettleWatch::Damage { since, latest } = run.track.settle {
-        let newest = match latest {
-            Some(old) if old.at >= damage.at => old,
-            _ => damage,
-        };
-        run.track.settle = SettleWatch::Damage {
-            since,
-            latest: Some(newest),
-        };
-        settling(run, fx, at);
+    let newest = |latest: Option<DamageAt>| match latest {
+        Some(old) if old.at >= damage.at => old,
+        _ => damage,
+    };
+    match run.track.settle {
+        SettleWatch::Damage { since, latest } => {
+            run.track.settle = SettleWatch::Damage {
+                since,
+                latest: Some(newest(latest)),
+            };
+            settling(run, fx, at);
+        }
+        SettleWatch::Change { until, latest } => {
+            run.track.settle = SettleWatch::Change {
+                until,
+                latest: Some(newest(latest)),
+            };
+            settling(run, fx, at);
+        }
+        SettleWatch::Idle => {}
+    }
+}
+
+/// Where a wait stands at `at`: over at its deadline, or once the window has changed and been
+/// quiet for `quiet`; otherwise it wakes at the sooner of the two.
+fn wait_verdict(until: Stamp, latest: Option<DamageAt>, quiet: Ms, at: Stamp) -> Settle {
+    if at >= until {
+        return Settle::Quiet;
+    }
+    match latest {
+        Some(change) => {
+            let calm = Stamp(change.at.0.saturating_add(u64::from(quiet.0)));
+            if at >= calm {
+                Settle::Quiet
+            } else {
+                Settle::Waiting {
+                    wake: calm.min(until),
+                }
+            }
+        }
+        None => Settle::Waiting { wake: until },
     }
 }
 
@@ -197,12 +229,8 @@ pub(super) fn settling(run: &mut Run, fx: &mut Vec<RunEffect>, at: Stamp) {
     };
     let verdict = match run.track.settle {
         SettleWatch::Idle => return,
-        SettleWatch::Timer { until } => {
-            if at >= until {
-                Settle::Quiet
-            } else {
-                Settle::Waiting { wake: until }
-            }
+        SettleWatch::Change { until, latest } => {
+            wait_verdict(until, latest, run.env.settle.quiet, at)
         }
         SettleWatch::Damage { since, latest } => settle(
             latest.as_slice(),
@@ -215,16 +243,17 @@ pub(super) fn settling(run: &mut Run, fx: &mut Vec<RunEffect>, at: Stamp) {
     match verdict {
         Settle::Waiting { wake } => enter(run, fx, RunPhase::Settling(n, Settle::Waiting { wake })),
         Settle::Quiet | Settle::TimedOut => {
-            let was_damage = matches!(run.track.settle, SettleWatch::Damage { .. });
-            run.track.settle = SettleWatch::Idle;
-            if was_damage {
+            let want = match run.track.settle {
+                SettleWatch::Damage { .. } => FrameWant::AfterDamage,
+                SettleWatch::Change {
+                    latest: Some(_), ..
+                } => FrameWant::AfterDamage,
+                SettleWatch::Change { latest: None, .. } | SettleWatch::Idle => FrameWant::Now,
+            };
+            if run.track.settle.wants_damage() == DamageWanted::Yes {
                 fx.push(RunEffect::CancelSettle);
             }
-            let want = if was_damage {
-                FrameWant::AfterDamage
-            } else {
-                FrameWant::Now
-            };
+            run.track.settle = SettleWatch::Idle;
             proceed(run, fx, at, want);
         }
     }

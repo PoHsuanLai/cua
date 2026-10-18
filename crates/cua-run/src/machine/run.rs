@@ -28,6 +28,10 @@ pub struct RunEnv {
     pub settle: SettleLimits,
     /// The longest a model may ask to wait.
     pub wait_max: Ms,
+    /// How long the run may keep waiting, `wait` after `wait`, before an unchanged screen counts
+    /// as stalled again.
+    #[serde(default = "default_wait_total")]
+    pub wait_total: Ms,
     /// Whether physical input pauses a run on a shared seat.
     pub autopause: Autopause,
     /// How many tree nodes a snapshot keeps.
@@ -46,6 +50,11 @@ pub struct RunEnv {
     pub reader: ReaderMode,
 }
 
+/// Ten minutes: the total of a run whose environment did not say.
+fn default_wait_total() -> Ms {
+    Ms(600_000)
+}
+
 /// The level of a run whose supervisor did not say: ask every time.
 fn strictest_grant() -> Level {
     Level::AlwaysAsk
@@ -58,6 +67,7 @@ impl RunEnv {
             caps,
             settle: config.settle,
             wait_max: config.wait_max,
+            wait_total: config.wait_total,
             autopause: config.autopause,
             tree_max_nodes: config.tree_max_nodes,
             keys: KeyWorld::default(),

@@ -10,8 +10,8 @@ use crate::gate::FakePdp;
 use crate::model::ScriptedModel;
 use crate::seat::FakeSeat;
 use cua_run::{
-    Clock, Collected, CuaSignal, Exec, Parts, Run, RunEffect, RunInput, RunPhase, Seam, Seams,
-    SettleWatch,
+    Clock, Collected, CuaSignal, DamageWanted, Exec, Parts, Run, RunEffect, RunInput, RunPhase,
+    Seam, Seams,
 };
 use std::collections::VecDeque;
 
@@ -142,7 +142,7 @@ pub async fn run_harness_answering(
 /// What the world does when nothing is queued: a screen that changes, or time that passes (the
 /// clock jumps to the machine's own wake-up, since nothing else will move it).
 async fn idle(run: &Run, exec: &mut Exec<'_, FakeSeams>, clock: &FixedClock) -> Option<RunInput> {
-    if matches!(run.track.settle, SettleWatch::Damage { .. })
+    if run.track.settle.wants_damage() == DamageWanted::Yes
         && let Some(damage) = exec.next_damage().await
     {
         return Some(RunInput::Damage(damage));

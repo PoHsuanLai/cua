@@ -274,6 +274,10 @@ fn each_key_lands_in_the_typed_value_the_design_names() {
     );
     assert_eq!(one("cua.wait.max_ms", int(1500)).wait_max, Ms(1500));
     assert_eq!(
+        one("cua.wait.total_ms", int(120_000)).wait_total,
+        Ms(120_000)
+    );
+    assert_eq!(
         one("cua.tree.max_nodes", int(80)).tree_max_nodes,
         NodeBudget(80)
     );

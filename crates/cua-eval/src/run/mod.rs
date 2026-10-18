@@ -15,8 +15,8 @@ use crate::world::{EvalA11y, EvalCapture, EvalClock, EvalDesktop, EvalSeams, Eva
 use cua_desktop::{BackendCaps, BackendKind};
 use cua_fake::MemoryEvents;
 use cua_run::{
-    Clock, Collected, CuaConfig, CuaModel, CuaSignal, Exec, FORCED_NO, FORCED_YES, Held, Run,
-    RunEffect, RunEnv, RunInput, Seam, SettleWatch,
+    Clock, Collected, CuaConfig, CuaModel, CuaSignal, DamageWanted, Exec, FORCED_NO, FORCED_YES,
+    Held, Run, RunEffect, RunEnv, RunInput, Seam,
 };
 use prov::{Label, Labelled, RunId};
 use std::collections::VecDeque;
@@ -139,7 +139,7 @@ async fn idle<M: CuaModel + 'static>(
     exec: &mut Exec<'_, EvalSeams<Timed<M>>>,
     clock: &EvalClock,
 ) -> Option<RunInput> {
-    if matches!(run.track.settle, SettleWatch::Damage { .. })
+    if run.track.settle.wants_damage() == DamageWanted::Yes
         && let Some(damage) = exec.next_damage().await
     {
         return Some(RunInput::Damage(damage));

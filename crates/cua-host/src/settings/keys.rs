@@ -110,6 +110,9 @@ pub(crate) fn table() -> Vec<Key> {
         num("cua.wait.max_ms", 500..=60_000, |s, v| {
             s.config.wait_max = ms(v)
         }),
+        num("cua.wait.total_ms", 1_000..=600_000, |s, v| {
+            s.config.wait_total = ms(v)
+        }),
         num("cua.tree.max_nodes", 50..=5_000, |s, v| {
             s.config.tree_max_nodes = NodeBudget(u32::try_from(v).unwrap_or(u32::MAX));
         }),

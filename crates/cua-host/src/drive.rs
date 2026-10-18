@@ -9,7 +9,7 @@ use crate::settings::CuaSettings;
 use cua_bus::{BudgetBody, CuaOutcome, RunEnd};
 use cua_desktop::Stamp;
 use cua_run::{
-    Clock, Exec, Outlet, Parts, Run, RunEffect, RunInput, RunPhase, Seam, Seams, SettleWatch,
+    Clock, DamageWanted, Exec, Outlet, Parts, Run, RunEffect, RunInput, RunPhase, Seam, Seams,
     SlotState,
 };
 use prov::RunId;
@@ -336,7 +336,7 @@ pub(crate) async fn drive<S: Drivable>(
         }
         // Nothing to do: wait for the person, the desktop, the screen or the clock.
         let wake = machine.run().wake();
-        let watching = matches!(machine.run().track.settle, SettleWatch::Damage { .. })
+        let watching = machine.run().track.settle.wants_damage() == DamageWanted::Yes
             && damage == Damage::Flowing;
         let nap = wake.map_or(Duration::MAX, |at| {
             Duration::from_millis(at.0.saturating_sub(shared.clock.now().0))
@@ -354,7 +354,7 @@ pub(crate) async fn drive<S: Drivable>(
                 machine.feed(&shared, RunInput::Tick, wake.map_or(now, |due| now.max(due)));
             }
         }
-        if !matches!(machine.run().track.settle, SettleWatch::Damage { .. }) {
+        if machine.run().track.settle.wants_damage() == DamageWanted::No {
             damage = Damage::Flowing;
         }
     };

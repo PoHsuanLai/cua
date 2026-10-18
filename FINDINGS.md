@@ -6,16 +6,15 @@ Open items and standing facts. An entry names the condition that closes it. `cua
 
 ## Stubs behind frozen interfaces
 
-At the f4-cua-capture fill (2026-10-06) **1 `todo!()` body** is left (12 after f4-cua-seat, 18 at the w4-cua fill of 2026-10-03) in library and daemon
+Since the AT-SPI backend (2026-10-18) **no `todo!()` body** is left (1 at the f4-cua-capture fill of 2026-10-06, 12 after f4-cua-seat, 18 at the w4-cua fill of 2026-10-03) in library and daemon
 code (lines that begin with `todo!(`); the tests contain none. All of them are the backends that
 need a compositor or a bus that cannot be had in a test; every behaviour over fakes is built. Two tests are `#[ignore]`d on purpose: they regenerate fixture
 files (`a11y-tree` fixtures and golden renders).
 
 | Where | Count | Closes when |
 | --- | --- | --- |
-| a11y-tree `AtspiSource::snapshot` (feature `atspi`) | 1 | Spike E, and a pid: stock's protocols name no process (`ToplevelInfo.pid` is 0), so "find the window by pid and title" has nothing to match on. Plan: a zbus fake of `org.a11y.Bus` and a registry with one fake app (`org.a11y.atspi.Accessible`, `Component`, `Action`) on a private bus tests the walk; match windows by title, size and the app's bus-name pid (`GetConnectionUnixProcessID`) once the pid exists |
 
-Per crate: a11y-tree 1; total 1. `maskcap::QuireMaskedCapture::open` is built over a lease (`create_lease`, `get_capture_source`, `create_session`, `set_mask_hints` before each frame) and tested against a fake `quire_agent_manager_v1`; casement master does not serve that global yet, so against it `open` answers `BackendUnavailable`. cua-desktop has none: the stock half is built, and the casement half (`Backend::Casement`, `quire_agent_v1` leases, suspend, resume and glow in the compositor, the agent workspace) is P4-Z-cua. There is no `BackendKind` for it yet, so no arm could hold a `todo!()` that is reachable; KWin (`KwinStock`) refuses every lease with `ModeUnsupported` until Spike B. (`EiSeat`, `FakeEis::serve` and `ScriptedModel::from_cassette` are built: see "The f4-cua-seat fill".)
+Per crate: none; total 0. `maskcap::QuireMaskedCapture::open` is built over a lease (`create_lease`, `get_capture_source`, `create_session`, `set_mask_hints` before each frame) and tested against a fake `quire_agent_manager_v1`; casement master does not serve that global yet, so against it `open` answers `BackendUnavailable`. cua-desktop has none: the stock half is built, and the casement half (`Backend::Casement`, `quire_agent_v1` leases, suspend, resume and glow in the compositor, the agent workspace) is P4-Z-cua. There is no `BackendKind` for it yet, so no arm could hold a `todo!()` that is reachable; KWin (`KwinStock`) refuses every lease with `ModeUnsupported` until Spike B. (`EiSeat`, `FakeEis::serve` and `ScriptedModel::from_cassette` are built: see "The f4-cua-seat fill".)
 
 What is built, not stubbed (all behind the frozen signatures): `BackendCaps::of`, `LeaseRequest::check`,
 glow, revoke, suspend and mode wire codes (pinned against the generated protocol enums under the
@@ -210,6 +209,14 @@ the machine under it. What was decided:
   run (`Failed` and `Infeasible` both end `Failed(Infeasible)`; a success check on the tree must pass
   first). Empty replies count as model failures and look again at the next step; transient and
   parse failures look again at the same step; over `cua.budget.model_failures` ends `Failed(Model)`.
+- **Long waits.** A `wait` lasts `min(asked, cua.wait.max_ms)` (default 60 s, which is also the
+  most stoker's `WaitMs` can ask), or ends sooner once the window has changed and been quiet for
+  `cua.settle.quiet_ms`. While the run has waited, `wait` after `wait`, for no more than
+  `cua.wait.total_ms` (default ten minutes) an unchanged screen is a slow job, not a stall; any
+  input action starts that count over. The active budget defaults to 1800 s and never passes
+  `RunBudget::ACTIVE_CEILING` (two hours). Cancel, pause and the kill chord work in a wait as in
+  any `Settling` phase. Ask for stoker: a `Wait` that names its own bound beyond 60 s, so one
+  action can cover a ten-minute export.
   A vendor safety hint of either kind blocks the batch and counts as a failure (the router has no way
   to be told "confirm this", so the run does not go on without it). A refused action marks the rest
   `NotExecuted` and reaches the model through `prev`; `Unconfirmed` is told as `UserDeclined`;

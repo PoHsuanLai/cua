@@ -35,7 +35,12 @@ impl FakeTree {
         at: Option<(i32, i32, i32, i32)>,
         children: &[u32],
     ) -> Self {
-        let extents = at.map_or(Extents::Unknown, |(x, y, w, h)| Extents::Screen { x, y, w, h });
+        let extents = at.map_or(Extents::Unknown, |(x, y, w, h)| Extents::Screen {
+            x,
+            y,
+            w,
+            h,
+        });
         self.objects.insert(
             key,
             RawNode {
@@ -95,11 +100,23 @@ fn desktop() -> FakeTree {
     FakeTree::default()
         .app(1, 100, &[10, 11])
         .app(2, 200, &[20])
-        .put(10, Atspi::Frame, "Editor", Some((100, 50, 800, 600)), &[100, 101])
+        .put(
+            10,
+            Atspi::Frame,
+            "Editor",
+            Some((100, 50, 800, 600)),
+            &[100, 101],
+        )
         .put(11, Atspi::Frame, "Editor", Some((1000, 50, 400, 300)), &[])
         .put(20, Atspi::Frame, "Editor", Some((0, 0, 800, 600)), &[])
         .put(100, Atspi::Panel, "", Some((100, 50, 800, 40)), &[102])
-        .put(101, Atspi::PasswordText, "Password", Some((200, 150, 300, 24)), &[])
+        .put(
+            101,
+            Atspi::PasswordText,
+            "Password",
+            Some((200, 150, 300, 24)),
+            &[],
+        )
         .put(102, Atspi::Button, "Save", Some((110, 55, 60, 30)), &[])
         .acting(102, "click")
 }
@@ -113,15 +130,24 @@ fn rect(x: u32, y: u32, w: u32, h: u32) -> Rect<cua_action::WindowSpace> {
 
 #[tokio::test]
 async fn the_window_is_read_breadth_first_in_window_local_pixels() {
-    let snapshot = read_window(&desktop(), &target(100, "Editor", 800, 600), NodeBudget(400))
-        .await
-        .unwrap();
+    let snapshot = read_window(
+        &desktop(),
+        &target(100, "Editor", 800, 600),
+        NodeBudget(400),
+    )
+    .await
+    .unwrap();
     assert_eq!(snapshot.source, TreeSource::Atspi);
     assert_eq!(snapshot.truncated, Truncation::Complete);
     let roles: Vec<Role> = snapshot.nodes.iter().map(|n| n.role).collect();
     assert_eq!(
         roles,
-        [Role::Window, Role::Section, Role::PasswordText, Role::Button]
+        [
+            Role::Window,
+            Role::Section,
+            Role::PasswordText,
+            Role::Button
+        ]
     );
     let parents: Vec<Parent> = snapshot.nodes.iter().map(|n| n.parent).collect();
     let id = |i: usize| snapshot.nodes[i].id;
@@ -150,17 +176,18 @@ async fn a_budget_cuts_the_walk_and_says_how_much_was_left() {
         .await
         .unwrap();
     assert_eq!(snapshot.nodes.len(), 2);
-    assert_eq!(
-        snapshot.truncated,
-        Truncation::Pruned { dropped: Count(2) }
-    );
+    assert_eq!(snapshot.truncated, Truncation::Pruned { dropped: Count(2) });
 }
 
 #[tokio::test]
 async fn a_password_field_is_secret_and_its_rectangle_is_a_mask() {
-    let snapshot = read_window(&desktop(), &target(100, "Editor", 800, 600), NodeBudget(400))
-        .await
-        .unwrap();
+    let snapshot = read_window(
+        &desktop(),
+        &target(100, "Editor", 800, 600),
+        NodeBudget(400),
+    )
+    .await
+    .unwrap();
     let secret: Vec<&str> = snapshot
         .nodes
         .iter()

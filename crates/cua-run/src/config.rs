@@ -78,8 +78,11 @@ pub struct CuaConfig {
     pub budget: RunBudget,
     /// `cua.settle.*`.
     pub settle: SettleLimits,
-    /// `cua.wait.max_ms`: the longest a model may ask to wait (5000).
+    /// `cua.wait.max_ms`: the longest one `wait` may last (60000, the most the action can ask).
     pub wait_max: Ms,
+    /// `cua.wait.total_ms`: how long a run may keep waiting, `wait` after `wait`, before an
+    /// unchanged screen counts as stalled again (600000, ten minutes).
+    pub wait_total: Ms,
     /// `cua.autopause`.
     pub autopause: Autopause,
     /// `cua.tree.max_nodes` (400).
@@ -100,7 +103,8 @@ impl Default for CuaConfig {
                 quiet: Ms(250),
                 timeout: Ms(3000),
             },
-            wait_max: Ms(5000),
+            wait_max: Ms(60_000),
+            wait_total: Ms(600_000),
             autopause: Autopause::On,
             tree_max_nodes: NodeBudget(400),
             keep_screens: KeepScreens::Off,
@@ -146,14 +150,15 @@ pub const SETTING_ROWS: &[SettingRow] = &[
     w("cua.enabled", "off"),
     w("cua.default_mode", "auto"),
     n("cua.budget.steps", 40),
-    n("cua.budget.active_s", 600),
+    n("cua.budget.active_s", 1800),
     n("cua.budget.stall_frames", 3),
     n("cua.budget.actions_per_min", 60),
     n("cua.budget.model_failures", 2),
     n("cua.budget.spend_microusd", 0),
     n("cua.settle.quiet_ms", 250),
     n("cua.settle.timeout_ms", 3000),
-    n("cua.wait.max_ms", 5000),
+    n("cua.wait.max_ms", 60_000),
+    n("cua.wait.total_ms", 600_000),
     w("cua.autopause", "on"),
     n("cua.tree.max_nodes", 400),
     w("cua.screens.keep", "off"),
@@ -186,6 +191,7 @@ impl CuaConfig {
             "cua.settle.quiet_ms" => Some(SettingValue::Number(i64::from(self.settle.quiet.0))),
             "cua.settle.timeout_ms" => Some(SettingValue::Number(i64::from(self.settle.timeout.0))),
             "cua.wait.max_ms" => Some(SettingValue::Number(i64::from(self.wait_max.0))),
+            "cua.wait.total_ms" => Some(SettingValue::Number(i64::from(self.wait_total.0))),
             "cua.autopause" => Some(SettingValue::Word(match self.autopause {
                 Autopause::Off => "off",
                 Autopause::On => "on",

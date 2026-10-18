@@ -28,10 +28,14 @@ pub struct A11yTarget {
 #[serde(tag = "kind", content = "v", rename_all = "snake_case")]
 pub enum A11yError {
     /// No accessibility bus.
-    #[error("The accessibility service is not running, so the window is read from the screen alone.")]
+    #[error(
+        "The accessibility service is not running, so the window is read from the screen alone."
+    )]
     NoBus,
     /// The app does not expose a tree.
-    #[error("The app does not describe its window to assistive tools, so it is read from the screen alone.")]
+    #[error(
+        "The app does not describe its window to assistive tools, so it is read from the screen alone."
+    )]
     NotExposed,
     /// No window matches the target, or several do.
     #[error("No single window matched, so the window is read from the screen alone.")]

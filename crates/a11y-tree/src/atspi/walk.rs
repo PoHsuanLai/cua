@@ -170,7 +170,10 @@ fn local(extents: Extents, origin: (i32, i32)) -> Rect<WindowSpace> {
             size: Size::new(Coord(0), Coord(0)),
         },
         Extents::Screen { x, y, w, h } => Rect {
-            origin: Point::new(px(x.saturating_sub(origin.0)), px(y.saturating_sub(origin.1))),
+            origin: Point::new(
+                px(x.saturating_sub(origin.0)),
+                px(y.saturating_sub(origin.1)),
+            ),
             size: Size::new(px(w), px(h)),
         },
     }

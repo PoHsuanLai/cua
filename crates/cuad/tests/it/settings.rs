@@ -92,5 +92,5 @@ async fn a_bad_value_in_the_file_leaves_the_running_value_and_is_reported() {
     let loaded = sup.follow(&mut watch).await.expect("the watch is live");
     assert_eq!(loaded.fallbacks.len(), 1);
     assert_eq!(loaded.fallbacks[0].key, "cua.wait.max_ms");
-    assert_eq!(sup.settings().wait_max, cua_desktop::Ms(5000));
+    assert_eq!(sup.settings().wait_max, cua_desktop::Ms(60_000));
 }

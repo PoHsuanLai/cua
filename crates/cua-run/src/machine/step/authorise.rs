@@ -18,7 +18,7 @@ use cua_bus::{
     ActionOutcome, ActionResult, AskBody, AuthorisedBy, BlockedOn, ConfirmBy, CuaOutcome,
     CuaRecord, FailReason, LocalRefusal, QuestionId, Refusal, SuccessCheck, TargetedAction,
 };
-use cua_desktop::{ConsentGuard, Stamp, Suspend};
+use cua_desktop::{ConsentGuard, Ms, Stamp, Suspend};
 use docket_core::{CallRefusal, GateAnswer};
 use maskcap::{FrameWant, Settle};
 use porter_infer::StepIndex;
@@ -81,6 +81,7 @@ pub(super) fn wait(run: &mut Run, fx: &mut Vec<RunEffect>, at: Stamp, n: StepInd
     };
     let ms = asked.min(run.env.wait_max.0);
     let until = Stamp(at.0.saturating_add(u64::from(ms)));
+    run.track.waited = run.track.waited.and(Ms(ms));
     action_ended(
         run,
         fx,
@@ -90,7 +91,14 @@ pub(super) fn wait(run: &mut Run, fx: &mut Vec<RunEffect>, at: Stamp, n: StepInd
         },
         None,
     );
-    run.track.settle = SettleWatch::Timer { until };
+    run.track.settle = SettleWatch::Change {
+        until,
+        latest: None,
+    };
+    fx.push(RunEffect::WatchSettle {
+        quiet: run.env.settle.quiet,
+        timeout: Ms(ms),
+    });
     enter(
         run,
         fx,

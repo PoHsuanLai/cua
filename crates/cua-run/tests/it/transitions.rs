@@ -420,9 +420,10 @@ fn a_screen_that_never_stops_changing_times_out() {
 }
 
 #[test]
-fn a_wait_pauses_for_the_time_asked_but_never_longer_than_the_setting() {
+fn a_wait_lasts_the_time_asked_but_never_longer_than_the_setting() {
     for (asked, slept) in [(500, 500_u64), (50_000, 5000)] {
         let mut d = Drive::thinking(STOCK, task(model_says()), tree(vec![]));
+        d.run.env.wait_max = cua_desktop::Ms(5000);
         d.feed(RunInput::ModelReplied(reply(vec![wait(asked)])));
         let at = d.at.0;
         assert_eq!(
@@ -438,11 +439,74 @@ fn a_wait_pauses_for_the_time_asked_but_never_longer_than_the_setting() {
         assert!(matches!(d.phase(), RunPhase::Settling(..)), "not yet");
         d.feed_after(1, RunInput::Tick);
         assert_eq!(*d.phase(), RunPhase::Observing(StepIndex(2)));
-        assert!(
-            !d.has(|e| matches!(e, RunEffect::CancelSettle)),
-            "a pause has no watch"
-        );
+        assert!(d.has(|e| matches!(e, RunEffect::CancelSettle)));
+        assert_eq!(d.run.track.settle, SettleWatch::Idle);
     }
+}
+
+#[test]
+fn a_wait_ends_early_once_the_window_has_changed_and_gone_quiet() {
+    let mut d = Drive::thinking(STOCK, task(model_says()), tree(vec![]));
+    d.feed(RunInput::ModelReplied(reply(vec![wait(30_000)])));
+    assert!(d.has(|e| matches!(e, RunEffect::WatchSettle { .. })));
+    let began = d.at.0;
+    d.feed_after(1000, RunInput::Damage(damage(began + 1000)));
+    assert_eq!(
+        *d.phase(),
+        RunPhase::Settling(
+            StepIndex(1),
+            Settle::Waiting {
+                wake: Stamp(began + 1000 + 250)
+            }
+        ),
+        "the quiet period after the change, far short of the deadline"
+    );
+    d.feed_after(100, RunInput::Damage(damage(began + 1100)));
+    d.feed_after(250, RunInput::Tick);
+    assert_eq!(*d.phase(), RunPhase::Observing(StepIndex(2)));
+    assert_eq!(
+        d.effects.last(),
+        Some(&RunEffect::Capture {
+            want: FrameWant::AfterDamage,
+            hints: cua_run::HintSource::FromTree
+        })
+    );
+}
+
+#[test]
+fn a_long_wait_is_not_a_stall_until_the_total_is_spent() {
+    let mut d = Drive::thinking(STOCK, task(model_says()), tree(vec![]));
+    let total = d.run.env.wait_total.0;
+    let mut waited = 0;
+    let mut waits = 0;
+    while finished_with(&d).is_none() && waits < 30 {
+        d.feed(RunInput::ModelReplied(reply(vec![wait(60_000)])));
+        d.feed_after(60_000, RunInput::Tick);
+        d.feed(RunInput::Observed(Box::new(observation(1, tree(vec![])))));
+        waits += 1;
+        waited += 60_000;
+        if waited <= total {
+            assert_eq!(finished_with(&d), None, "wait {waits} is within the total");
+        }
+    }
+    assert_eq!(
+        finished_with(&d),
+        Some(CuaOutcome::BudgetOut(RunBudgetKind::Stall))
+    );
+    assert!(waited > total, "only after the total: {waited} ms");
+}
+
+#[test]
+fn the_person_can_stop_a_run_in_the_middle_of_a_long_wait() {
+    let mut d = Drive::thinking(STOCK, task(model_says()), tree(vec![]));
+    d.feed(RunInput::ModelReplied(reply(vec![wait(60_000)])));
+    d.feed_after(5000, RunInput::UserCancel);
+    assert_eq!(
+        finished_with(&d),
+        Some(CuaOutcome::Cancelled(cua_bus::CancelledBy::User))
+    );
+    assert!(d.has(|e| matches!(e, RunEffect::CancelSettle)));
+    assert_eq!(d.run.track.settle, SettleWatch::Idle);
 }
 
 #[test]
