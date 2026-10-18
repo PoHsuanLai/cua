@@ -13,9 +13,9 @@ use cua_bus::{
 use cua_dbus::{CUA_BUS, CUA_PATH, run_path};
 use cua_desktop::WindowTrust;
 use cua_desktop::{Desktop, RunMode, ToplevelInfo, ToplevelState};
-use cua_host::Drivable;
 use cua_host::Supervisor;
 use cua_host::SupervisorEvent;
+use cua_host::{Apps, Drivable};
 use cua_run::{CuaSignal, choose_mode};
 use docket_client::{ContextSource, SummonTarget};
 use docket_core::{
@@ -112,9 +112,13 @@ fn open_apps(windows: &[ToplevelInfo]) -> BTreeSet<AppName> {
         .collect()
 }
 
-/// The refusal that lists the open apps; with none open there is nothing to choose from.
-fn choose_app(windows: &[ToplevelInfo]) -> TaskRefusal {
-    let apps: Vec<AppName> = open_apps(windows).into_iter().collect();
+/// The refusal that lists the open apps the person allows (an app not on their list would only be
+/// refused next); with none there is nothing to choose from.
+fn choose_app(windows: &[ToplevelInfo], allows: &Apps) -> TaskRefusal {
+    let apps: Vec<AppName> = open_apps(windows)
+        .into_iter()
+        .filter(|app| allows.rule_for(app).is_some())
+        .collect();
     if apps.is_empty() {
         TaskRefusal::Control(ControlRefusal::BadTask)
     } else {
@@ -138,6 +142,10 @@ pub(crate) async fn task_for<S: Drivable>(
             .ok_or(ControlRefusal::ModeUnsupported)?,
     };
     let windows = supervisor.desktop().windows().await;
+    if let Err(error) = &windows {
+        eprintln!("cuad: the desktop did not list its windows: {error}");
+    }
+    let allows = supervisor.apps();
     let (target, app) = match (&request.window, &request.app) {
         (Some(ident), _) => {
             let window = windows
@@ -152,7 +160,7 @@ pub(crate) async fn task_for<S: Drivable>(
             if let Ok(windows) = &windows
                 && !open_apps(windows).contains(app)
             {
-                return Err(choose_app(windows));
+                return Err(choose_app(windows, &allows));
             }
             (TaskTarget::App(app.clone()), app.clone())
         }
@@ -163,7 +171,7 @@ pub(crate) async fn task_for<S: Drivable>(
                 .find(|w| usable(w) && w.state.contains(&ToplevelState::Activated));
             match focused {
                 Some(window) => (TaskTarget::Window(window.ident.clone()), window.app.clone()),
-                None => return Err(choose_app(&windows)),
+                None => return Err(choose_app(&windows, &allows)),
             }
         }
     };

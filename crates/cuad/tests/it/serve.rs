@@ -650,4 +650,18 @@ async fn no_app_and_no_focus_gives_the_choices_even_when_the_shell_has_it() {
         matches!(refused, Err(docket_core::AppRefusal::NeedsParam { ref options, .. }) if options.len() == 2),
         "{refused:?}"
     );
+    // An open app the person has not listed is no choice: it would only be refused next.
+    fx.supervisor.apply_settings(&cuad::CuaSettings {
+        config: fx.supervisor.settings(),
+        apps: cuad::Apps::Listed(vec![cuad::AppRule {
+            app: prov::AppName::parse("app.zen_browser.zen").expect("an app"),
+            allow: cuad::AppAllow::Ask,
+        }]),
+    });
+    let Err(docket_core::AppRefusal::NeedsParam { options, .. }) = start_with(&fx, None).await
+    else {
+        panic!("a refusal with choices");
+    };
+    let ids: Vec<&str> = options.iter().map(|o| o.id.key.as_str()).collect();
+    assert_eq!(ids, ["app.zen_browser.zen"]);
 }
