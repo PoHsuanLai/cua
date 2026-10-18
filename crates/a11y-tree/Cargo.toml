@@ -17,13 +17,15 @@ porter-core = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
 atspi = { workspace = true, optional = true }
+tokio = { workspace = true, optional = true }
+zbus = { workspace = true, optional = true }
 
 [dev-dependencies]
 serde_json = { workspace = true }
 
 [features]
 # The AT-SPI backend over atspi (zbus): the accessibility bus of the session.
-atspi = ["dep:atspi"]
+atspi = ["dep:atspi", "dep:tokio", "dep:zbus"]
 
 [lints]
 workspace = true

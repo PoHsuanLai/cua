@@ -22,8 +22,8 @@ pub enum BackendChoice {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum A11yChoice {
-    /// No tree: every snapshot says there is no accessibility bus. The default until the AT-SPI
-    /// source is built (FINDINGS), because asking it today would panic a run.
+    /// No tree: every snapshot says there is no accessibility bus, and a run goes on from pixels.
+    /// The default, so that nothing reads the session's bus unless the person turned it on.
     #[default]
     Off,
     /// AT-SPI, over the session's accessibility bus.

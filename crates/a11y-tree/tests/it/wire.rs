@@ -57,10 +57,11 @@ fn a_target_and_every_error_round_trip() {
         app: AppName::parse("org.mozilla.firefox").unwrap(),
         title: WindowTitle("Sign in".into()),
         geometry: Size::new(Coord(1000), Coord(700)),
+        space: prov::SpaceId::parse("desktop").unwrap(),
     };
     assert_eq!(
         round_trip(&target),
-        r#"{"pid":4242,"app":"org.mozilla.firefox","title":"Sign in","geometry":{"w":1000,"h":700}}"#
+        r#"{"pid":4242,"app":"org.mozilla.firefox","title":"Sign in","geometry":{"w":1000,"h":700},"space":"desktop"}"#
     );
     for error in [
         A11yError::NoBus,

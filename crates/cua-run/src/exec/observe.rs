@@ -7,7 +7,7 @@ use crate::machine::input::{CheckResult, RunInput};
 use crate::observation::{
     ContextObs, CursorObs, Focus, Observation, TreeAbsence, TreeObs, Visibility, WindowInfo,
 };
-use crate::seams::{MessageLink, Seams};
+use crate::seams::{Clock, MessageLink, Seams};
 use crate::sensitivity::window_sensitivity;
 use crate::turn::note_of;
 use a11y_tree::{
@@ -96,9 +96,14 @@ impl<S: Seams> Exec<'_, S> {
             app: info.app.clone(),
             title: info.title.clone(),
             geometry: size_of(&info),
+            space: self.task.space.clone(),
         };
         match self.seam.a11y.snapshot(&target, budget).await {
-            Ok(snapshot) => TreeObs::Present(prune(&snapshot, budget)),
+            Ok(mut snapshot) => {
+                // A source does not read the clock: the tree is stamped when the run got it.
+                snapshot.taken = self.seam.clock.now();
+                TreeObs::Present(prune(&snapshot, budget))
+            }
             Err(error) => TreeObs::Absent(absence_of(&error)),
         }
     }
