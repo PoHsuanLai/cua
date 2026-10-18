@@ -61,6 +61,11 @@ async fn a_change_in_the_file_applies_to_the_next_start_without_a_restart() {
     }
     let started = sup.start(CuaCaller::Companion, task()).await;
     assert!(started.is_ok(), "{started:?}");
+    assert_eq!(
+        cuad::reach_json(sup.settings().enabled),
+        r#"{"cua.run.start":"offered"}"#,
+        "the live reach follows the file"
+    );
 
     // Off again, in the file: the next start is refused, the daemon never restarted.
     write_atomically(home.path(), "[cua]\nenabled = \"off\"\n");
@@ -70,6 +75,10 @@ async fn a_change_in_the_file_applies_to_the_next_start_without_a_restart() {
     assert_eq!(
         sup.start(CuaCaller::Companion, task()).await,
         Err(ControlRefusal::Disabled)
+    );
+    assert_eq!(
+        cuad::reach_json(sup.settings().enabled),
+        r#"{"cua.run.start":"hidden"}"#
     );
 }
 

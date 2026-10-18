@@ -31,6 +31,7 @@ mod frame_fd;
 mod keymap;
 mod model;
 mod provider;
+mod reach;
 mod reasons;
 mod serve;
 mod system;
@@ -54,6 +55,7 @@ pub use model::InferdCuaModel;
 pub use provider::{
     CuaProvider, ModeChoice, ProviderError, StartRefusal, StartRequest, manifest_for,
 };
+pub use reach::{follow_settings, reach_json};
 pub use serve::{ServeError, Serving, serve, serve_on, serve_on_with};
 pub use system::{SystemSeams, WaylandPair};
 pub use watch::{DEBOUNCE, SettingsWatch, WatchState};

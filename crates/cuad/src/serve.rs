@@ -4,6 +4,7 @@
 use crate::bus::{MANAGER_PATH, ManagerObject, RunObject, enveloped};
 use crate::callers::shell_owner;
 use crate::provider::{CuaProvider, ModeChoice, StartRefusal, StartRequest};
+use crate::reach::ReachObject;
 use crate::reasons::words_of;
 use cua_bus::{
     AskBody, ControlRefusal, CuaCaller, CuaTask, ProcedureUse, ReportRoute, RunOrigin,
@@ -20,6 +21,7 @@ use docket_core::{
     ContextScope, ContextSnapshot, Here, Selection, SummonAnswer, SummonOrigin, SummonSerial,
     TextTarget, Visible, WindowPrivacy,
 };
+use docket_dbus::PROVIDER_PATH;
 use docket_dbus::callers::{CallerTable, Identity};
 use futures_util::StreamExt;
 use porter_core::{AppName, Count};
@@ -400,6 +402,17 @@ async fn serve_as<S: Drivable>(
             ManagerObject {
                 supervisor: supervisor.clone(),
                 who: who.clone(),
+            },
+        )
+        .await
+        .map_err(bus)?;
+    // `org.quire.IntentReach1` beside `IntentProvider1`: the live value of the one action.
+    connection
+        .object_server()
+        .at(
+            PROVIDER_PATH,
+            ReachObject {
+                supervisor: supervisor.clone(),
             },
         )
         .await
