@@ -6,12 +6,12 @@ use crate::callers::shell_owner;
 use crate::provider::{CuaProvider, ModeChoice, StartRefusal, StartRequest};
 use crate::reach::ReachObject;
 use crate::reasons::words_of;
-use cua_action::WindowTrust;
 use cua_bus::{
     AskBody, ControlRefusal, CuaCaller, CuaTask, ProcedureUse, ReportRoute, RunOrigin,
     SuccessCheck, TaskTarget,
 };
 use cua_dbus::{CUA_BUS, CUA_PATH, run_path};
+use cua_desktop::WindowTrust;
 use cua_desktop::{Desktop, RunMode, ToplevelInfo, ToplevelState};
 use cua_host::Drivable;
 use cua_host::Supervisor;
