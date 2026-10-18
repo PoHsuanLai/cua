@@ -149,7 +149,7 @@ impl<S: Seams> Exec<'_, S> {
             )
             .with_hints(self.hints.clone());
             if let Err(error) = model.begin(begin).await {
-                return out.input(RunInput::ModelFailed(error));
+                return out.input(failed_input(&*model, error));
             }
             self.model = ModelSession::Open;
         }
@@ -166,9 +166,16 @@ impl<S: Seams> Exec<'_, S> {
                 usage: model.usage(),
                 cost: reply_cost(model.served().as_ref()),
             })),
-            Err(
-                error @ (CuaModelError::Transient | CuaModelError::Parse | CuaModelError::Fatal),
-            ) => RunInput::ModelFailed(error),
+            Err(error) => failed_input(&*model, error),
         });
+    }
+}
+
+/// What the machine is told when the model's call failed with `error`: a model that cannot read
+/// images says so in its own words.
+fn failed_input(model: &impl CuaModel, error: CuaModelError) -> RunInput {
+    match error {
+        CuaModelError::CannotSeeScreen => RunInput::ModelBlind(model.cannot_see_words()),
+        other => RunInput::ModelFailed(other),
     }
 }

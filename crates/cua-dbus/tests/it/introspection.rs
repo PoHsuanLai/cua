@@ -32,6 +32,7 @@ fn every_member_of_the_spec_is_declared() {
         "<method name=\"StopAll\">",
         "<property name=\"Backend\" type=\"s\" access=\"read\"/>",
         "<property name=\"Modes\" type=\"a{ss}\" access=\"read\"/>",
+        "<property name=\"SightNote\" type=\"s\" access=\"read\"/>",
         "<signal name=\"RunAdded\">",
         "<signal name=\"RunRemoved\">",
         "interface name=\"org.quire.Cua1.Run\"",

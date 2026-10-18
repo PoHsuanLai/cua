@@ -13,7 +13,7 @@ use cua_desktop::GlowState;
 
 /// A summary of `text`; the empty one (the report's fallback line says something) when the text
 /// does not fit a summary.
-fn summary(text: &str) -> Summary {
+pub(crate) fn summary(text: &str) -> Summary {
     Summary::new(text)
         .or_else(|_| Summary::new(""))
         .expect("the empty summary is valid")
@@ -32,6 +32,7 @@ fn said_of(outcome: CuaOutcome) -> &'static str {
         CuaOutcome::Failed(FailReason::CheckFailed) => "The result did not check out.",
         CuaOutcome::Failed(FailReason::Infeasible) => "This cannot be done in this window.",
         CuaOutcome::Failed(FailReason::Log) => "What was done could not be written down.",
+        CuaOutcome::Failed(FailReason::CannotSeeScreen) => porter_infer::NO_MODEL_SEES_SCREEN,
         CuaOutcome::Blocked(BlockedOn::ConsentDenied) => {
             "Computer use was not allowed for this app."
         }

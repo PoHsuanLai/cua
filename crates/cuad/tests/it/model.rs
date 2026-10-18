@@ -6,7 +6,9 @@ use cua_action::{
     Button, ClickCount, Coord, CuaAction, DeviceSize, PixelFormat, Point, Scale120, Size, Target,
     WindowSpace,
 };
-use cua_run::{CuaModel, CuaModelError, FrameAttachment, ModelReach, StepEvent, StepSink};
+use cua_run::{
+    CuaModel, CuaModelError, FrameAttachment, ModelReach, ModelSight, StepEvent, StepSink,
+};
 use cuad::InferdCuaModel;
 use maskcap::PixelBuf;
 use porter_client::{Transport, TransportError};
@@ -15,10 +17,11 @@ use porter_core::{
     AccountId, AccountsReply, AccountsRequest, DataClass, Locality, ModelId, Need, Tier, Tokens,
 };
 use porter_infer::{
-    AttachIndex, ClientFrame, CuaBegin, CuaStepReply, CuaStepRequest, FrameImage, FrameLayout,
+    AttachIndex, ClientFrame, CuaBegin, CuaStepReply, CuaStepRequest, Declined, DeclinedBecause,
+    FrameImage, FrameLayout,
     ImageSource, InferEvent, InferRefusal, InferReply, InferRequest, InferSession, MaskedRegions,
-    ModelError, NoteFrom, OpenOptions, Readiness, ServedBy, SessionError, StepIndex, StepNote,
-    TokenUsage, TreeText, WindowGeometry,
+    ModelError, ModelRef, NoteFrom, OpenOptions, PlaceId, PlaceModel, PlaceRow, PlaceState, Readiness, ServedBy, SessionError, StepIndex, StepNote,
+    Takes, TokenUsage, TreeText, WindowGeometry,
 };
 use rustix::fs::{SealFlags, fcntl_get_seals};
 use std::collections::{BTreeSet, VecDeque};
@@ -46,6 +49,8 @@ struct Scripted {
     denied: Option<String>,
     /// What `Prepare` answers; none is an inferd that does not.
     readiness: Option<Readiness>,
+    /// What `Places` answers; none is an inferd that does not.
+    places: Option<Vec<PlaceRow>>,
 }
 
 struct Session {
@@ -63,6 +68,7 @@ impl Scripted {
             down: false,
             denied: None,
             readiness: None,
+            places: None,
         };
         (scripted, log)
     }
@@ -74,6 +80,7 @@ impl Scripted {
             down: true,
             denied: None,
             readiness: None,
+            places: None,
         }
     }
 
@@ -84,6 +91,14 @@ impl Scripted {
             down: false,
             denied: Some(why.to_owned()),
             readiness: None,
+            places: None,
+        }
+    }
+
+    fn placing(places: Vec<PlaceRow>) -> Self {
+        Self {
+            places: Some(places),
+            ..Self::unreachable()
         }
     }
 
@@ -146,6 +161,10 @@ impl Transport for Scripted {
         _options: &OpenOptions,
     ) -> Result<Readiness, TransportError> {
         self.readiness.ok_or(TransportError::Unreachable)
+    }
+
+    async fn places(&self) -> Result<Vec<PlaceRow>, TransportError> {
+        self.places.clone().ok_or(TransportError::Unreachable)
     }
 
     async fn open_with(
@@ -390,6 +409,11 @@ async fn every_way_a_turn_can_end_is_sorted_for_the_run_machine() {
             CuaModelError::Transient,
         ),
         (
+            "no model sees the screen",
+            refused(InferRefusal::NoModelSeesScreen),
+            CuaModelError::CannotSeeScreen,
+        ),
+        (
             "no grant",
             refused(InferRefusal::NeedsGrant),
             CuaModelError::Fatal,
@@ -516,4 +540,80 @@ async fn faults_before_and_around_the_session() {
         InferdCuaModel::over(transport).begin(begin()).await,
         Err(CuaModelError::Fatal)
     );
+}
+
+fn declined_blind() -> InferEvent {
+    InferEvent::Declined(Declined {
+        model: ModelRef {
+            account: AccountId::parse("local").expect("account"),
+            model: ModelId::parse("qwen-text").expect("model"),
+        },
+        because: DeclinedBecause::CannotSeeScreen,
+    })
+}
+
+#[tokio::test]
+async fn a_chosen_model_that_cannot_read_images_is_told_by_name_and_not_retried() {
+    let (transport, _) = Scripted::new(vec![vec![
+        declined_blind(),
+        InferEvent::Finished(InferReply::Refused(InferRefusal::Unavailable)),
+    ]]);
+    let mut model = InferdCuaModel::over(transport);
+    assert_eq!(model.begin(begin()).await, Err(CuaModelError::CannotSeeScreen));
+    assert_eq!(
+        model.cannot_see_words(),
+        Some(porter_infer::cannot_see_screen("qwen-text"))
+    );
+}
+
+#[tokio::test]
+async fn no_model_that_reads_images_says_porters_sentence() {
+    let (transport, _) = Scripted::new(vec![vec![InferEvent::Finished(InferReply::Refused(
+        InferRefusal::NoModelSeesScreen,
+    ))]]);
+    let mut model = InferdCuaModel::over(transport);
+    assert_eq!(model.begin(begin()).await, Err(CuaModelError::CannotSeeScreen));
+    assert_eq!(
+        model.cannot_see_words().as_deref(),
+        Some(porter_infer::NO_MODEL_SEES_SCREEN)
+    );
+}
+
+fn place(models: &[Takes], state: PlaceState) -> PlaceRow {
+    let models = models
+        .iter()
+        .enumerate()
+        .map(|(n, takes)| {
+            PlaceModel::new(
+                ModelId::parse(&format!("m{n}")).expect("model"),
+                format!("M{n}"),
+            )
+            .with_takes(*takes)
+        })
+        .collect();
+    PlaceRow::new(
+        PlaceId::this_computer(),
+        porter_infer::PlaceKind::ThisComputer,
+        "This computer".into(),
+        state,
+    )
+    .with_models(models)
+}
+
+#[tokio::test]
+async fn only_models_all_known_not_to_read_images_make_the_screen_blind() {
+    let ready = PlaceState::Ready;
+    let rows = [
+        (vec![place(&[Takes::TextOnly, Takes::TextAndAudio], ready)], ModelSight::Blind),
+        (vec![place(&[Takes::TextOnly, Takes::TextAndImages], ready)], ModelSight::MaySee),
+        (vec![place(&[Takes::TextOnly, Takes::Unknown], ready)], ModelSight::MaySee),
+        (vec![place(&[Takes::TextOnly], PlaceState::NotReady)], ModelSight::MaySee),
+        (vec![], ModelSight::MaySee),
+    ];
+    for (places, want) in rows {
+        let mut model = InferdCuaModel::over(Scripted::placing(places.clone()));
+        assert_eq!(model.sight().await, want, "{places:?}");
+    }
+    let mut silent = InferdCuaModel::over(Scripted::unreachable());
+    assert_eq!(silent.sight().await, ModelSight::MaySee, "no answer is no warning");
 }

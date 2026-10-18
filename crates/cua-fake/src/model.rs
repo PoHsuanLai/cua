@@ -2,7 +2,7 @@
 
 use cua_action::{CuaAction, ImageSpace, ModelSpace, ToolDialect, WindowSpace};
 use cua_parse::{InSpace, ParseLimits, Parsed, parse_text, parse_tool_calls};
-use cua_run::{CuaModel, CuaModelError, FrameAttachment, ModelReach, StepSink};
+use cua_run::{CuaModel, CuaModelError, FrameAttachment, ModelReach, ModelSight, StepSink};
 use model_provider::{ProviderError, SafetySignal, ToolCall, TurnEvent};
 use model_replay::{Cassette, Interaction};
 use porter_core::Tokens;
@@ -27,6 +27,7 @@ pub struct ScriptedModel {
     script: VecDeque<Result<CuaStepReply, CuaModelError>>,
     served: Option<ServedBy>,
     reach: ModelReach,
+    sight: ModelSight,
     began: Vec<CuaBegin>,
     requests: Vec<CuaStepRequest>,
 }
@@ -38,6 +39,7 @@ impl ScriptedModel {
             script: script.into(),
             served: None,
             reach: ModelReach::Serves,
+            sight: ModelSight::MaySee,
             began: Vec::new(),
             requests: Vec::new(),
         }
@@ -46,6 +48,12 @@ impl ScriptedModel {
     /// Says no model can serve a run (what inferd answers when the chosen model has no engine).
     pub fn missing(mut self) -> Self {
         self.reach = ModelReach::Missing;
+        self
+    }
+
+    /// Says no model that could serve reads images.
+    pub fn blind(mut self) -> Self {
+        self.sight = ModelSight::Blind;
         self
     }
 
@@ -89,6 +97,10 @@ impl ScriptedModel {
 impl CuaModel for ScriptedModel {
     async fn reach(&mut self) -> ModelReach {
         self.reach
+    }
+
+    async fn sight(&mut self) -> ModelSight {
+        self.sight
     }
 
     async fn begin(&mut self, begin: CuaBegin) -> Result<(), CuaModelError> {

@@ -3,7 +3,7 @@
 use super::authorise::{ask, authorise, conclude, wait};
 use super::over_budget;
 use crate::machine::effect::{CuaSignal, RunEffect};
-use crate::machine::finish::finish_plain;
+use crate::machine::finish::{Said, finish, finish_plain, summary};
 use crate::machine::ops::{
     AlsoContext, action_ended, drop_rest, next, observe, step_of, targeted, thought_digest,
 };
@@ -60,7 +60,22 @@ pub(super) fn model_failed(
         crate::model::CuaModelError::Fatal => {
             finish_plain(run, fx, CuaOutcome::Failed(FailReason::Model));
         }
+        crate::model::CuaModelError::CannotSeeScreen => model_blind(run, fx, None),
     }
+}
+
+/// The model cannot read images: the run ends at once, saying so in the model's own words when
+/// it gave some (it names itself) and in the general ones when not. Never retried.
+pub(super) fn model_blind(run: &mut Run, fx: &mut Vec<RunEffect>, words: Option<String>) {
+    if !matches!(run.phase, RunPhase::Thinking(_)) {
+        return;
+    }
+    let text = words.unwrap_or_else(|| porter_infer::NO_MODEL_SEES_SCREEN.to_owned());
+    let said = Said {
+        summary: summary(&text),
+        extracted: Vec::new(),
+    };
+    finish(run, fx, CuaOutcome::Failed(FailReason::CannotSeeScreen), said);
 }
 
 pub(super) fn model_replied(

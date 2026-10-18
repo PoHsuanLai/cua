@@ -165,6 +165,24 @@ async fn a_start_the_model_cannot_serve_is_refused_before_it_takes_an_id_or_a_wi
 }
 
 #[tokio::test(start_paused = true)]
+async fn computer_use_on_with_no_model_that_reads_images_says_so_beside_the_setting() {
+    let note = |blind: bool, on: bool| async move {
+        let mut parts = cua_fake::scene::world(STOCK, vec![], FakePdp::allow_all());
+        let model = cua_fake::ScriptedModel::new(vec![]);
+        parts.model = if blind { model.blind() } else { model };
+        let config = if on {
+            enabled()
+        } else {
+            cuad::CuadConfig::default()
+        };
+        Supervisor::new(parts, config).sight_note().await
+    };
+    assert_eq!(note(true, true).await, Some(cua_run::NO_SIGHT_NOTE));
+    assert_eq!(note(false, true).await, None, "a model that may see is no warning");
+    assert_eq!(note(true, false).await, None, "computer use is off: nothing to warn of");
+}
+
+#[tokio::test(start_paused = true)]
 async fn a_window_has_one_run_at_a_time() {
     let sup = supervisor(
         STOCK,

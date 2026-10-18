@@ -61,6 +61,9 @@ pub enum FailReason {
     /// The run's log could not be written after input went out: with no record of what was
     /// done the run does not go on.
     Log,
+    /// No model that reads images could be used: the one the person named does not, or none
+    /// here does. The run row offers to choose another.
+    CannotSeeScreen,
 }
 
 /// What stopped a run before it began or kept it from going on.

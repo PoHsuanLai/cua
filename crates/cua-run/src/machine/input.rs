@@ -73,6 +73,8 @@ pub enum RunInput {
     ModelReplied(Box<ModelReply>),
     /// The model failed.
     ModelFailed(CuaModelError),
+    /// The model cannot read images; the sentence it gave for it, if any.
+    ModelBlind(Option<String>),
     /// The quarantined reader's answer about the screen's text (`RunEffect::ReadScreen`).
     ScreenRead(ScreenRead),
     /// The router will ask the person about the head action (`Progress(Confirming)`).

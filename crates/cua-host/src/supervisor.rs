@@ -10,8 +10,8 @@ use cua_bus::{
 };
 use cua_desktop::Desktop;
 use cua_run::{
-    Clock, CuaConfig, CuaModel, GateLink, LeaseBook, ModelReach, Parts, Run, RunEnv, RunInput,
-    RunPhase, Seams, mode_support,
+    Clock, CuaConfig, CuaModel, Enabled, GateLink, LeaseBook, ModelReach, ModelSight,
+    NO_SIGHT_NOTE, Parts, Run, RunEnv, RunInput, RunPhase, Seams, mode_support,
 };
 use prov::{Integrity, Labelled, ModelRole, RunId, Source};
 use std::sync::Arc;
@@ -240,6 +240,23 @@ impl<S: Drivable> Supervisor<S> {
         match self.shared.model.try_lock() {
             Ok(mut model) => model.reach().await,
             Err(_) => ModelReach::Serves,
+        }
+    }
+
+    /// What the shell says beside computer use about the model: the sentence when computer use
+    /// is on and every model that could serve is known not to read images, and nothing
+    /// otherwise. A model a run is working with is plainly in use, so only an idle one is asked.
+    pub async fn sight_note(&self) -> Option<&'static str> {
+        if self.settings().enabled != Enabled::On {
+            return None;
+        }
+        let sight = match self.shared.model.try_lock() {
+            Ok(mut model) => model.sight().await,
+            Err(_) => ModelSight::MaySee,
+        };
+        match sight {
+            ModelSight::MaySee => None,
+            ModelSight::Blind => Some(NO_SIGHT_NOTE),
         }
     }
 

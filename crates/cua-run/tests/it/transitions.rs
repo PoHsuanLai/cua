@@ -656,6 +656,25 @@ fn a_question_waits_for_the_person_and_the_answer_goes_back_as_the_outcome() {
 }
 
 #[test]
+fn a_model_that_cannot_read_images_ends_the_run_at_once_in_its_own_words() {
+    let sentence = "qwen-text can't see the screen, so it can't use apps for you. Choose a model that reads images.";
+    let mut named = Drive::thinking(STOCK, task(model_says()), tree(vec![]));
+    named.feed(RunInput::ModelBlind(Some(sentence.to_owned())));
+    assert_eq!(
+        finished_with(&named),
+        Some(CuaOutcome::Failed(FailReason::CannotSeeScreen)),
+        "not retried, not the generic model failure"
+    );
+    assert!(named.has(|e| matches!(e, RunEffect::CancelModel)));
+    let mut unnamed = Drive::thinking(STOCK, task(model_says()), tree(vec![]));
+    unnamed.feed(RunInput::ModelFailed(CuaModelError::CannotSeeScreen));
+    assert_eq!(
+        finished_with(&unnamed),
+        Some(CuaOutcome::Failed(FailReason::CannotSeeScreen))
+    );
+}
+
+#[test]
 fn model_failures_are_counted_and_the_limit_ends_the_run() {
     let mut d = Drive::thinking(STOCK, task(model_says()), tree(vec![]));
     d.feed(RunInput::ModelFailed(CuaModelError::Transient));

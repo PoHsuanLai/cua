@@ -51,6 +51,10 @@ pub enum CuaModelError {
     /// Retrying will not help.
     #[error("fatal")]
     Fatal,
+    /// The model cannot read images, so it cannot do work from the screen. Never retried: the
+    /// person has to choose another.
+    #[error("cannot see the screen")]
+    CannotSeeScreen,
 }
 
 impl From<CuaStepFailure> for CuaModelError {
@@ -94,6 +98,19 @@ pub enum ModelReach {
     Missing,
 }
 
+/// Whether any model that could serve a run reads images, as far as anything says.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ModelSight {
+    /// A model reads images, or nothing says it does not (an unknown counts as seeing).
+    MaySee,
+    /// Every model that could serve is known not to read images.
+    Blind,
+}
+
+/// Said beside computer use when [`ModelSight::Blind`].
+pub const NO_SIGHT_NOTE: &str = "No model here can see the screen, so the assistant can't use apps for you. Choose one that reads images.";
+
 /// A computer-use model for one run.
 pub trait CuaModel: Send {
     /// Whether a model can serve a run now. Only a model that is plainly not there is
@@ -101,6 +118,18 @@ pub trait CuaModel: Send {
     /// the run, which says why if it cannot go on. By default a model serves.
     fn reach(&mut self) -> impl Future<Output = ModelReach> + Send {
         async { ModelReach::Serves }
+    }
+
+    /// Whether any model that could serve reads images, asked for the status the shell shows
+    /// beside computer use. By default nothing says it does not.
+    fn sight(&mut self) -> impl Future<Output = ModelSight> + Send {
+        async { ModelSight::MaySee }
+    }
+
+    /// The sentence a person reads when the last failure was [`CuaModelError::CannotSeeScreen`];
+    /// none when the model has no words of its own for it.
+    fn cannot_see_words(&self) -> Option<String> {
+        None
     }
 
     /// Starts the run's session with the goal and hints.

@@ -19,6 +19,7 @@
    </signal>
    <property name="Backend" type="s" access="read"/>
    <property name="Modes" type="a{ss}" access="read"/>
+   <property name="SightNote" type="s" access="read"/>
  </interface>
  <interface name="org.quire.Cua1.Run">
    <method name="Cancel">

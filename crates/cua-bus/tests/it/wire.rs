@@ -324,6 +324,7 @@ fn the_report_of_a_finished_run_is_a_report_message_whatever_the_outcome() {
     let outcomes = [
         CuaOutcome::Done,
         CuaOutcome::Failed(FailReason::WindowGone),
+        CuaOutcome::Failed(FailReason::CannotSeeScreen),
         CuaOutcome::Blocked(BlockedOn::ConsentDenied),
         CuaOutcome::Cancelled(CancelledBy::User),
         CuaOutcome::BudgetOut(RunBudgetKind::Steps),

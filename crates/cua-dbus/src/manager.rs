@@ -30,6 +30,11 @@ pub trait Manager {
     #[zbus(property)]
     fn modes(&self) -> zbus::Result<HashMap<String, String>>;
 
+    /// What to say beside computer use about the model: a sentence when computer use is on and
+    /// no model reads images, empty otherwise.
+    #[zbus(property)]
+    fn sight_note(&self) -> zbus::Result<String>;
+
     /// A run began.
     #[zbus(signal)]
     fn run_added(&self, run: OwnedObjectPath) -> zbus::Result<()>;
@@ -66,6 +71,11 @@ impl ManagerSkeleton {
 
     #[zbus(property)]
     fn modes(&self) -> fdo::Result<HashMap<String, String>> {
+        Err(crate::introspect::frozen())
+    }
+
+    #[zbus(property)]
+    fn sight_note(&self) -> fdo::Result<String> {
         Err(crate::introspect::frozen())
     }
 

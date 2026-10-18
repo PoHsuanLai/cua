@@ -2,16 +2,18 @@
 
 use crate::frame_fd::frame_fd;
 use cua_run::{
-    CuaModel, CuaModelError, FrameAttachment, ModelReach, StepEvent, StepSink, ThoughtText,
+    CuaModel, CuaModelError, FrameAttachment, ModelReach, ModelSight, StepEvent, StepSink,
+    ThoughtText,
 };
 use porter_client::{OpenOptions, Transport, TransportError};
 use porter_core::capability::CuaEnv;
 use porter_core::need::CuaNeed;
 use porter_core::{DataClass, Need, Tier, Tokens};
 use porter_infer::{
-    AttachIndex, ClientFrame, CuaBegin, CuaStepFailure, CuaStepReply, CuaStepRequest, FrameLayout,
-    ImageSource, InferEvent, InferRefusal, InferReply, InferRequest, InferSession, Readiness,
-    ServedBy, SessionError, TokenUsage,
+    AttachIndex, ClientFrame, CuaBegin, CuaStepFailure, CuaStepReply, CuaStepRequest, Declined,
+    DeclinedBecause, FrameLayout, ImageSource, InferEvent, InferRefusal, InferReply, InferRequest,
+    InferSession, NO_MODEL_SEES_SCREEN, PlaceRow, PlaceState, Readiness, ServedBy, SessionError,
+    Sight, TokenUsage, cannot_see_screen,
 };
 use std::collections::BTreeSet;
 
@@ -32,6 +34,9 @@ pub struct InferdCuaModel<T: Transport> {
     session: Option<T::Session>,
     served: Option<ServedBy>,
     usage: Option<TokenUsage>,
+    /// What inferd said about the screen when it refused to serve: the model the person named
+    /// cannot read images, or no model can. It is the sentence the person reads.
+    blind: Option<String>,
 }
 
 impl<T: Transport> InferdCuaModel<T> {
@@ -43,6 +48,7 @@ impl<T: Transport> InferdCuaModel<T> {
             session: None,
             served: None,
             usage: None,
+            blind: None,
         }
     }
 
@@ -66,10 +72,16 @@ fn transport_failure(error: TransportError) -> CuaModelError {
     }
 }
 
-/// Why a turn ended without the reply it was waiting for.
-fn failed_turn(reply: InferReply) -> CuaModelError {
+/// Why a turn ended without the reply it was waiting for. `blind` is the sentence inferd's
+/// notice that the chosen model cannot read images left: a refusal that follows it is that
+/// refusal, not a model that is merely not there.
+fn failed_turn(reply: InferReply, blind: Option<&str>) -> CuaModelError {
     match reply {
         InferReply::Failed(error) => CuaStepFailure::ModelFailed(error).into(),
+        InferReply::Refused(InferRefusal::NoModelSeesScreen) => CuaModelError::CannotSeeScreen,
+        InferReply::Refused(InferRefusal::Unavailable) if blind.is_some() => {
+            CuaModelError::CannotSeeScreen
+        }
         InferReply::Refused(InferRefusal::Unavailable) | InferReply::Cancelled => {
             CuaModelError::Transient
         }
@@ -122,8 +134,9 @@ impl<T: Transport> CuaModel for InferdCuaModel<T> {
         loop {
             match session.next().await.map_err(|_| CuaModelError::Fatal)? {
                 InferEvent::Routed(served) => self.served = Some(served),
+                InferEvent::Declined(declined) => self.note_declined(&declined),
                 InferEvent::Finished(InferReply::CuaStep(ack)) if is_ack(&ack) => break,
-                InferEvent::Finished(other) => return Err(failed_turn(other)),
+                InferEvent::Finished(other) => return Err(self.ended(other)),
                 _ => {}
             }
         }
@@ -170,9 +183,10 @@ impl<T: Transport> CuaModel for InferdCuaModel<T> {
                     sink.event(StepEvent::ActionProposed(action));
                 }
                 Ok(InferEvent::Routed(served)) => self.served = Some(served),
+                Ok(InferEvent::Declined(declined)) => self.note_declined(&declined),
                 Ok(InferEvent::Usage(usage)) => self.usage = Some(usage),
                 Ok(InferEvent::Finished(InferReply::CuaStep(reply))) => return Ok(reply),
-                Ok(InferEvent::Finished(other)) => return Err(failed_turn(other)),
+                Ok(InferEvent::Finished(other)) => return Err(self.ended(other)),
                 Ok(_) => {}
                 Err(error) => return Err(self.lost(error)),
             }
@@ -186,9 +200,54 @@ impl<T: Transport> CuaModel for InferdCuaModel<T> {
     fn served(&self) -> Option<ServedBy> {
         self.served.clone()
     }
+
+    /// Asks for the places (`Places`) and sorts what their models take in: a model that reads
+    /// images means computer use can work. A model that says nothing counts as one that may
+    /// see, and so does a list that cannot be had: the warning is only for a list whose every
+    /// model is known not to.
+    async fn sight(&mut self) -> ModelSight {
+        match self.transport.places().await {
+            Ok(places) => sight_of(&places),
+            Err(_) => ModelSight::MaySee,
+        }
+    }
+
+    fn cannot_see_words(&self) -> Option<String> {
+        self.blind.clone()
+    }
+}
+
+/// Whether any model among `places` may read images. Only a list whose models are all known
+/// not to is [`ModelSight::Blind`]; an empty list says nothing.
+fn sight_of(places: &[PlaceRow]) -> ModelSight {
+    let sights: Vec<Sight> = places
+        .iter()
+        .filter(|place| place.state == PlaceState::Ready)
+        .flat_map(|place| place.models.iter().map(|model| model.takes.sight()))
+        .collect();
+    match sights.is_empty() || sights.iter().any(|sight| *sight != Sight::Blind) {
+        true => ModelSight::MaySee,
+        false => ModelSight::Blind,
+    }
 }
 
 impl<T: Transport> InferdCuaModel<T> {
+    /// A turn ended without its reply: sorted, and the sentence kept when it is about the screen.
+    fn ended(&mut self, reply: InferReply) -> CuaModelError {
+        if matches!(reply, InferReply::Refused(InferRefusal::NoModelSeesScreen)) {
+            self.blind = Some(NO_MODEL_SEES_SCREEN.to_owned());
+        }
+        failed_turn(reply, self.blind.as_deref())
+    }
+
+    /// inferd named the model the person chose and said why it cannot serve; for one that cannot
+    /// read images the sentence is kept, with the model's name.
+    fn note_declined(&mut self, declined: &Declined) {
+        if declined.because == DeclinedBecause::CannotSeeScreen {
+            self.blind = Some(cannot_see_screen(declined.model.model.as_str()));
+        }
+    }
+
     /// The session broke: it is gone, and so is the history the model was pinned to.
     fn lost(&mut self, _error: SessionError) -> CuaModelError {
         self.session = None;

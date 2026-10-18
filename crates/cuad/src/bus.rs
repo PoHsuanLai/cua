@@ -120,6 +120,15 @@ impl<S: Drivable, K: Callers> ManagerObject<S, K> {
         modes_wire(&support).into_iter().collect()
     }
 
+    #[zbus(property)]
+    async fn sight_note(&self) -> String {
+        self.supervisor
+            .sight_note()
+            .await
+            .map(str::to_owned)
+            .unwrap_or_default()
+    }
+
     #[zbus(signal)]
     async fn run_added(emitter: &SignalEmitter<'_>, run: OwnedObjectPath) -> zbus::Result<()>;
 
