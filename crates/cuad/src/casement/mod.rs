@@ -134,7 +134,7 @@ impl LeaseControl for CasementDesktop {
                         id,
                         window,
                         seat: SeatIsolation::SharedSeat,
-                        ei: EiOrigin::LeaseSocket,
+                        ei: EiOrigin::SenderSocket,
                     },
                     socket: EiSocket(fd.into()),
                 })

@@ -196,7 +196,7 @@ bus door of its own, a module of `cuad` (`casement`) with a variant of `SystemDe
 `Connect("agent")` twice: one Wayland connection feeds `desktop-client` (windows, geometry,
 Spaces; on its own thread, published to the async side), the other is capture's (stock toplevel
 source, masked in cuad). A lease is `LeaseWindow(identifier, 7)`: the reply's socket is an EIS
-socket (`EiOrigin::LeaseSocket`) whose input reaches only that window and its popups, and
+socket (`EiOrigin::SenderSocket`: its region is the desktop's extent) whose input reaches only that window and its popups, and
 `EndLease` gives it back. It is a shared seat (`SeatIsolation::SharedSeat`): the person's cursor
 and focus are still the one set, so in-place runs only, and the agent workspace is refused with
 `HiddenCaptureWithheld`. The agent seat of its own, compositor masking and the agent Space are

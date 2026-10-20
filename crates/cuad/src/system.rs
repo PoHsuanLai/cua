@@ -88,10 +88,7 @@ impl Reached {
     /// The compositor `config` asks for. `Detect` takes casement when `org.quire.Compositor1`
     /// has an owner on `bus`, else the environment's compositor, else none; `Only(Casement)`
     /// fails when casement is not there.
-    pub async fn find(
-        config: &CuadConfig,
-        bus: &zbus::Connection,
-    ) -> Result<Reached, ReachError> {
+    pub async fn find(config: &CuadConfig, bus: &zbus::Connection) -> Result<Reached, ReachError> {
         match config.backend {
             BackendChoice::Only(BackendKind::Casement) => {
                 let door = Door::find(bus).await.ok_or_else(|| {

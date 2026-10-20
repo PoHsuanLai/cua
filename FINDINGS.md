@@ -664,6 +664,6 @@ needs: docket pin bump, `docket-reader` in `[workspace.dependencies]`, and cuad'
   `AgentSeat` and `Full` in place), masking in the compositor (`QuireMasked`), the agent Space,
   suspend, resume and glow in the compositor. The pid of a window is unknown (`Pid(0)`): no
   protocol read here says which process owns it.
-- Assumption to check against casement: the lease socket's EI region is taken as window-local
-  (`EiOrigin::LeaseSocket`, identity mapping); if casement advertises the output's global region
-  the origin is `SenderSocket`.
+- casement's lease socket offers the desktop's whole extent as its absolute region (the same
+  region as the portal's remote sockets), so the grant says `EiOrigin::SenderSocket` and
+  seat-input offsets window points by the window's geometry.

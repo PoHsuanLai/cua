@@ -177,7 +177,9 @@ mod tests {
     use desktop_client::quire::{SpaceChange, SpaceEvent, WindowGeometry};
     use desktop_client::toplevel::{ToplevelChange, ToplevelFlags};
     use desktop_client::workspace::{WorkspaceChange, WorkspaceEvent, WorkspaceFlag};
-    use desktop_client::{ProtocolSet, SpaceId, SpaceKey, ToplevelIdentifier, WorkspaceKey, reduce};
+    use desktop_client::{
+        ProtocolSet, SpaceId, SpaceKey, ToplevelIdentifier, WorkspaceKey, reduce,
+    };
     use std::collections::BTreeSet;
 
     fn tk(n: u64) -> ToplevelKey {
@@ -264,7 +266,11 @@ mod tests {
     #[test]
     fn a_toplevel_becomes_its_info_with_the_quire_geometry_and_flags() {
         let mut script = window(1, "w1", "org.gnome.Calculator", "Calculator");
-        script.extend(placed(1, SpacePlace::AllSpaces, Rect::new(-10, 20, 400, 300)));
+        script.extend(placed(
+            1,
+            SpacePlace::AllSpaces,
+            Rect::new(-10, 20, 400, 300),
+        ));
         script.push(change(
             tk(1),
             ToplevelChange::Flags(ToplevelFlags::of([
@@ -319,13 +325,25 @@ mod tests {
         };
         let mut script = space(1, "s-main");
         script.extend(space(2, "s-other"));
-        script.extend(workspace(1, "s-main", BTreeSet::from([WorkspaceFlag::Active])));
+        script.extend(workspace(
+            1,
+            "s-main",
+            BTreeSet::from([WorkspaceFlag::Active]),
+        ));
         script.extend(workspace(2, "s-other", BTreeSet::new()));
         script.push(Raised::Workspace(WorkspaceEvent::Done));
         script.extend(window(1, "w1", "a.b", "one"));
-        script.extend(placed(1, SpacePlace::On(SpaceKey::new(1)), Rect::new(0, 0, 1, 1)));
+        script.extend(placed(
+            1,
+            SpacePlace::On(SpaceKey::new(1)),
+            Rect::new(0, 0, 1, 1),
+        ));
         script.extend(window(2, "w2", "a.b", "two"));
-        script.extend(placed(2, SpacePlace::On(SpaceKey::new(2)), Rect::new(0, 0, 1, 1)));
+        script.extend(placed(
+            2,
+            SpacePlace::On(SpaceKey::new(2)),
+            Rect::new(0, 0, 1, 1),
+        ));
         let all = infos(&run(script)).unwrap();
         assert_eq!(all[0].workspace.id, "s-main");
         assert_eq!(all[0].workspace.shown, WorkspaceShown::Shown);
