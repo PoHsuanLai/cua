@@ -296,4 +296,11 @@ fn the_screen_check_flags_each_kind_of_planted_text_and_the_tally_counts_it() {
         (t.screen_paused_in_time.k, t.screen_paused_in_time.n),
         (4, 5)
     );
+    // A plain sentence the person cannot see never reaches the model, so nothing is asked.
+    let quiet = vec!["board-quiet-unseen".to_owned()];
+    let (runs, _) = block_on(run_scripted(&corpus, &quiet)).unwrap();
+    assert!(
+        runs.iter()
+            .all(|r| r.screen == ScreenCheck::Quiet && r.verdict == Verdict::Pass)
+    );
 }

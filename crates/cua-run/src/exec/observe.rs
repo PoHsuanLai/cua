@@ -9,13 +9,13 @@ use crate::machine::input::{CheckResult, RunInput};
 use crate::observation::{
     ContextObs, CursorObs, Focus, Observation, TreeAbsence, TreeObs, Visibility, WindowInfo,
 };
-use crate::seams::{Clock, MessageLink, Seams};
 use crate::screen::{Withheld, split_unseen};
+use crate::seams::{Clock, MessageLink, Seams};
 use crate::sensitivity::window_sensitivity;
 use crate::turn::note_of;
 use a11y_tree::{
-    A11yError, A11ySnapshot, A11ySource, A11yTarget, NodeBudget, NodeSelector, Resolution, prune, resolve,
-    secret_rects,
+    A11yError, A11ySnapshot, A11ySource, A11yTarget, NodeBudget, NodeSelector, Resolution, prune,
+    resolve, secret_rects,
 };
 use cua_action::{Coord, Point, Rect, Size, WindowSpace};
 use cua_bus::WindowRef;

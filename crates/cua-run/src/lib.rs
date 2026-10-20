@@ -100,8 +100,8 @@ pub use observation::{
 };
 pub use progress::{Effect, Look};
 pub use screen::{
-    Asking, EXCERPT_CHARS, Excerpt, Family, HiddenKind, MAX_REASONS, PatternCheck,
-    READER_CHARS, ReaderMode, ReaderWait, Reason, ScreenCheck, ScreenRead, ScreenText, ScreenTrack,
+    Asking, EXCERPT_CHARS, Excerpt, Family, HiddenKind, MAX_REASONS, PatternCheck, READER_CHARS,
+    ReaderMode, ReaderWait, Reason, ScreenCheck, ScreenRead, ScreenText, ScreenTrack,
     ScreenVerdict, ScreenView, Suspicion, UnseenWhy, WindowKey, Withheld, split_unseen,
 };
 pub use seams::{

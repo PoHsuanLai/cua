@@ -350,7 +350,10 @@ fn an_instruction_in_a_node_the_person_cannot_see_is_found_with_why() {
     // On screen it is the instruction alone.
     let seen = text_node(1, INJECTION, (0, 0, 100, 20));
     let verdict = check("App", &[root, seen]);
-    assert_eq!(causes(&verdict), vec![Cause::Phrase(Family::IgnorePrevious)]);
+    assert_eq!(
+        causes(&verdict),
+        vec![Cause::Phrase(Family::IgnorePrevious)]
+    );
 }
 
 #[test]
@@ -358,10 +361,19 @@ fn plain_words_the_person_cannot_see_are_no_reason_and_never_reach_the_model() {
     let root = node(0, Role::Window, "App", (0, 0, 100, 80));
     let rows = [
         ("no size", unseen_node(UnseenWhy::NoSize, SENTENCE)),
-        ("right of the window", unseen_node(UnseenWhy::OffWindow, SENTENCE)),
+        (
+            "right of the window",
+            unseen_node(UnseenWhy::OffWindow, SENTENCE),
+        ),
         ("not showing", unseen_node(UnseenWhy::NotShown, SENTENCE)),
-        ("a short label with no size", unseen_node(UnseenWhy::NoSize, "Close")),
-        ("below the bottom edge stays", text_node(1, "Footer", (0, 500, 100, 20))),
+        (
+            "a short label with no size",
+            unseen_node(UnseenWhy::NoSize, "Close"),
+        ),
+        (
+            "below the bottom edge stays",
+            text_node(1, "Footer", (0, 500, 100, 20)),
+        ),
     ];
     for (name, unseen) in rows {
         let nodes = [root.clone(), unseen.clone()];
@@ -378,7 +390,10 @@ fn plain_words_the_person_cannot_see_are_no_reason_and_never_reach_the_model() {
 fn a_browser_tree_is_clear_and_its_model_view_holds_only_what_is_seen() {
     let root = node(0, Role::Window, "Shop", (0, 0, 100, 80));
     let page = text_node(1, "Arc desk lamp, model L-200", (0, 0, 100, 20));
-    let mut tab = unseen_node(UnseenWhy::NotShown, "Background tab document with many words");
+    let mut tab = unseen_node(
+        UnseenWhy::NotShown,
+        "Background tab document with many words",
+    );
     tab.id = cua_action::NodeId(2);
     let mut child = text_node(3, "Child of the background tab", (0, 20, 100, 20));
     child.parent = Parent::Node(cua_action::NodeId(2));
