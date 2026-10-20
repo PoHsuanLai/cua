@@ -22,7 +22,7 @@ pub trait Manager {
     /// The control-centre kill switch: every run is cancelled.
     fn stop_all(&self) -> zbus::Result<()>;
 
-    /// The backend: `kwin_stock` or `none`.
+    /// The backend: `kwin_stock`, `casement` or `none`.
     #[zbus(property)]
     fn backend(&self) -> zbus::Result<String>;
 

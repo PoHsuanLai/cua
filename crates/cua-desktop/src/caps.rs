@@ -10,6 +10,9 @@ use serde::{Deserialize, Serialize};
 pub enum BackendKind {
     /// Stock KWin: the nested-session host and the portability reference.
     KwinStock,
+    /// casement, our own compositor. Until its agent seat lands (casement P4) input is a
+    /// lease-scoped socket on the person's seat (`Compositor1.LeaseWindow`) and cuad masks.
+    Casement,
 }
 
 /// Who masks a frame before pixels reach the model.
@@ -83,6 +86,17 @@ impl BackendCaps {
                 hidden: HiddenCapture::Renders,
                 glow: GlowDraw::ShellOnly,
             },
+            // Input reaches only the leased window, but it is still the person's seat and
+            // cursor; casement does not mask yet (cuad does) and does not render a window of
+            // another Space, so only in-place runs work.
+            BackendKind::Casement => BackendCaps {
+                kind,
+                seat: SeatIsolation::SharedSeat,
+                masking: MaskWhere::Cuad,
+                consent: ConsentGuard::CuadSuspendsInput,
+                hidden: HiddenCapture::Withheld,
+                glow: GlowDraw::ShellOnly,
+            },
         }
     }
 }
@@ -100,6 +114,17 @@ mod tests {
         assert_eq!(caps.masking, MaskWhere::Cuad);
         assert_eq!(caps.consent, ConsentGuard::CuadSuspendsInput);
         assert_eq!(caps.hidden, HiddenCapture::Renders);
+        assert_eq!(caps.glow, GlowDraw::ShellOnly);
+    }
+
+    #[test]
+    fn the_casement_backend_is_a_shared_seat_that_withholds_hidden_windows() {
+        let caps = BackendCaps::of(BackendKind::Casement);
+        assert_eq!(caps.kind, BackendKind::Casement);
+        assert_eq!(caps.seat, SeatIsolation::SharedSeat);
+        assert_eq!(caps.masking, MaskWhere::Cuad);
+        assert_eq!(caps.consent, ConsentGuard::CuadSuspendsInput);
+        assert_eq!(caps.hidden, HiddenCapture::Withheld);
         assert_eq!(caps.glow, GlowDraw::ShellOnly);
     }
 }

@@ -87,7 +87,26 @@ mod tests {
     fn mode_support_table() {
         let fork = agent_seat();
         let stock = BackendCaps::of(BackendKind::KwinStock);
+        let casement = BackendCaps::of(BackendKind::Casement);
         let rows = [
+            Row {
+                name: "casement in place",
+                caps: casement,
+                mode: RunMode::InPlace,
+                want: HandsOff,
+            },
+            Row {
+                name: "casement workspace: another Space is not rendered",
+                caps: casement,
+                mode: RunMode::AgentWorkspace,
+                want: Unsupported(HiddenCaptureWithheld),
+            },
+            Row {
+                name: "casement nested",
+                caps: casement,
+                mode: RunMode::NestedSession,
+                want: Unsupported(NoNestedHost),
+            },
             Row {
                 name: "agent seat in place",
                 caps: fork,
