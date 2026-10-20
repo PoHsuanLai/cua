@@ -16,7 +16,7 @@ use screen::screen_read;
 
 use crate::machine::control::{cancel, desktop, hand_back, pause, resume, take_over};
 use crate::machine::effect::RunEffect;
-use crate::machine::finish::finish_plain;
+use crate::machine::finish::{finish_no_window, finish_plain};
 use crate::machine::input::RunInput;
 use crate::machine::ops::{AlsoContext, count_active, enter, observe};
 use crate::machine::phase::RunPhase;
@@ -70,11 +70,7 @@ pub(crate) fn start(id: RunId, task: CuaTask, env: RunEnv, at: Stamp) -> (Run, V
             CuaOutcome::Blocked(BlockedOn::ModeUnsupported(mode)),
         );
     } else if window_of(&run.task).is_none() {
-        finish_plain(
-            &mut run,
-            &mut fx,
-            CuaOutcome::Blocked(BlockedOn::NeedsCapability),
-        );
+        finish_no_window(&mut run, &mut fx);
     } else {
         fx.push(RunEffect::Grant {
             app: run.task.app.clone(),
@@ -167,7 +163,7 @@ fn granted(run: &mut Run, fx: &mut Vec<RunEffect>, answer: GrantAnswer) {
             }));
         }
         (GrantAnswer::Granted, None) => {
-            finish_plain(run, fx, CuaOutcome::Blocked(BlockedOn::NeedsCapability));
+            finish_no_window(run, fx);
         }
         // The person's or an administrator's "never" covers the app: refused without asking, so
         // no lease is taken. The bus has no separate word for it: to a reader it is a consent

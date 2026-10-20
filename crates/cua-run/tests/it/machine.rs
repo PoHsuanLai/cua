@@ -126,6 +126,17 @@ fn report_status(effects: &[RunEffect]) -> Option<ReportStatus> {
     })
 }
 
+/// The words of the run's report, when it sent one.
+fn report_text(effects: &[RunEffect]) -> Option<String> {
+    effects.iter().find_map(|e| match e {
+        RunEffect::Report(draft) => draft.parts.iter().find_map(|p| match p {
+            docket_core::DraftPart::Text(text) => Some(text.as_str().to_owned()),
+            _ => None,
+        }),
+        _ => None,
+    })
+}
+
 fn finished_signal(effects: &[RunEffect]) -> Option<CuaOutcome> {
     effects.iter().find_map(|e| match e {
         RunEffect::Emit(CuaSignal::Finished(outcome)) => Some(*outcome),
@@ -202,7 +213,7 @@ fn a_mode_the_backend_cannot_run_or_an_app_target_ends_the_run_at_once() {
         )))
     );
     assert_eq!(report_status(&effects), Some(ReportStatus::Failed));
-    let (run, _) = Run::start(
+    let (run, effects) = Run::start(
         run_id(),
         task(TaskTarget::App(app()), RunMode::InPlace),
         env(BackendKind::KwinStock),
@@ -212,6 +223,8 @@ fn a_mode_the_backend_cannot_run_or_an_app_target_ends_the_run_at_once() {
         run.phase,
         RunPhase::Finished(CuaOutcome::Blocked(BlockedOn::NeedsCapability))
     );
+    let said = report_text(&effects).unwrap_or_default();
+    assert!(said.contains("has no open window"), "{said}");
 }
 
 #[test]

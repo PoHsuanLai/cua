@@ -584,6 +584,7 @@ async fn two_windows(focus: Option<&str>) -> Fixture {
     shell.state = std::collections::BTreeSet::from([ToplevelState::Activated]);
     let windows = vec![
         open("w-browser", "app.zen_browser.zen", "secret lamp order"),
+        open("w-draw-0", "org.example.Draw", "secret notes"),
         open("w-draw", "org.example.Draw", "secret sketch"),
         shell,
     ];
@@ -636,10 +637,30 @@ async fn no_app_means_the_window_the_person_is_in_and_a_known_app_still_starts()
     let view = fx.supervisor.view(&"r-1".parse_run()).expect("a live run");
     assert_eq!(view.task.app.as_str(), "org.example.Draw");
 
-    let fx = two_windows(None).await;
-    start_with(&fx, Some("app.zen_browser.zen"))
+    // An open app named alone runs on its window: the one the person is in, else the first.
+    let fx = two_windows(Some("w-draw")).await;
+    start_with(&fx, Some("org.example.Draw"))
         .await
         .expect("an open app starts");
+    let view = fx.supervisor.view(&"r-1".parse_run()).expect("a live run");
+    assert_eq!(
+        view.task.target,
+        cua_bus::TaskTarget::Window(ident("w-draw"))
+    );
+
+    let fx = two_windows(None).await;
+    start_with(&fx, Some("org.example.Draw"))
+        .await
+        .expect("an open app starts");
+    let view = fx.supervisor.view(&"r-1".parse_run()).expect("a live run");
+    assert_eq!(
+        view.task.target,
+        cua_bus::TaskTarget::Window(ident("w-draw-0"))
+    );
+}
+
+fn ident(text: &str) -> cua_desktop::ToplevelIdent {
+    cua_desktop::ToplevelIdent::parse(text).unwrap()
 }
 
 #[tokio::test]

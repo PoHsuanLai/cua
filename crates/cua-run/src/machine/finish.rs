@@ -121,3 +121,14 @@ pub(crate) fn finish(run: &mut Run, fx: &mut Vec<RunEffect>, outcome: CuaOutcome
 pub(crate) fn finish_plain(run: &mut Run, fx: &mut Vec<RunEffect>, outcome: CuaOutcome) {
     finish(run, fx, outcome, Said::of(outcome));
 }
+
+/// Ends the run blocked because its task names an app and no window: opening an app is not
+/// available yet, and the words say so.
+pub(crate) fn finish_no_window(run: &mut Run, fx: &mut Vec<RunEffect>) {
+    let outcome = CuaOutcome::Blocked(BlockedOn::NeedsCapability);
+    let said = Said {
+        summary: summary("That app has no open window, and opening apps is not available yet."),
+        extracted: Vec::new(),
+    };
+    finish(run, fx, outcome, said);
+}

@@ -112,6 +112,16 @@ fn open_apps(windows: &[ToplevelInfo]) -> BTreeSet<AppName> {
         .collect()
 }
 
+/// The window of `app` a run works in: the one the person is in, else the first usable one.
+fn window_of_app<'a>(windows: &'a [ToplevelInfo], app: &AppName) -> Option<&'a ToplevelInfo> {
+    let mut ours = windows.iter().filter(|w| usable(w) && &w.app == app);
+    let first = ours.next()?;
+    let focused = std::iter::once(first)
+        .chain(ours)
+        .find(|w| w.state.contains(&ToplevelState::Activated));
+    Some(focused.unwrap_or(first))
+}
+
 /// The refusal that lists the open apps the person allows (an app not on their list would only be
 /// refused next); with none there is nothing to choose from.
 fn choose_app(windows: &[ToplevelInfo], allows: &Apps) -> TaskRefusal {
@@ -157,12 +167,18 @@ pub(crate) async fn task_for<S: Drivable>(
         }
         (None, Some(app)) => {
             // A desktop that cannot list its windows cannot say the app is not open.
-            if let Ok(windows) = &windows
-                && !open_apps(windows).contains(app)
-            {
-                return Err(choose_app(windows, &allows));
+            let open = windows.as_deref().ok();
+            match open.and_then(|windows| window_of_app(windows, app)) {
+                Some(window) => (TaskTarget::Window(window.ident.clone()), app.clone()),
+                None => {
+                    if let Some(windows) = open
+                        && !open_apps(windows).contains(app)
+                    {
+                        return Err(choose_app(windows, &allows));
+                    }
+                    (TaskTarget::App(app.clone()), app.clone())
+                }
             }
-            (TaskTarget::App(app.clone()), app.clone())
         }
         (None, None) => {
             let windows = windows.map_err(|_| ControlRefusal::BadTask)?;
