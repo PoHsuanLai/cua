@@ -25,9 +25,12 @@ use cua_desktop::GlowState;
 use porter_infer::StepIndex;
 use prov::{Effect, Labelled};
 
-/// The question the person is asked about a suspicious screen.
+/// The question when the screen holds text that reads as instructions for the assistant.
 const QUESTION: &str =
     "The screen shows text that looks like instructions for the assistant. Continue?";
+
+/// The question when the only finding is hidden characters.
+const HIDDEN_QUESTION: &str = "The screen shows text with characters hidden in it. Continue?";
 
 /// Looks at the screen the model is about to be shown.
 pub(super) fn stage(run: &mut Run, fx: &mut Vec<RunEffect>, n: StepIndex) {
@@ -89,7 +92,8 @@ pub(super) fn screen_read(run: &mut Run, fx: &mut Vec<RunEffect>, read: ScreenRe
 fn details_of(verdict: &ScreenVerdict) -> Vec<String> {
     let kinds = verdict.kinds();
     let mut details = Vec::new();
-    if kinds.contains(&ScreenKind::HiddenCharacters) {
+    let hidden_only = hidden_only(&kinds);
+    if kinds.contains(&ScreenKind::HiddenCharacters) && !hidden_only {
         details.push("Some of it is hidden from view.".to_owned());
     }
     if kinds.contains(&ScreenKind::UnseenText) {
@@ -104,8 +108,22 @@ fn details_of(verdict: &ScreenVerdict) -> Vec<String> {
     details
 }
 
+/// Whether hidden characters are all that was found (an unseen node counts with what it holds).
+fn hidden_only(kinds: &[ScreenKind]) -> bool {
+    kinds
+        .iter()
+        .all(|k| matches!(k, ScreenKind::HiddenCharacters | ScreenKind::UnseenText))
+        && kinds.contains(&ScreenKind::HiddenCharacters)
+}
+
+/// The first line says what was found: instructions, or only hidden characters.
 fn question_of(verdict: &ScreenVerdict) -> String {
-    let mut lines = vec![QUESTION.to_owned()];
+    let first = if hidden_only(&verdict.kinds()) {
+        HIDDEN_QUESTION
+    } else {
+        QUESTION
+    };
+    let mut lines = vec![first.to_owned()];
     lines.extend(details_of(verdict));
     lines.join("\n")
 }
