@@ -122,6 +122,15 @@ pub(crate) fn finish_plain(run: &mut Run, fx: &mut Vec<RunEffect>, outcome: CuaO
     finish(run, fx, outcome, Said::of(outcome));
 }
 
+/// Ends the run blocked because the question about the app was never answered.
+pub(crate) fn finish_unanswered(run: &mut Run, fx: &mut Vec<RunEffect>) {
+    let said = Said {
+        summary: summary("Nobody answered the question about using this app, so the run stopped."),
+        extracted: Vec::new(),
+    };
+    finish(run, fx, CuaOutcome::Blocked(BlockedOn::ConsentDenied), said);
+}
+
 /// Ends the run blocked because its task names an app and no window: opening an app is not
 /// available yet, and the words say so.
 pub(crate) fn finish_no_window(run: &mut Run, fx: &mut Vec<RunEffect>) {

@@ -524,3 +524,44 @@ async fn the_grant_carries_the_level_the_persons_row_for_the_app_gives() {
         assert_eq!(asks[0].level, level, "{allow:?}");
     }
 }
+
+#[tokio::test(start_paused = true)]
+async fn a_desktop_event_the_run_ignores_leaves_the_consent_question_standing() {
+    let mut parts = cua_fake::scene::world(STOCK, vec![], FakePdp::allow_all());
+    parts.gate = FakePdp::grant_unanswered();
+    let sup = Supervisor::new(parts, enabled());
+    let mut events = sup.subscribe();
+    let id = sup.start(CuaCaller::Router, task()).await.unwrap();
+    until(&sup, &id, |p| matches!(p, RunPhase::Granting)).await;
+    sup.desktop().raise(DesktopEvent::ConsentShown);
+    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+    assert!(
+        matches!(sup.view(&id).map(|v| v.phase), Some(RunPhase::Granting)),
+        "still waiting on the person"
+    );
+    // The question is still being asked: the run ends only when the wait does.
+    tokio::time::sleep(std::time::Duration::from_secs(301)).await;
+    let end = ended(&mut events, &id).await;
+    assert_eq!(
+        end.outcome,
+        CuaOutcome::Blocked(cua_bus::BlockedOn::ConsentDenied)
+    );
+}
+
+#[tokio::test(start_paused = true)]
+async fn a_consent_nobody_answers_ends_the_run_blocked_and_frees_the_window() {
+    let mut parts = cua_fake::scene::world(STOCK, vec![], FakePdp::allow_all());
+    parts.gate = FakePdp::grant_unanswered();
+    let sup = Supervisor::new(parts, enabled());
+    let mut events = sup.subscribe();
+    let id = sup.start(CuaCaller::Router, task()).await.unwrap();
+    tokio::time::sleep(std::time::Duration::from_secs(301)).await;
+    let end = ended(&mut events, &id).await;
+    assert_eq!(
+        end.outcome,
+        CuaOutcome::Blocked(cua_bus::BlockedOn::ConsentDenied)
+    );
+    assert!(matches!(end.report, ReportDelivery::Sent(_)));
+    assert!(sup.runs().is_empty());
+    assert_eq!(sup.lease_book(), cua_run::LeaseBook::default());
+}

@@ -29,6 +29,16 @@ enum AfterEvents {
     Hang,
 }
 
+/// What the fake router does when asked for the per-app consent.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+enum GrantWait {
+    /// Answers at once, from the queue.
+    #[default]
+    Answers,
+    /// The person has not answered the sheet: the call never returns.
+    Never,
+}
+
 /// A [`GateLink`] over a queue of grant answers and a queue of verdicts; when a queue is empty
 /// it grants and runs.
 #[derive(Debug, Default)]
@@ -37,6 +47,7 @@ pub struct FakePdp {
     verdicts: Mutex<VecDeque<Verdict>>,
     checks: Mutex<Vec<CuaAsk>>,
     grant_asks: Mutex<Vec<GrantAsk>>,
+    grant_wait: GrantWait,
     confirms: Mutex<u32>,
     session: Option<SessionId>,
     closes: Arc<Mutex<u32>>,
@@ -63,6 +74,14 @@ impl FakePdp {
         *confirms += 1;
         let id = ConfirmId::parse(&format!("c-{confirms}")).expect("a well-formed id");
         GateEvent::Confirming(id)
+    }
+
+    /// A gate whose consent sheet nobody answers: `Gate.Grant` never returns.
+    pub fn grant_unanswered() -> Self {
+        Self {
+            grant_wait: GrantWait::Never,
+            ..Self::default()
+        }
     }
 
     /// Opens this session for every run (`s-1` when not set), as the router would.
@@ -118,6 +137,9 @@ impl GateLink for FakePdp {
 
     async fn grant(&self, ask: GrantAsk) -> Result<GrantAnswer, LinkError> {
         self.grant_asks.lock().expect("fake gate lock").push(ask);
+        if self.grant_wait == GrantWait::Never {
+            std::future::pending::<()>().await;
+        }
         Ok(self
             .grants
             .lock()

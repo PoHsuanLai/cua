@@ -117,6 +117,7 @@ fn the_consent_row_leases_the_window_on_yes_and_blocks_on_no() {
             "the router is away",
             RunInput::GrantFailed(cua_run::LinkError::Unavailable),
         ),
+        ("nobody answered in time", RunInput::GrantUnanswered),
     ] {
         let mut d = Drive::start(STOCK, task(model_says()));
         d.feed(input);

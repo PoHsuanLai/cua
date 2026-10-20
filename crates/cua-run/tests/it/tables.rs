@@ -116,12 +116,16 @@ fn effects_that_talk_to_a_neighbour_have_a_deadline_and_the_ones_that_wait_on_th
         deadline.failure,
         Some(RunInput::CaptureFailed(CaptureError::Protocol(_)))
     ));
-    let waits_on_the_person = RunEffect::Grant {
+    let consent = RunEffect::Grant {
         app: AppName::parse("org.gnome.Calculator").expect("an app"),
         space: SpaceId::parse("desktop").expect("a space"),
         level: docket_core::Level::AlwaysAsk,
     };
-    assert_eq!(deadline_of(&waits_on_the_person), None);
+    // The consent waits on a person, so its wait is long, but it ends: a run never stays in
+    // `Granting` for ever.
+    let wait = deadline_of(&consent).expect("the consent wait is bounded");
+    assert!(wait.after >= std::time::Duration::from_secs(120));
+    assert_eq!(wait.failure, Some(RunInput::GrantUnanswered));
     assert_eq!(deadline_of(&RunEffect::Proceed), None);
 }
 

@@ -57,6 +57,8 @@ pub enum RunInput {
     Granted(GrantAnswer),
     /// The router could not be asked.
     GrantFailed(LinkError),
+    /// Nobody answered the per-app consent in time.
+    GrantUnanswered,
     /// The desktop granted the lease.
     Leased(LeaseGrant),
     /// It did not.

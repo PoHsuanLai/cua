@@ -16,7 +16,7 @@ use screen::screen_read;
 
 use crate::machine::control::{cancel, desktop, hand_back, pause, resume, take_over};
 use crate::machine::effect::RunEffect;
-use crate::machine::finish::{finish_no_window, finish_plain};
+use crate::machine::finish::{finish_no_window, finish_plain, finish_unanswered};
 use crate::machine::input::RunInput;
 use crate::machine::ops::{AlsoContext, count_active, enter, observe};
 use crate::machine::phase::RunPhase;
@@ -118,6 +118,10 @@ fn dispatch(run: &mut Run, fx: &mut Vec<RunEffect>, input: RunInput, at: Stamp) 
         RunInput::GrantFailed(_) => {
             finish_plain(run, fx, CuaOutcome::Blocked(BlockedOn::ConsentDenied))
         }
+        RunInput::GrantUnanswered if run.phase == RunPhase::Granting => {
+            finish_unanswered(run, fx);
+        }
+        RunInput::GrantUnanswered => {}
         // The window the desktop leased is not the app the consent and the allow-list were for.
         RunInput::Leased(grant) if grant.window.app != run.task.app => {
             leased_elsewhere(run, fx, grant.id);

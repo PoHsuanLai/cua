@@ -271,6 +271,7 @@ fn every_input_in_every_phase_has_a_row_and_leaves_a_valid_run() {
         vec![
             RunInput::Granted(GrantAnswer::Granted),
             RunInput::GrantFailed(cua_run::LinkError::Unavailable),
+            RunInput::GrantUnanswered,
             RunInput::Leased(grant(STOCK)),
             RunInput::LeaseRefused(cua_desktop::DesktopError::Busy),
             RunInput::Observed(Box::new(observation(4, tree(vec![])))),

@@ -3,7 +3,7 @@
 //! Every effect that talks to a neighbour (the desktop, the seat, capture, the model, the router,
 //! the log) has a deadline, so a stalled neighbour fails a step instead of freezing the run. The
 //! driver races the effect against [`Exec::deadline_of`]; the effects that wait on the person
-//! (the per-app consent, a confirmation) have none, and the active budget does not count them
+//! (a confirmation) have none, and the per-app consent has a long one, and the active budget does not count them
 //! either.
 
 use super::Exec;
@@ -21,6 +21,9 @@ use std::time::Duration;
 const QUICK: Duration = Duration::from_secs(30);
 /// The router's gate.
 const GATE: Duration = Duration::from_secs(60);
+/// The person's answer to the per-app consent: a sheet waits for a person, who may be away
+/// from the screen for a while, but not for ever.
+const CONSENT: Duration = Duration::from_secs(300);
 /// The model: a step with a large frame on a loaded engine takes a while.
 const MODEL: Duration = Duration::from_secs(180);
 
@@ -40,6 +43,7 @@ fn timed_out() -> String {
 /// The deadline of `effect`; none for an effect that finishes at once or waits on the person.
 pub fn deadline_of(effect: &RunEffect) -> Option<Deadline> {
     let (after, failure) = match effect {
+        RunEffect::Grant { .. } => (CONSENT, Some(RunInput::GrantUnanswered)),
         RunEffect::AcquireLease(_) => (
             QUICK,
             Some(RunInput::LeaseRefused(DesktopError::Protocol(timed_out()))),
@@ -65,7 +69,7 @@ pub fn deadline_of(effect: &RunEffect) -> Option<Deadline> {
         | RunEffect::Glow(_)
         | RunEffect::Record(_)
         | RunEffect::Report(_) => (QUICK, None),
-        // The consent and a confirmation wait on the person; the rest are instant.
+        // A confirmation waits on the person; the rest are instant.
         _ => return None,
     };
     Some(Deadline { after, failure })

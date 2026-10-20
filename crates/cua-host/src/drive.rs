@@ -216,14 +216,31 @@ impl Machine {
         self.queue.extend(effects);
     }
 
-    /// The person or the desktop interrupts: what was about to start is dropped, the input is the
-    /// machine's to answer.
-    fn interrupt<S: Seams>(&mut self, shared: &Shared<S>, input: RunInput, at: Stamp) {
-        if !self.run().phase.is_finished() {
+    /// The person or the desktop interrupts. An input that moves the run (its phase changes, or
+    /// it answers with effects) drops what was about to start, and the machine answers it. An
+    /// input the machine has nothing to say to (a window moved, a sheet shown) changes nothing:
+    /// the effect in hand and the ones queued go on, or the run would wait for an answer to a
+    /// question nobody is asking any more.
+    fn interrupt<S: Seams>(&mut self, shared: &Shared<S>, input: RunInput, at: Stamp) -> Moved {
+        let before = self.run.phase.clone();
+        let effects = self.run.advance(input, at);
+        shared.update(&self.run);
+        if self.run.phase == before && effects.is_empty() {
+            return Moved::No;
+        }
+        if !before.is_finished() {
             self.queue.retain(|e| !is_work(e));
         }
-        self.feed(shared, input, at);
+        self.queue.extend(effects);
+        Moved::Yes
     }
+}
+
+/// Whether an interruption moved the run.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Moved {
+    Yes,
+    No,
 }
 
 fn run_end<S: Seams>(exec: &Exec<'_, S>, run: &Run, outcome: CuaOutcome) -> RunEnd {
@@ -343,7 +360,7 @@ pub(crate) async fn drive<S: Drivable>(
         });
         tokio::select! {
             biased;
-            Some(input) = control.recv() => machine.interrupt(&shared, input, shared.clock.now()),
+            Some(input) = control.recv() => { machine.interrupt(&shared, input, shared.clock.now()); },
             Some(event) = wire.recv() => heard(&shared, &id, &mut machine, event),
             seen = exec.next_damage(), if watching => match seen {
                 Some(change) => machine.feed(&shared, RunInput::Damage(change), shared.clock.now()),
@@ -404,8 +421,9 @@ async fn race<S: Seams, T>(
         tokio::select! {
             biased;
             Some(input) = control.recv() => {
-                machine.interrupt(shared, input, shared.clock.now());
-                return Raced::Interrupted;
+                if machine.interrupt(shared, input, shared.clock.now()) == Moved::Yes {
+                    return Raced::Interrupted;
+                }
             }
             Some(event) = wire.recv() => heard(shared, id, machine, event),
             done = &mut work => return Raced::Finished(done),
