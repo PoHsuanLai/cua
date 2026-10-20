@@ -238,6 +238,14 @@ fn action_results_pin_their_json() {
             ActionResult::Refused(Refusal::Local(LocalRefusal::StateMoved)),
             r#"{"kind":"refused","v":{"kind":"local","v":"state_moved"}}"#,
         ),
+        (
+            ActionResult::Refused(Refusal::Local(LocalRefusal::NoProgress)),
+            r#"{"kind":"refused","v":{"kind":"local","v":"no_progress"}}"#,
+        ),
+        (
+            ActionResult::Refused(Refusal::Local(LocalRefusal::HasControl)),
+            r#"{"kind":"refused","v":{"kind":"local","v":"has_control"}}"#,
+        ),
         (ActionResult::UserDeclined, r#"{"kind":"user_declined"}"#),
         (
             ActionResult::Failed(SeatError::Suspended),

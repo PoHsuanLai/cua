@@ -29,6 +29,10 @@ pub enum LocalRefusal {
     /// The window was not what the action was aimed at when it came to be injected (moved,
     /// resized, refocused or taken over): nothing was injected.
     StateMoved,
+    /// The action is the one that just ran and the screen did not change: nothing was injected.
+    NoProgress,
+    /// A key chord for something the window shows as a visible control: nothing was injected.
+    HasControl,
 }
 
 /// Who refused an action.
