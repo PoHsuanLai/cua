@@ -78,8 +78,8 @@ mod window_class;
 pub use chord_scope::{KeyWorld, acts_on_desktop, standard_actions_of};
 pub use commit::{Commit, commit_of};
 pub use config::{
-    Autopause, CuaConfig, Days, DefaultMode, Enabled, KeepScreens, SETTING_ROWS, SettingRow,
-    SettingValue, SettleLimits,
+    Accessibility, Autopause, CuaConfig, Days, DefaultMode, Enabled, KeepScreens, SETTING_ROWS,
+    SettingRow, SettingValue, SettleLimits,
 };
 pub use effect_class::{classify_effect, classify_effect_in};
 pub use exec::{Collected, Deadline, Exec, Outlet, Progress, Seam, Step, StepNote, deadline_of};

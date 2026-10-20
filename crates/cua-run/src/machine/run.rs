@@ -1,7 +1,7 @@
 //! The run itself: its state, and the three functions that drive it.
 
 use crate::chord_scope::KeyWorld;
-use crate::config::{Autopause, CuaConfig, SettleLimits};
+use crate::config::{Accessibility, Autopause, CuaConfig, SettleLimits};
 use crate::machine::effect::RunEffect;
 use crate::machine::input::RunInput;
 use crate::machine::phase::{ActionQueue, RunPhase};
@@ -69,7 +69,11 @@ impl RunEnv {
             wait_max: config.wait_max,
             wait_total: config.wait_total,
             autopause: config.autopause,
-            tree_max_nodes: config.tree_max_nodes,
+            // Reading the controls turned off is a run with no room for any of them.
+            tree_max_nodes: match config.accessibility {
+                Accessibility::On => config.tree_max_nodes,
+                Accessibility::Off => NodeBudget(0),
+            },
             keys: KeyWorld::default(),
             grant_level: strictest_grant(),
             reader: ReaderMode::Off,

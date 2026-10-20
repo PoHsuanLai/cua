@@ -2,7 +2,7 @@
 
 use super::keys::{APPS_KEY, Rule, table};
 use super::*;
-use cua_run::{Autopause, DefaultMode, Enabled};
+use cua_run::{Accessibility, Autopause, DefaultMode, Enabled};
 use porter_core::AppName;
 use std::collections::BTreeSet;
 
@@ -129,7 +129,8 @@ fn the_intelligence_page_shows_computer_use_and_the_rest_is_advanced() {
             "cua.enabled",
             "cua.apps",
             "cua.default_mode",
-            "cua.autopause"
+            "cua.autopause",
+            "cua.accessibility"
         ]
     );
 }
@@ -256,6 +257,10 @@ fn each_key_lands_in_the_typed_value_the_design_names() {
         DefaultMode::AgentWorkspace
     );
     assert_eq!(one("cua.autopause", word("off")).autopause, Autopause::Off);
+    assert_eq!(
+        one("cua.accessibility", word("off")).accessibility,
+        Accessibility::Off
+    );
     assert_eq!(one("cua.budget.steps", int(7)).budget.steps, Count(7));
     assert_eq!(
         one("cua.budget.active_s", int(90)).budget.active,

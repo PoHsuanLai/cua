@@ -6,7 +6,7 @@
 use super::CuaSettings;
 use a11y_tree::NodeBudget;
 use cua_desktop::Ms;
-use cua_run::{Autopause, DefaultMode, Enabled};
+use cua_run::{Accessibility, Autopause, DefaultMode, Enabled};
 use porter_core::{Count, MicroUsd};
 use std::ops::RangeInclusive;
 
@@ -68,6 +68,7 @@ const MODE: [DefaultMode; 3] = [
     DefaultMode::AgentWorkspace,
 ];
 const AUTOPAUSE: [Autopause; 2] = [Autopause::On, Autopause::Off];
+const ACCESSIBILITY: [Accessibility; 2] = [Accessibility::On, Accessibility::Off];
 
 /// Every scalar key, in the order the schema lists them.
 pub(crate) fn table() -> Vec<Key> {
@@ -82,6 +83,9 @@ pub(crate) fn table() -> Vec<Key> {
         ),
         word("cua.autopause", &["on", "off"], |s, i| {
             s.config.autopause = AUTOPAUSE[i];
+        }),
+        word("cua.accessibility", &["on", "off"], |s, i| {
+            s.config.accessibility = ACCESSIBILITY[i];
         }),
         num("cua.budget.steps", 1..=500, |s, v| {
             s.config.budget.steps = count(v)

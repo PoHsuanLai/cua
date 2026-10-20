@@ -112,6 +112,27 @@ on = "On"
 off = "Off"
 
 [[key]]
+path = "cua.accessibility"
+default = "on"
+label = "Read app controls"
+help = "Lets the assistant read the buttons and fields of the window it is using, so it clicks the right one. Only the window it is working in."
+section = "Computer use"
+exposure = "basic"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["on", "off"]
+
+[key.page]
+kind = "intelligence"
+
+[key.labels]
+on = "On"
+off = "Off"
+
+[[key]]
 path = "cua.budget.steps"
 default = 40
 label = "Steps per run"

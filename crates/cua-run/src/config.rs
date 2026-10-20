@@ -43,6 +43,17 @@ pub enum Autopause {
     On,
 }
 
+/// `cua.accessibility`: whether a run reads the controls (buttons, fields) of the window it is
+/// using, as the app describes them. Only that window's; with it off a run goes from pixels.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Accessibility {
+    /// It does not.
+    Off,
+    /// It does.
+    On,
+}
+
 /// `cua.screens.keep`: whether thumbnails of steps are stored.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -85,6 +96,8 @@ pub struct CuaConfig {
     pub wait_total: Ms,
     /// `cua.autopause`.
     pub autopause: Autopause,
+    /// `cua.accessibility` (on).
+    pub accessibility: Accessibility,
     /// `cua.tree.max_nodes` (400).
     pub tree_max_nodes: NodeBudget,
     /// `cua.screens.keep`.
@@ -106,6 +119,7 @@ impl Default for CuaConfig {
             wait_max: Ms(60_000),
             wait_total: Ms(600_000),
             autopause: Autopause::On,
+            accessibility: Accessibility::On,
             tree_max_nodes: NodeBudget(400),
             keep_screens: KeepScreens::Off,
             keep_days: Days(7),
@@ -160,6 +174,7 @@ pub const SETTING_ROWS: &[SettingRow] = &[
     n("cua.wait.max_ms", 60_000),
     n("cua.wait.total_ms", 600_000),
     w("cua.autopause", "on"),
+    w("cua.accessibility", "on"),
     n("cua.tree.max_nodes", 400),
     w("cua.screens.keep", "off"),
     n("cua.screens.keep_days", 7),
@@ -195,6 +210,10 @@ impl CuaConfig {
             "cua.autopause" => Some(SettingValue::Word(match self.autopause {
                 Autopause::Off => "off",
                 Autopause::On => "on",
+            })),
+            "cua.accessibility" => Some(SettingValue::Word(match self.accessibility {
+                Accessibility::Off => "off",
+                Accessibility::On => "on",
             })),
             "cua.tree.max_nodes" => Some(SettingValue::Number(i64::from(self.tree_max_nodes.0))),
             "cua.screens.keep" => Some(SettingValue::Word(match self.keep_screens {

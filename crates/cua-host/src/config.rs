@@ -26,7 +26,8 @@ pub enum A11yChoice {
     /// For a person who turned it off.
     Off,
     /// AT-SPI, over the session's accessibility bus. The default: where there is no such bus (a
-    /// sandbox), a snapshot says so and the run goes on from pixels.
+    /// sandbox), a snapshot says so and the run goes on from pixels. The person's
+    /// `cua.accessibility` setting still turns reading off for every run.
     #[default]
     Atspi,
 }
