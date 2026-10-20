@@ -170,6 +170,10 @@ impl Outlet for Channel {
     fn signal(&mut self, signal: cua_run::CuaSignal) {
         let _ = self.0.send(Wire::Signal(signal));
     }
+
+    fn note(&mut self, note: cua_run::StepNote) {
+        eprintln!("cuad: {note}");
+    }
 }
 
 /// An effect that starts work against the world as it was: when the person interrupts, it is

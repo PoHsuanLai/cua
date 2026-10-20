@@ -16,7 +16,7 @@ use screen::screen_read;
 
 use crate::machine::control::{cancel, desktop, hand_back, pause, resume, take_over};
 use crate::machine::effect::RunEffect;
-use crate::machine::finish::{finish_no_window, finish_plain, finish_unanswered};
+use crate::machine::finish::{finish_acquire, finish_no_window, finish_plain, finish_unanswered};
 use crate::machine::input::RunInput;
 use crate::machine::ops::{AlsoContext, count_active, enter, observe};
 use crate::machine::phase::RunPhase;
@@ -130,6 +130,7 @@ fn dispatch(run: &mut Run, fx: &mut Vec<RunEffect>, input: RunInput, at: Stamp) 
         RunInput::LeaseRefused(_) => {
             finish_plain(run, fx, CuaOutcome::Blocked(BlockedOn::LeaseRefused))
         }
+        RunInput::AcquireFailed(failure) => acquire_failed(run, fx, &failure),
         RunInput::Observed(obs) => observed(run, fx, *obs),
         RunInput::CaptureFailed(error) => capture_failed(run, fx, error),
         RunInput::ModelEvent(event) => model_event(run, fx, event),
@@ -195,6 +196,16 @@ fn leased(run: &mut Run, fx: &mut Vec<RunEffect>, lease: cua_desktop::LeaseId) {
     })));
     fx.push(RunEffect::Glow(cua_desktop::GlowState::Working));
     observe(run, fx, StepIndex(1), FrameWant::Now, AlsoContext::Yes);
+}
+
+fn acquire_failed(
+    run: &mut Run,
+    fx: &mut Vec<RunEffect>,
+    failure: &crate::machine::acquire::AcquireFailure,
+) {
+    if run.phase == RunPhase::Leasing {
+        finish_acquire(run, fx, failure);
+    }
 }
 
 fn leased_elsewhere(run: &mut Run, fx: &mut Vec<RunEffect>, lease: cua_desktop::LeaseId) {

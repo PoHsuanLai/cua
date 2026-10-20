@@ -1,5 +1,6 @@
 //! The run machine: `(Run, RunInput) -> (Run, Vec<RunEffect>)`, pure.
 
+pub(crate) mod acquire;
 pub(crate) mod control;
 pub(crate) mod effect;
 pub(crate) mod finish;

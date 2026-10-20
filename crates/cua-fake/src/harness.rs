@@ -11,7 +11,7 @@ use crate::model::ScriptedModel;
 use crate::seat::FakeSeat;
 use cua_run::{
     Clock, Collected, CuaSignal, DamageWanted, Exec, Parts, Run, RunEffect, RunInput, RunPhase,
-    Seam, Seams,
+    Seam, Seams, StepNote,
 };
 use std::collections::VecDeque;
 
@@ -40,6 +40,8 @@ pub struct HarnessReport {
     pub run: Run,
     /// The signals, in order.
     pub signals: Vec<CuaSignal>,
+    /// The log lines of taking the window, in order.
+    pub notes: Vec<StepNote>,
 }
 
 /// Why a harness run did not end.
@@ -76,8 +78,13 @@ pub async fn run_harness_answering(
 ) -> Result<HarnessReport, HarnessError> {
     let mut answers: VecDeque<String> = answers.into();
     let mut signals = Vec::new();
+    let mut notes = Vec::new();
     if run.phase.is_finished() {
-        return Ok(HarnessReport { run, signals });
+        return Ok(HarnessReport {
+            run,
+            signals,
+            notes,
+        });
     }
     let Parts {
         desktop,
@@ -124,9 +131,16 @@ pub async fn run_harness_answering(
             }
         }
         signals.append(&mut out.signals);
+        notes.append(&mut out.notes);
         let input = match out.inputs.pop_front() {
             Some(input) => input,
-            None if run.phase.is_finished() => return Ok(HarnessReport { run, signals }),
+            None if run.phase.is_finished() => {
+                return Ok(HarnessReport {
+                    run,
+                    signals,
+                    notes,
+                });
+            }
             None => match idle(&run, &mut exec, clock).await {
                 Some(input) => input,
                 None => return Err(HarnessError::Stuck(run.phase)),

@@ -44,8 +44,9 @@ fn timed_out() -> String {
 pub fn deadline_of(effect: &RunEffect) -> Option<Deadline> {
     let (after, failure) = match effect {
         RunEffect::Grant { .. } => (CONSENT, Some(RunInput::GrantUnanswered)),
+        // Each step of taking the window is bounded on its own (`phase`); this is the backstop.
         RunEffect::AcquireLease(_) => (
-            QUICK,
+            super::phase::ACQUIRE_LIMIT,
             Some(RunInput::LeaseRefused(DesktopError::Protocol(timed_out()))),
         ),
         RunEffect::Capture { .. } => (

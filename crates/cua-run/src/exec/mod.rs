@@ -11,6 +11,7 @@ mod cost;
 mod deadline;
 mod fit;
 mod observe;
+mod phase;
 mod session;
 
 use crate::machine::effect::{CuaSignal, RunEffect};
@@ -24,6 +25,7 @@ use cua_bus::{CuaRecord, CuaTask, ReportDelivery};
 pub use deadline::{Deadline, deadline_of};
 use docket_core::{Delivery, GrantAsk, SendRefusal, WireRefusal};
 use maskcap::DamageAt;
+pub use phase::{Progress, Step, StepNote};
 use porter_core::Count;
 use prov::{MessageId, RunId};
 use session::Held;
@@ -35,6 +37,11 @@ pub trait Outlet: Send {
 
     /// A signal for the bus.
     fn signal(&mut self, signal: CuaSignal);
+
+    /// A line for the daemon's log about taking a window. Nothing by default.
+    fn note(&mut self, note: StepNote) {
+        let _ = note;
+    }
 }
 
 /// Inputs and signals kept in order, for a driver that has nothing to race.
@@ -44,6 +51,8 @@ pub struct Collected {
     pub inputs: std::collections::VecDeque<RunInput>,
     /// The signals.
     pub signals: Vec<CuaSignal>,
+    /// The log lines of taking a window, in order.
+    pub notes: Vec<StepNote>,
 }
 
 impl Outlet for Collected {
@@ -53,6 +62,10 @@ impl Outlet for Collected {
 
     fn signal(&mut self, signal: CuaSignal) {
         self.signals.push(signal);
+    }
+
+    fn note(&mut self, note: StepNote) {
+        self.notes.push(note);
     }
 }
 

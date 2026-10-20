@@ -3,13 +3,14 @@
 use cua_desktop::Stamp;
 use cua_run::Clock;
 use porter_core::UnixSeconds;
-use std::sync::atomic::{AtomicI64, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicI64, AtomicU64, Ordering};
 
 /// A clock set by hand; it never moves on its own.
 #[derive(Debug, Default)]
 pub struct FixedClock {
     stamp: AtomicU64,
     unix: AtomicI64,
+    impatient: AtomicBool,
 }
 
 impl FixedClock {
@@ -18,7 +19,15 @@ impl FixedClock {
         Self {
             stamp: AtomicU64::new(stamp.0),
             unix: AtomicI64::new(unix.0),
+            impatient: AtomicBool::new(false),
         }
+    }
+
+    /// The same clock, whose timers fire at once: whatever waits on one gives up.
+    #[must_use]
+    pub fn impatient(self) -> Self {
+        self.impatient.store(true, Ordering::SeqCst);
+        self
     }
 
     /// Moves both readings forward by `ms` milliseconds.
@@ -36,6 +45,14 @@ impl Clock for FixedClock {
 
     fn unix(&self) -> UnixSeconds {
         UnixSeconds(self.unix.load(Ordering::SeqCst))
+    }
+
+    async fn after(&self, limit: std::time::Duration) {
+        let _ = limit;
+        if self.impatient.load(Ordering::SeqCst) {
+            return;
+        }
+        std::future::pending::<()>().await;
     }
 }
 

@@ -39,6 +39,13 @@ pub trait Clock: Send + Sync {
 
     /// Now, as wall time.
     fn unix(&self) -> UnixSeconds;
+
+    /// Ready once `limit` has passed. A clock with no timers (a harness) never is, so what is
+    /// bounded by it waits as long as it likes.
+    fn after(&self, limit: std::time::Duration) -> impl Future<Output = ()> + Send {
+        let _ = limit;
+        std::future::pending()
+    }
 }
 
 /// What a check in flight reports.

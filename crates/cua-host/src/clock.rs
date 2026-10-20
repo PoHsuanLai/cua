@@ -32,4 +32,8 @@ impl Clock for SystemClock {
             .map_or(0, |d| i64::try_from(d.as_secs()).unwrap_or(i64::MAX));
         UnixSeconds(seconds)
     }
+
+    fn after(&self, limit: std::time::Duration) -> impl std::future::Future<Output = ()> + Send {
+        tokio::time::sleep(limit)
+    }
 }

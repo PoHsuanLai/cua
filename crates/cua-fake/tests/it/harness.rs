@@ -12,7 +12,9 @@ use cua_fake::{
     DesktopCall, FakeA11y, FakeCapture, FakeDesktop, FakePdp, FakeSeat, FixedClock, Fixture,
     MemoryEvents, ScriptedModel, SeatEvent, World, run_harness_answering,
 };
-use cua_run::{CuaConfig, CuaSignal, FORCED_YES, Run, RunEnv, RunPhase};
+use cua_run::{
+    AcquirePhase, CuaConfig, CuaSignal, FORCED_YES, Progress, Run, RunEnv, RunPhase, Step,
+};
 use maskcap::{Frame, FrameSeq, MaskReport, PixelBuf, WholeMask};
 use porter_core::{AppName, Px, UnixSeconds};
 use porter_infer::CuaStepReply;
@@ -89,29 +91,20 @@ fn user_goal() -> Labelled<String> {
     )
 }
 
-#[test]
-fn end_to_end_scripted_run_done() {
-    let click = CuaAction::Click {
-        at: Target::Point(Point::new(Coord(10), Coord(10))),
-        button: Button::Left,
-        count: ClickCount::One,
-        mods: BTreeSet::new(),
-    };
-    let finish = CuaAction::Finish {
-        outcome: FinishOutcome::Done,
-        summary: Summary::new("Signed in.").unwrap(),
-        extracted: vec![],
-    };
-    let mut world = World {
+fn new_world(script: Vec<Result<CuaStepReply, cua_run::CuaModelError>>) -> World {
+    World {
         desktop: FakeDesktop::new(BackendKind::KwinStock, vec![window()]),
         seat: FakeSeat::new(cua_desktop::SeatIsolation::SharedSeat, Stamp(0)),
         capture: FakeCapture::scripted(vec![frame(1), frame(2), frame(3)], vec![]),
         a11y: FakeA11y::fixture(Fixture::FirefoxForm),
-        model: ScriptedModel::new(vec![Ok(reply(click)), Ok(reply(finish))]),
+        model: ScriptedModel::new(script),
         gate: FakePdp::allow_all(),
         events: MemoryEvents::new(),
         clock: FixedClock::at(Stamp(0), UnixSeconds(1_700_000_000)),
-    };
+    }
+}
+
+fn new_run() -> Run {
     let task = CuaTask {
         app: app(),
         goal: user_goal(),
@@ -134,7 +127,24 @@ fn end_to_end_scripted_run_done() {
         &CuaConfig::default(),
         BackendCaps::of(BackendKind::KwinStock),
     );
-    let (run, _) = Run::start(RunId::parse("r-1").unwrap(), task, env, Stamp(0));
+    Run::start(RunId::parse("r-1").unwrap(), task, env, Stamp(0)).0
+}
+
+#[test]
+fn end_to_end_scripted_run_done() {
+    let click = CuaAction::Click {
+        at: Target::Point(Point::new(Coord(10), Coord(10))),
+        button: Button::Left,
+        count: ClickCount::One,
+        mods: BTreeSet::new(),
+    };
+    let finish = CuaAction::Finish {
+        outcome: FinishOutcome::Done,
+        summary: Summary::new("Signed in.").unwrap(),
+        extracted: vec![],
+    };
+    let mut world = new_world(vec![Ok(reply(click)), Ok(reply(finish))]);
+    let run = new_run();
 
     // The fixture is a sign-in form with a password field: a sensitive window, so the run asks
     // before the click whatever the gate says, and the scripted person says yes.
@@ -223,5 +233,66 @@ fn block_on<T>(future: impl std::future::Future<Output = T>) -> T {
         if let std::task::Poll::Ready(value) = future.as_mut().poll(&mut cx) {
             return value;
         }
+    }
+}
+
+/// A step of taking the window that stalls ends the run blocked in words that name it, the lease
+/// is given back, and the log has the step's start and its timeout.
+fn stalled(phase: AcquirePhase) -> (cua_fake::HarnessReport, World) {
+    let mut world = new_world(vec![]);
+    world.clock = FixedClock::at(Stamp(0), UnixSeconds(1_700_000_000)).impatient();
+    match phase {
+        AcquirePhase::Attach => world.seat.stall_next_attach(),
+        AcquirePhase::Capture => world.capture.stall_next_open(),
+    }
+    let report = block_on(run_harness_answering(new_run(), &mut world, vec![])).expect("ends");
+    (report, world)
+}
+
+#[test]
+fn a_stalled_step_of_taking_the_window_names_itself_and_gives_the_lease_back() {
+    let table = [
+        (AcquirePhase::Attach, "its input never answered", "attach"),
+        (
+            AcquirePhase::Capture,
+            "its picture never arrived",
+            "capture",
+        ),
+    ];
+    for (phase, words, name) in table {
+        let (report, world) = stalled(phase);
+        assert_eq!(
+            report.run.phase,
+            RunPhase::Finished(CuaOutcome::Blocked(cua_bus::BlockedOn::LeaseRefused)),
+            "{name}"
+        );
+        let sent: Vec<String> = world
+            .events
+            .sent()
+            .into_iter()
+            .flat_map(|(_, draft)| draft.parts)
+            .filter_map(|part| match part {
+                docket_core::DraftPart::Text(text) => Some(text.as_str().to_owned()),
+                _ => None,
+            })
+            .collect();
+        assert!(sent.iter().any(|t| t.contains(words)), "{name}: {sent:?}");
+        assert!(
+            matches!(world.desktop.calls().last(), Some(DesktopCall::Released(_))),
+            "{name}: the lease is ended"
+        );
+        assert!(
+            matches!(world.seat.events().last(), Some(SeatEvent::Detached(_))),
+            "{name}: the input is let go"
+        );
+        let steps: Vec<(Step, bool)> = report
+            .notes
+            .iter()
+            .map(|n| (n.step, matches!(n.progress, Progress::Failed(..))))
+            .collect();
+        let named = Step::Phase(phase);
+        assert!(steps.contains(&(Step::Lease, false)), "{name}: {steps:?}");
+        assert!(steps.contains(&(named, false)), "{name}: {steps:?}");
+        assert!(steps.contains(&(named, true)), "{name}: {steps:?}");
     }
 }

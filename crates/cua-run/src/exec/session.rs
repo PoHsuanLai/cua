@@ -2,13 +2,15 @@
 
 use super::cost::reply_cost;
 use super::fit::{Fit, fit_of};
-use super::{Exec, ModelSession, Outlet};
+use super::phase::{Bound, PHASE_LIMIT, bounded};
+use super::{Exec, ModelSession, Outlet, Progress, Step, StepNote};
+use crate::machine::acquire::{AcquireFailure, AcquirePhase, AcquireWhy};
 use crate::machine::input::{ModelReply, Moved, RunInput};
 use crate::model::{CuaModel, CuaModelError, StepEvent, StepSink};
-use crate::seams::{GateCheck, Seams};
+use crate::seams::{Clock, GateCheck, Seams};
 use crate::turn::FrameAttachment;
 use cua_desktop::{
-    DesktopError, GlowState, LeaseControl, LeaseGrant, LeaseId, LeaseRequest, Suspend,
+    DesktopError, GlowState, LeaseControl, LeaseGrant, LeaseId, LeaseRequest, Stamp, Suspend,
 };
 use maskcap::WindowCapture;
 use porter_infer::{CuaBegin, CuaStepRequest};
@@ -31,35 +33,119 @@ impl<O: Outlet> StepSink for Forward<'_, O> {
 
 impl<S: Seams> Exec<'_, S> {
     pub(super) async fn acquire(&mut self, request: LeaseRequest, out: &mut impl Outlet) {
-        let leased = match self.seam.desktop.lease(request).await {
-            Ok(leased) => leased,
-            Err(error) => return out.input(RunInput::LeaseRefused(error)),
+        let began = self.seam.clock.now();
+        self.note(out, Step::Lease, Progress::Started);
+        let leased = match bounded(
+            self.seam.clock,
+            PHASE_LIMIT,
+            self.seam.desktop.lease(request),
+        )
+        .await
+        {
+            Bound::Done(Ok(leased)) => leased,
+            Bound::Done(Err(error)) => {
+                let why = AcquireWhy::Failed(error.to_string());
+                self.note(out, Step::Lease, Progress::Failed(self.since(began), why));
+                return out.input(RunInput::LeaseRefused(error));
+            }
+            Bound::TimedOut => {
+                let why = Progress::Failed(self.since(began), AcquireWhy::TimedOut);
+                self.note(out, Step::Lease, why);
+                return out.input(RunInput::LeaseRefused(DesktopError::Protocol(
+                    "timed out".to_owned(),
+                )));
+            }
         };
+        self.note(out, Step::Lease, Progress::Finished(self.since(began)));
         let grant = leased.grant;
-        if let Err(error) = self.seam.seat.attach(&grant, leased.socket).await {
-            let _ = self.seam.desktop.release(grant.id).await;
-            let refusal = match error {
-                SeatError::Busy => DesktopError::Busy,
-                other => DesktopError::Protocol(other.to_string()),
-            };
-            return out.input(RunInput::LeaseRefused(refusal));
+
+        let began = self.seam.clock.now();
+        self.note(out, Step::Phase(AcquirePhase::Attach), Progress::Started);
+        let attached = bounded(
+            self.seam.clock,
+            PHASE_LIMIT,
+            self.seam.seat.attach(&grant, leased.socket),
+        )
+        .await;
+        match attached {
+            Bound::Done(Ok(())) => {
+                let done = Progress::Finished(self.since(began));
+                self.note(out, Step::Phase(AcquirePhase::Attach), done);
+            }
+            Bound::Done(Err(SeatError::Busy)) => {
+                let why = AcquireWhy::Failed(SeatError::Busy.to_string());
+                let failed = Progress::Failed(self.since(began), why);
+                self.note(out, Step::Phase(AcquirePhase::Attach), failed);
+                let _ = self.seam.seat.detach(grant.id).await;
+                let _ = self.seam.desktop.release(grant.id).await;
+                return out.input(RunInput::LeaseRefused(DesktopError::Busy));
+            }
+            Bound::Done(Err(error)) => {
+                let why = AcquireWhy::Failed(error.to_string());
+                return self
+                    .abandon(&grant, AcquirePhase::Attach, began, why, out)
+                    .await;
+            }
+            Bound::TimedOut => {
+                let why = AcquireWhy::TimedOut;
+                return self
+                    .abandon(&grant, AcquirePhase::Attach, began, why, out)
+                    .await;
+            }
         }
-        match self.seam.capture.open(&grant).await {
-            Ok(capture) => {
+
+        let began = self.seam.clock.now();
+        self.note(out, Step::Phase(AcquirePhase::Capture), Progress::Started);
+        match bounded(self.seam.clock, PHASE_LIMIT, self.seam.capture.open(&grant)).await {
+            Bound::Done(Ok(capture)) => {
+                let done = Progress::Finished(self.since(began));
+                self.note(out, Step::Phase(AcquirePhase::Capture), done);
                 self.held = Some(Held {
                     grant: grant.clone(),
                     capture,
                 });
                 out.input(RunInput::Leased(grant));
             }
-            Err(error) => {
-                let _ = self.seam.seat.detach(grant.id).await;
-                let _ = self.seam.desktop.release(grant.id).await;
-                out.input(RunInput::LeaseRefused(DesktopError::Protocol(
-                    error.to_string(),
-                )));
+            Bound::Done(Err(error)) => {
+                let why = AcquireWhy::Failed(error.to_string());
+                self.abandon(&grant, AcquirePhase::Capture, began, why, out)
+                    .await;
+            }
+            Bound::TimedOut => {
+                let why = AcquireWhy::TimedOut;
+                self.abandon(&grant, AcquirePhase::Capture, began, why, out)
+                    .await;
             }
         }
+    }
+
+    /// A step of taking the window failed: the log says which, the lease is given back (the
+    /// input too, once it was attached) and the run is told the step by name.
+    async fn abandon(
+        &mut self,
+        grant: &LeaseGrant,
+        phase: AcquirePhase,
+        began: Stamp,
+        why: AcquireWhy,
+        out: &mut impl Outlet,
+    ) {
+        let failed = Progress::Failed(self.since(began), why.clone());
+        self.note(out, Step::Phase(phase), failed);
+        let _ = self.seam.seat.detach(grant.id).await;
+        let _ = self.seam.desktop.release(grant.id).await;
+        out.input(RunInput::AcquireFailed(AcquireFailure { phase, why }));
+    }
+
+    fn since(&self, began: Stamp) -> u64 {
+        self.seam.clock.now().0.saturating_sub(began.0)
+    }
+
+    fn note(&self, out: &mut impl Outlet, step: Step, progress: Progress) {
+        out.note(StepNote {
+            run: self.run.clone(),
+            step,
+            progress,
+        });
     }
 
     pub(super) async fn release(&mut self, lease: LeaseId) {

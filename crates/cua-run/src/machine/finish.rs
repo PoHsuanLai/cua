@@ -1,6 +1,7 @@
 //! Ending a run: the one place every road to `Finished` goes through, so the effects of an end
 //! are the same whichever road it was.
 
+use crate::machine::acquire::AcquireFailure;
 use crate::machine::effect::{CuaSignal, RunEffect};
 use crate::machine::phase::RunPhase;
 use crate::machine::run::Run;
@@ -120,6 +121,15 @@ pub(crate) fn finish(run: &mut Run, fx: &mut Vec<RunEffect>, outcome: CuaOutcome
 /// Ends the run with `outcome` and the machine's own words.
 pub(crate) fn finish_plain(run: &mut Run, fx: &mut Vec<RunEffect>, outcome: CuaOutcome) {
     finish(run, fx, outcome, Said::of(outcome));
+}
+
+/// Ends the run blocked because a step of taking the window failed; the words name the step.
+pub(crate) fn finish_acquire(run: &mut Run, fx: &mut Vec<RunEffect>, failure: &AcquireFailure) {
+    let said = Said {
+        summary: summary(failure.words()),
+        extracted: Vec::new(),
+    };
+    finish(run, fx, CuaOutcome::Blocked(BlockedOn::LeaseRefused), said);
 }
 
 /// Ends the run blocked because the question about the app was never answered.

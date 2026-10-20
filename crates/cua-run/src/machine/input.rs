@@ -1,6 +1,7 @@
 //! What can happen to a run: every input of the machine. Each is `Serialize + Eq` so a run can
 //! be written to a trace and replayed.
 
+use crate::machine::acquire::AcquireFailure;
 use crate::model::{CuaModelError, StepEvent};
 use crate::observation::Observation;
 use crate::screen::ScreenRead;
@@ -63,6 +64,8 @@ pub enum RunInput {
     Leased(LeaseGrant),
     /// It did not.
     LeaseRefused(DesktopError),
+    /// The desktop leased the window but taking it failed (the lease is already ended).
+    AcquireFailed(AcquireFailure),
     /// The step's observation is ready.
     Observed(Box<Observation>),
     /// The capture failed.

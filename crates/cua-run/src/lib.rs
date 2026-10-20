@@ -80,8 +80,9 @@ pub use config::{
     SettingValue, SettleLimits,
 };
 pub use effect_class::{classify_effect, classify_effect_in};
-pub use exec::{Collected, Deadline, Exec, Outlet, Seam, deadline_of};
+pub use exec::{Collected, Deadline, Exec, Outlet, Progress, Seam, Step, StepNote, deadline_of};
 pub use lease_book::{LeaseBook, LeaseHeld, Slot, SlotState};
+pub use machine::acquire::{AcquireFailure, AcquirePhase, AcquireWhy};
 pub use machine::effect::{CuaSignal, HintSource, RunEffect};
 pub use machine::input::{CheckResult, ModelReply, Moved, RunInput};
 pub use machine::phase::{ActionQueue, RunPhase};
