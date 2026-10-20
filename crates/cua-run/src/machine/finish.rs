@@ -39,6 +39,9 @@ fn said_of(outcome: CuaOutcome) -> &'static str {
         }
         CuaOutcome::Blocked(BlockedOn::LeaseRefused) => "The window could not be taken.",
         CuaOutcome::Blocked(BlockedOn::PolicyDenials) => "Paused after refused actions.",
+        CuaOutcome::Blocked(BlockedOn::RouterUnreachable) => {
+            "Stopped: it could not ask whether its next step was allowed."
+        }
         CuaOutcome::Blocked(BlockedOn::ModeUnsupported(_)) => {
             "That mode is not supported on this desktop."
         }

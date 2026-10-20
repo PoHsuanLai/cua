@@ -788,7 +788,7 @@ fn a_router_that_cannot_be_asked_blocks_the_run() {
     d.feed(RunInput::GateFailed(cua_run::LinkError::Unavailable));
     assert_eq!(
         finished_with(&d),
-        Some(CuaOutcome::Blocked(BlockedOn::PolicyDenials))
+        Some(CuaOutcome::Blocked(BlockedOn::RouterUnreachable))
     );
 }
 

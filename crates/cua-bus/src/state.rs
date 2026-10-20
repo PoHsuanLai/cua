@@ -77,6 +77,9 @@ pub enum BlockedOn {
     LeaseRefused,
     /// The router's breaker paused the session.
     PolicyDenials,
+    /// The router that says whether a step may go could not be asked (it went away, or did not
+    /// answer in time): the run stops without acting, which is not a refusal.
+    RouterUnreachable,
     /// The backend cannot run this mode.
     ModeUnsupported(RunMode),
     /// The backend or the model lacks a capability the task needs.
@@ -279,6 +282,10 @@ mod tests {
             (
                 CuaOutcome::Blocked(BlockedOn::ModeUnsupported(RunMode::NestedSession)),
                 r#"{"kind":"blocked","v":{"kind":"mode_unsupported","v":"nested_session"}}"#,
+            ),
+            (
+                CuaOutcome::Blocked(BlockedOn::RouterUnreachable),
+                r#"{"kind":"blocked","v":{"kind":"router_unreachable"}}"#,
             ),
             (
                 CuaOutcome::Blocked(BlockedOn::ScreenSuspicious(ScreenKind::Instruction)),

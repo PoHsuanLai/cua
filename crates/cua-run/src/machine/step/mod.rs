@@ -142,7 +142,7 @@ fn dispatch(run: &mut Run, fx: &mut Vec<RunEffect>, input: RunInput, at: Stamp) 
         RunInput::Confirming(id) => confirming(run, fx, id),
         RunInput::Verdict(answer) => verdict(run, fx, at, answer),
         RunInput::GateFailed(_) => {
-            finish_plain(run, fx, CuaOutcome::Blocked(BlockedOn::PolicyDenials))
+            finish_plain(run, fx, CuaOutcome::Blocked(BlockedOn::RouterUnreachable))
         }
         RunInput::Injected(receipt) => injected(run, fx, at, receipt),
         RunInput::InjectFailed(error) => inject_failed(run, fx, error),
