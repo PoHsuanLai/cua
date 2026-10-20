@@ -11,8 +11,8 @@
 //! top is full of them), a node whose bounds are unknown (a tree where no node has any extent has
 //! no geometry to judge), and a tree that sets no state bits at all. The window root stays.
 
-use a11y_tree::{A11yNode, A11ySnapshot, NodeState, Parent, Truncation};
-use cua_action::{NodeId, Size, WindowSpace};
+use a11y_tree::{A11yNode, A11ySnapshot, NodeState, Parent, Truncation, secret_rects_of};
+use cua_action::{NodeId, Rect, Size, WindowSpace};
 use porter_core::Count;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
@@ -98,6 +98,17 @@ impl Withheld {
     pub fn count(&self) -> usize {
         self.0.len()
     }
+}
+
+/// The rectangles to mask for the secret nodes of a tree, the ones the model reads and the ones
+/// withheld from it alike. Withholding a node never takes its mask away: a toolkit can drop
+/// SHOWING on a password field that is on screen, or a field can stand partly off the window.
+pub fn secret_masks(seen: &A11ySnapshot, withheld: &Withheld) -> Vec<Rect<WindowSpace>> {
+    secret_rects_of(
+        seen.nodes
+            .iter()
+            .chain(withheld.0.iter().map(|(_, node)| node)),
+    )
 }
 
 /// The snapshot without the nodes the person cannot see, for a window of `window`, and those

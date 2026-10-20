@@ -9,13 +9,13 @@ use crate::machine::input::{CheckResult, RunInput};
 use crate::observation::{
     ContextObs, CursorObs, Focus, Observation, TreeAbsence, TreeObs, Visibility, WindowInfo,
 };
-use crate::screen::{Withheld, split_unseen};
+use crate::screen::{Withheld, secret_masks, split_unseen};
 use crate::seams::{Clock, MessageLink, Seams};
 use crate::sensitivity::window_sensitivity;
 use crate::turn::note_of;
 use a11y_tree::{
     A11yError, A11ySnapshot, A11ySource, A11yTarget, NodeBudget, NodeSelector, Resolution, prune,
-    resolve, secret_rects,
+    resolve,
 };
 use cua_action::{Coord, Point, Rect, Size, WindowSpace};
 use cua_bus::WindowRef;
@@ -191,16 +191,18 @@ impl<S: Seams> Exec<'_, S> {
         (self.staged.tree, self.staged.withheld) = self.tree_of(budget).await;
     }
 
-    /// The masks the tree asks for: every secret node's rectangle.
+    /// The masks the tree asks for: every secret node's rectangle, withheld nodes included.
     fn hints_of(&self, source: HintSource) -> Vec<MaskRegion> {
         match (source, &self.staged.tree) {
-            (HintSource::FromTree, TreeObs::Present(snapshot)) => secret_rects(snapshot)
-                .into_iter()
-                .map(|rect| MaskRegion {
-                    rect,
-                    why: MaskReason::A11ySecret,
-                })
-                .collect(),
+            (HintSource::FromTree, TreeObs::Present(snapshot)) => {
+                secret_masks(snapshot, &self.staged.withheld)
+                    .into_iter()
+                    .map(|rect| MaskRegion {
+                        rect,
+                        why: MaskReason::A11ySecret,
+                    })
+                    .collect()
+            }
             _ => Vec::new(),
         }
     }

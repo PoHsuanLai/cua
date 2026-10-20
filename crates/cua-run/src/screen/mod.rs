@@ -29,7 +29,7 @@ pub use hidden::HiddenKind;
 pub use phrases::Family;
 pub use reader::{READER_CHARS, ScreenRead, ScreenText};
 pub use track::{Asking, ReaderMode, ReaderWait, ScreenTrack, Suspicion};
-pub use unseen::{UnseenWhy, Withheld, split_unseen};
+pub use unseen::{UnseenWhy, Withheld, secret_masks, split_unseen};
 
 use crate::observation::{Observation, TreeObs};
 use a11y_tree::{A11yNode, NodeValue, Role, Sensitivity};

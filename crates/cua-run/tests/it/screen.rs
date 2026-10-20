@@ -7,7 +7,7 @@ use a11y_tree::{A11yNode, NodeState, NodeValue, Parent, Role, Sensitivity, rende
 use cua_action::{Coord, Size};
 use cua_run::{
     EXCERPT_CHARS, Family, HiddenKind, MAX_REASONS, PatternCheck, Reason, ScreenCheck,
-    ScreenVerdict, ScreenView, TreeObs, UnseenWhy, Withheld, split_unseen,
+    ScreenVerdict, ScreenView, TreeObs, UnseenWhy, Withheld, secret_masks, split_unseen,
 };
 use prov::{Label, Labelled};
 use std::collections::BTreeSet;
@@ -545,4 +545,25 @@ fn a_clear_verdict_has_no_reasons_and_a_suspicious_one_is_never_empty() {
     assert!(ScreenVerdict::Clear.reasons().is_empty());
     let one = ScreenVerdict::of(vec![Reason::Reader]);
     assert_eq!(one.kinds(), vec![cua_bus::ScreenKind::ReaderFlagged]);
+}
+
+#[test]
+fn a_secret_node_withheld_from_the_model_still_gets_its_mask() {
+    let root = node(0, Role::Window, "Sign in", (0, 0, 100, 80));
+    let shown = node(1, Role::PasswordText, "Password", (0, 0, 100, 20));
+    let mut not_shown = node(2, Role::PasswordText, "PIN", (0, 30, 100, 20));
+    not_shown.states = BTreeSet::from([NodeState::Enabled]);
+    let mut marked = text_node(3, "Recovery code", (0, 60, 100, 20));
+    marked.sensitivity = Sensitivity::Secret;
+    marked.states = BTreeSet::from([NodeState::Enabled]);
+    let nodes = [root, shown.clone(), not_shown.clone(), marked.clone()];
+    let (seen, withheld) = split(&nodes);
+    // The model reads only the shown field; the two the person cannot see are withheld.
+    assert_eq!(withheld.count(), 2);
+    // Every secret node keeps its mask, withheld or not: never fewer masks than the whole tree.
+    let masks = secret_masks(&seen, &withheld);
+    for secret in [&shown, &not_shown, &marked] {
+        assert!(masks.contains(&secret.bounds), "{}", secret.name.value);
+    }
+    assert_eq!(masks.len(), 3);
 }

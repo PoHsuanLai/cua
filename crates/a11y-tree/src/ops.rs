@@ -134,9 +134,16 @@ pub fn diff(before: &A11ySnapshot, after: &A11ySnapshot) -> TreeDiff {
 /// The regions of secret nodes (marked secret, or a password entry), window-local, as mask
 /// hints for `maskcap`, in tree order.
 pub fn secret_rects(snapshot: &A11ySnapshot) -> Vec<Rect<WindowSpace>> {
-    snapshot
-        .nodes
-        .iter()
+    secret_rects_of(&snapshot.nodes)
+}
+
+/// [`secret_rects`] over any nodes, such as a tree's nodes together with the ones a caller took
+/// out of it.
+pub fn secret_rects_of<'a>(
+    nodes: impl IntoIterator<Item = &'a A11yNode>,
+) -> Vec<Rect<WindowSpace>> {
+    nodes
+        .into_iter()
         .filter(|n| is_secret(n))
         .map(|n| n.bounds)
         .collect()

@@ -102,7 +102,8 @@ pub use progress::{Effect, Look};
 pub use screen::{
     Asking, EXCERPT_CHARS, Excerpt, Family, HiddenKind, MAX_REASONS, PatternCheck, READER_CHARS,
     ReaderMode, ReaderWait, Reason, ScreenCheck, ScreenRead, ScreenText, ScreenTrack,
-    ScreenVerdict, ScreenView, Suspicion, UnseenWhy, WindowKey, Withheld, split_unseen,
+    ScreenVerdict, ScreenView, Suspicion, UnseenWhy, WindowKey, Withheld, secret_masks,
+    split_unseen,
 };
 pub use seams::{
     Clock, GateCheck, GateEvent, GateLink, LinkError, MessageLink, Parts, RecordSink, Seams,
