@@ -164,6 +164,15 @@ impl LeaseControl for CasementDesktop {
         self.leases().check(lease)
     }
 
+    async fn focus(&self, lease: LeaseId) -> Result<(), DesktopError> {
+        self.leases().check(lease)?;
+        self.door
+            .proxy()
+            .focus_lease(lease.0)
+            .await
+            .map_err(protocol)
+    }
+
     async fn glow(&self, _lease: LeaseId, _glow: GlowState) -> Result<(), DesktopError> {
         // The shell's orb is the only glow here.
         Ok(())

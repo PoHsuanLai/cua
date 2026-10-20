@@ -188,10 +188,9 @@ impl<S: Seams> Exec<'_, S> {
         let Some(now) = self.window_now().await else {
             return out.input(RunInput::InjectFailed(SeatError::TargetGone));
         };
-        let now = match self
-            .settled(now, planned.window, takes(&planned.action))
-            .await
-        {
+        let wants = takes(&planned.action);
+        let (now, refocus) = self.refocused(now, planned.window, wants).await;
+        let now = match self.settled(now, planned.window, wants).await {
             (now, Fit::Ready) => now,
             (_, Fit::NotVisible) => {
                 return out.input(RunInput::InjectFailed(SeatError::OutsideLease));
@@ -211,7 +210,8 @@ impl<S: Seams> Exec<'_, S> {
         }
         // Not what the aim was made against (moved, another owner, the focus gone elsewhere):
         // nothing is injected and the run looks again.
-        if let Some(moved) = self.seen.as_ref().and_then(|seen| seen.moved_by(&now)) {
+        let seen = self.seen.clone().map(|seen| seen.after(refocus));
+        if let Some(moved) = seen.as_ref().and_then(|seen| seen.moved_by(&now)) {
             return out.input(RunInput::StateMoved(moved));
         }
         if let Err(error) = self.seam.seat.rebind(lease, now.geometry).await {

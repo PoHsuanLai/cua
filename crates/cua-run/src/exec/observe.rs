@@ -1,6 +1,6 @@
 //! Looking at the window: the tree, the frame, the messages that wait, and the success check.
 
-use super::fit::{Fit, Seen, Takes, fit_of};
+use super::fit::{Fit, Refocus, Seen, Takes, fit_of};
 use seat_input::AgentSeat;
 
 use super::{Exec, Outlet};
@@ -18,7 +18,7 @@ use a11y_tree::{
 };
 use cua_action::{Coord, Point, Rect, Size, WindowSpace};
 use cua_bus::WindowRef;
-use cua_desktop::{Desktop, ToplevelInfo, ToplevelState, WorkspaceShown};
+use cua_desktop::{Desktop, LeaseControl, ToplevelInfo, ToplevelState, WorkspaceShown};
 use docket_core::InboxAsk;
 use maskcap::{CaptureError, CaptureSession, FrameWant, MaskReason, MaskRegion, WholeMask};
 use porter_infer::StepIndex;
@@ -89,6 +89,31 @@ impl<S: Seams> Exec<'_, S> {
             .ok()
             .and_then(|all| all.into_iter().find(|w| w.ident == leased.ident));
         listed.or(Some(leased))
+    }
+
+    /// Keys for a leased window that does not have the focus: the desktop is first asked to
+    /// focus it (casement allows that for a live lease, as the person's own run), and the window
+    /// is read again. A backend that cannot, or refuses, leaves the window as it was and the
+    /// short wait of [`Self::settled`] and its refusal stand.
+    pub(super) async fn refocused(
+        &mut self,
+        now: ToplevelInfo,
+        aimed: Size<WindowSpace>,
+        takes: Takes,
+    ) -> (ToplevelInfo, Refocus) {
+        let isolation = self.seam.seat.caps().isolation;
+        let lease = self.held.as_ref().map(|held| held.grant.id);
+        let Some(lease) = lease.filter(|_| fit_of(&now, aimed, isolation, takes) == Fit::NotFocused)
+        else {
+            return (now, Refocus::Not);
+        };
+        if self.seam.desktop.focus(lease).await.is_err() {
+            return (now, Refocus::Not);
+        }
+        match self.window_now().await {
+            Some(again) => (again, Refocus::Asked),
+            None => (now, Refocus::Not),
+        }
     }
 
     /// The window and its fit for an action aimed at `aimed` that sends what `takes` says. A

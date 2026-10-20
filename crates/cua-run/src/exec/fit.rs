@@ -39,6 +39,18 @@ impl Seen {
         }
     }
 
+    /// The sighting once the run has had the window focused for an action: the focus it was
+    /// seen with is no longer a change to look again for.
+    pub(super) fn after(self, refocus: Refocus) -> Self {
+        match refocus {
+            Refocus::Asked => Self {
+                focus: Focus::Focused,
+                ..self
+            },
+            Refocus::Not => self,
+        }
+    }
+
     /// What about the window is not as it was seen, if anything.
     pub(super) fn moved_by(&self, now: &ToplevelInfo) -> Option<Moved> {
         if self.app != now.app || self.pid != now.pid {
@@ -64,6 +76,15 @@ pub(super) enum Fit {
     Resized,
     /// Another window has the focus, and the seat is the person's.
     NotFocused,
+}
+
+/// Whether the run asked the desktop to focus the leased window before an action.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum Refocus {
+    /// It did, and the desktop took the ask.
+    Asked,
+    /// It did not (the window had the focus, or the action needs none) or the desktop would not.
+    Not,
 }
 
 /// What an action sends: keys go to the focused window, the pointer to the one under it.
@@ -163,6 +184,17 @@ mod tests {
         for (now, want) in table {
             assert_eq!(seen.moved_by(&now), want, "{now:?}");
         }
+    }
+
+    #[test]
+    fn a_window_the_run_focused_is_no_change_but_any_other_is() {
+        let seen = Seen::of(&window(&[]));
+        let now = window(&[ToplevelState::Activated]);
+        assert_eq!(
+            seen.clone().after(Refocus::Not).moved_by(&now),
+            Some(Moved::Focus)
+        );
+        assert_eq!(seen.after(Refocus::Asked).moved_by(&now), None);
     }
 
     #[test]

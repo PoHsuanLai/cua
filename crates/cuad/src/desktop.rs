@@ -82,6 +82,13 @@ impl LeaseControl for SystemDesktop {
         }
     }
 
+    async fn focus(&self, lease: LeaseId) -> Result<(), DesktopError> {
+        match self {
+            SystemDesktop::Absent => Err(DesktopError::NoSuchWindow),
+            SystemDesktop::Casement(desktop) => desktop.focus(lease).await,
+        }
+    }
+
     async fn glow(&self, lease: LeaseId, glow: GlowState) -> Result<(), DesktopError> {
         match self {
             SystemDesktop::Absent => Err(DesktopError::NoSuchWindow),

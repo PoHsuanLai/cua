@@ -202,6 +202,18 @@ and focus are still the one set, so in-place runs only, and the agent workspace 
 `HiddenCaptureWithheld`. The agent seat of its own, compositor masking and the agent Space are
 casement P4.
 
+**The focus check before keys.** Before an action is injected the leased window is read again
+(`exec/fit.rs`, `exec/observe.rs`). On a shared seat an action that sends keys (`takes()` is
+`Keys`: typing, key chords, a click with modifiers) needs the window to be the key window;
+otherwise it is `Fit::NotFocused`. Before that refusal the run asks the desktop to focus the
+leased window (`LeaseControl::focus`; on casement `Compositor1.FocusLease(lease)`, which
+casement allows only for a live lease and answers as the person's own run, so its rule A7 for
+apps is unchanged), reads the window again, then does the short focus wait as before. A
+backend that cannot (any but casement) or that refuses (locked screen, window in the dock)
+keeps the `NotFocused` refusal, and the model is told to click the window. A focus the run
+asked for is not a change to look again for (`Refocus::Asked`); one that came by itself still
+is (`Moved::Focus`). A pointer action asks for no focus: a click is how a window gets it.
+
 **Add a member to `Cua1`.** (1) The method or signal in `cua-dbus` (`manager.rs` or `run.rs`),
 on the proxy and the skeleton; run `cargo test -p cua-dbus`, which prints the new XML; replace
 `dbus/org.quire.Cua1.xml` with it in the same commit; (2) a `CuaMember` and its row in

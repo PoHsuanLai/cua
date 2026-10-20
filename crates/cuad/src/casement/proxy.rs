@@ -18,6 +18,9 @@ pub(super) trait Compositor1 {
     /// 4 touch): the lease number and the client end of an EIS socket.
     fn lease_window(&self, window: &str, devices: u32) -> zbus::Result<(u64, zvariant::OwnedFd)>;
 
+    /// Makes the window `lease` holds the key window (the run is about to send keys).
+    fn focus_lease(&self, lease: u64) -> zbus::Result<()>;
+
     /// Ends a lease and closes its socket.
     fn end_lease(&self, lease: u64) -> zbus::Result<()>;
 }

@@ -20,6 +20,9 @@ pub enum DesktopError {
     /// Another run holds the window or the seat.
     #[error("busy")]
     Busy,
+    /// The backend cannot do that (it cannot be asked to focus a window), or refused it.
+    #[error("not possible here")]
+    Unsupported,
     /// The compositor's answer did not follow the protocol.
     #[error("protocol: {0}")]
     Protocol(String),

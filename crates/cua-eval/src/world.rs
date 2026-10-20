@@ -303,6 +303,10 @@ impl LeaseControl for EvalDesktop {
         self.inner.resume(lease).await
     }
 
+    async fn focus(&self, lease: LeaseId) -> Result<(), DesktopError> {
+        self.inner.focus(lease).await
+    }
+
     async fn glow(&self, lease: LeaseId, glow: GlowState) -> Result<(), DesktopError> {
         self.inner.glow(lease, glow).await
     }

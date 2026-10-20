@@ -297,8 +297,12 @@ fn a_stalled_step_of_taking_the_window_names_itself_and_gives_the_lease_back() {
     }
 }
 
-/// The run on a window without the focus: what reached the seat, and the steps' results.
-fn on_an_unfocused_window(first: CuaAction<WindowSpace>) -> (usize, Vec<String>) {
+/// The run on a window without the focus, on a desktop of `kind`: what reached the seat, the
+/// steps' results and what the desktop was asked.
+fn on_an_unfocused_window(
+    kind: BackendKind,
+    first: CuaAction<WindowSpace>,
+) -> (usize, Vec<String>, Vec<DesktopCall>) {
     let finish = CuaAction::Finish {
         outcome: FinishOutcome::Done,
         summary: Summary::new("Signed in.").unwrap(),
@@ -307,7 +311,7 @@ fn on_an_unfocused_window(first: CuaAction<WindowSpace>) -> (usize, Vec<String>)
     let mut world = new_world(vec![Ok(reply(first)), Ok(reply(finish))]);
     let mut unfocused = window();
     unfocused.state = BTreeSet::new();
-    world.desktop = FakeDesktop::new(BackendKind::KwinStock, vec![unfocused]);
+    world.desktop = FakeDesktop::new(kind, vec![unfocused]);
     world.clock = FixedClock::at(Stamp(0), UnixSeconds(1_700_000_000)).impatient();
     let report = block_on(run_harness_answering(
         new_run(),
@@ -329,7 +333,7 @@ fn on_an_unfocused_window(first: CuaAction<WindowSpace>) -> (usize, Vec<String>)
         .filter(|r| r.kind() == "cua.step")
         .map(|r| format!("{r:?}"))
         .collect();
-    (performed, steps)
+    (performed, steps, world.desktop.calls())
 }
 
 /// On the person's seat keys wait a moment for their window to have the focus; when it never
@@ -337,8 +341,13 @@ fn on_an_unfocused_window(first: CuaAction<WindowSpace>) -> (usize, Vec<String>)
 /// focus (it is how a window gets it) and goes.
 #[test]
 fn keys_need_the_focus_on_the_persons_seat_and_a_click_does_not() {
-    let (performed, steps) = on_an_unfocused_window(cua_fake::scene::ctrl_n());
+    let (performed, steps, calls) =
+        on_an_unfocused_window(BackendKind::KwinStock, cua_fake::scene::ctrl_n());
     assert_eq!(performed, 0, "no key reached a window without the focus");
+    assert!(
+        !calls.iter().any(|c| matches!(c, DesktopCall::Focused(_))),
+        "a backend that cannot focus a window is not asked to"
+    );
     assert!(
         steps.iter().any(|s| s.contains("NotFocused")),
         "refused as not focused: {steps:?}"
@@ -350,6 +359,23 @@ fn keys_need_the_focus_on_the_persons_seat_and_a_click_does_not() {
         count: ClickCount::One,
         mods: BTreeSet::new(),
     };
-    let (performed, _) = on_an_unfocused_window(click);
+    let (performed, ..) = on_an_unfocused_window(BackendKind::KwinStock, click);
     assert_eq!(performed, 1, "the click went");
+}
+
+/// On casement the run asks for the focus of its leased window before keys, instead of waiting
+/// for a focus that never comes: the keys land, and a click (which needs no focus) asks nothing.
+#[test]
+fn keys_for_an_unfocused_leased_window_ask_casement_to_focus_it_and_land() {
+    let (performed, steps, calls) =
+        on_an_unfocused_window(BackendKind::Casement, cua_fake::scene::ctrl_n());
+    assert_eq!(performed, 1, "the keys landed");
+    assert!(
+        calls.iter().any(|c| matches!(c, DesktopCall::Focused(_))),
+        "the window was asked to take the focus: {calls:?}"
+    );
+    assert!(
+        !steps.iter().any(|s| s.contains("NotFocused")),
+        "not refused: {steps:?}"
+    );
 }

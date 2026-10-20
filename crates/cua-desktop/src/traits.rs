@@ -45,6 +45,15 @@ pub trait LeaseControl: Send + Sync {
     /// Lets input flow again.
     fn resume(&self, lease: LeaseId) -> impl Future<Output = Result<(), DesktopError>> + Send;
 
+    /// Asks the desktop to make the leased window the key window, so keys land in it. A
+    /// backend that cannot (or that refuses: the lease is not live, the screen is locked, the
+    /// window is in the dock) says [`DesktopError::Unsupported`] or its own error, and the run
+    /// keeps its refusal of keys for a window that does not have the focus.
+    fn focus(&self, lease: LeaseId) -> impl Future<Output = Result<(), DesktopError>> + Send {
+        let _ = lease;
+        async { Err(DesktopError::Unsupported) }
+    }
+
     /// Shows what the run is doing.
     fn glow(
         &self,

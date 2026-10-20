@@ -3,7 +3,8 @@
 use crate::eis::FakeEis;
 use cua_desktop::{
     BackendCaps, BackendKind, Desktop, DesktopError, DesktopEvent, EiOrigin, GlowState,
-    LeaseControl, LeaseGrant, LeaseId, LeaseRequest, Leased, SeatIsolation, Suspend, ToplevelInfo,
+    LeaseControl, LeaseGrant, LeaseId, LeaseRequest, Leased, SeatIsolation, Suspend, ToplevelIdent,
+    ToplevelInfo, ToplevelState,
 };
 use std::collections::VecDeque;
 use std::sync::Mutex;
@@ -27,6 +28,8 @@ pub enum DesktopCall {
     Suspended(LeaseId, Suspend),
     /// A lease was resumed.
     Resumed(LeaseId),
+    /// The lease's window was asked to take the focus.
+    Focused(LeaseId),
     /// The glow changed.
     Glow(LeaseId, GlowState),
 }
@@ -35,7 +38,8 @@ pub enum DesktopCall {
 #[derive(Debug)]
 pub struct FakeDesktop {
     caps: BackendCaps,
-    windows: Vec<ToplevelInfo>,
+    windows: Mutex<Vec<ToplevelInfo>>,
+    held: Mutex<Vec<(LeaseId, ToplevelIdent)>>,
     events: Mutex<Events>,
     calls: Mutex<Vec<DesktopCall>>,
     next_lease: Mutex<u64>,
@@ -46,7 +50,8 @@ impl FakeDesktop {
     pub fn new(kind: BackendKind, windows: Vec<ToplevelInfo>) -> Self {
         Self {
             caps: BackendCaps::of(kind),
-            windows,
+            windows: Mutex::new(windows),
+            held: Mutex::new(Vec::new()),
             events: Mutex::new(Events::default()),
             calls: Mutex::new(Vec::new()),
             next_lease: Mutex::new(1),
@@ -78,7 +83,7 @@ impl Desktop for FakeDesktop {
     }
 
     async fn windows(&self) -> Result<Vec<ToplevelInfo>, DesktopError> {
-        Ok(self.windows.clone())
+        Ok(self.windows.lock().expect("fake desktop lock").clone())
     }
 
     async fn next_event(&self) -> DesktopEvent {
@@ -100,10 +105,13 @@ impl LeaseControl for FakeDesktop {
     async fn lease(&self, req: LeaseRequest) -> Result<Leased, DesktopError> {
         let info = self
             .windows
+            .lock()
+            .expect("fake desktop lock")
             .iter()
             .find(|w| w.ident == req.window)
+            .cloned()
             .ok_or(DesktopError::NoSuchWindow)?;
-        req.check(info)?;
+        req.check(&info)?;
         let mode = cua_run::mode_support(&self.caps, req.mode);
         if let cua_bus::ModeSupport::Unsupported(_) = mode {
             return Err(DesktopError::ModeUnsupported(req.mode));
@@ -120,11 +128,15 @@ impl LeaseControl for FakeDesktop {
             SeatIsolation::AgentSeat => EiOrigin::LeaseSocket,
             SeatIsolation::SharedSeat => EiOrigin::SenderSocket,
         };
+        self.held
+            .lock()
+            .expect("fake desktop lock")
+            .push((id, info.ident.clone()));
         self.note(DesktopCall::Leased(id));
         Ok(Leased {
             grant: LeaseGrant {
                 id,
-                window: info.clone(),
+                window: info,
                 seat: self.caps.seat,
                 ei,
             },
@@ -144,6 +156,31 @@ impl LeaseControl for FakeDesktop {
 
     async fn resume(&self, lease: LeaseId) -> Result<(), DesktopError> {
         self.note(DesktopCall::Resumed(lease));
+        Ok(())
+    }
+
+    /// Only a casement desktop can be asked: the leased window becomes the activated one.
+    async fn focus(&self, lease: LeaseId) -> Result<(), DesktopError> {
+        if self.caps.kind != BackendKind::Casement {
+            return Err(DesktopError::Unsupported);
+        }
+        let ident = {
+            let held = self.held.lock().expect("fake desktop lock");
+            let (_, ident) = held
+                .iter()
+                .find(|(id, _)| *id == lease)
+                .ok_or(DesktopError::NoSuchWindow)?;
+            ident.clone()
+        };
+        let mut windows = self.windows.lock().expect("fake desktop lock");
+        for window in windows.iter_mut() {
+            match window.ident == ident {
+                true => window.state.insert(ToplevelState::Activated),
+                false => window.state.remove(&ToplevelState::Activated),
+            };
+        }
+        drop(windows);
+        self.note(DesktopCall::Focused(lease));
         Ok(())
     }
 
