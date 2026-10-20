@@ -116,10 +116,11 @@ async fn run() -> Result<(), Fatal> {
     // system's `cuad-callers.toml` with the person's laid over it.
     let table = read_callers(&env).map_err(|e| Fatal::Config(e.to_string()))?;
     let who = caller_identity(connection.clone(), table, &env);
-    let _serving = serve_on_as(&connection, supervisor, who).await?;
-
+    // SIGTERM is caught before the names are taken: whoever sees the name may stop the daemon.
     let mut terminate =
         signal(SignalKind::terminate()).map_err(|e| Fatal::Signal(e.to_string()))?;
+    let _serving = serve_on_as(&connection, supervisor, who).await?;
+
     let mut messages = zbus::MessageStream::from(&connection);
     tokio::select! {
         () = async { while messages.next().await.is_some() {} } => {}
