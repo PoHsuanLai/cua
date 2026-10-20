@@ -57,6 +57,10 @@ fn info_of(state: &DesktopState, top: &Toplevel) -> Option<ToplevelInfo> {
         workspace: workspace_of(state, window),
         state: top.flags.iter().filter_map(state_of).collect(),
         trust: trust_of(&top.app_id),
+        parent: top
+            .parent
+            .and_then(|key| state.toplevels.get(key))
+            .and_then(ident_of),
     })
 }
 

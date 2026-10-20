@@ -1,6 +1,6 @@
 //! Capture that returns the frames it was given.
 
-use cua_desktop::LeaseGrant;
+use cua_desktop::{LeaseGrant, ToplevelIdent};
 use maskcap::{
     CaptureError, CaptureSession, DamageAt, Frame, FrameWant, MaskRegion, WindowCapture,
 };
@@ -23,6 +23,7 @@ pub struct FakeCapture {
     damage: Vec<DamageAt>,
     refuse: Mutex<Option<CaptureError>>,
     stall: Mutex<Stalls>,
+    opened: Mutex<Vec<ToplevelIdent>>,
 }
 
 impl FakeCapture {
@@ -33,7 +34,13 @@ impl FakeCapture {
             damage,
             refuse: Mutex::new(None),
             stall: Mutex::new(Stalls::Never),
+            opened: Mutex::new(Vec::new()),
         }
+    }
+
+    /// The windows a session was opened on, in order.
+    pub fn opened(&self) -> Vec<ToplevelIdent> {
+        self.opened.lock().expect("fake capture lock").clone()
     }
 
     /// Makes the next `open` wait for ever, like a compositor that never sends the constraints.
@@ -66,7 +73,10 @@ impl WindowCapture for FakeCapture {
     type Session = FakeCaptureSession;
 
     async fn open(&self, lease: &LeaseGrant) -> Result<FakeCaptureSession, CaptureError> {
-        let _ = lease;
+        self.opened
+            .lock()
+            .expect("fake capture lock")
+            .push(lease.window.ident.clone());
         let stalled = std::mem::replace(
             &mut *self.stall.lock().expect("fake capture lock"),
             Stalls::Never,

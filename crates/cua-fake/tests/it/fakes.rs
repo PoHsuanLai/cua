@@ -71,6 +71,7 @@ fn window(ident: &str, trust: WindowTrust) -> ToplevelInfo {
         },
         state: BTreeSet::new(),
         trust,
+        parent: None,
     }
 }
 

@@ -10,6 +10,7 @@
 mod cost;
 mod deadline;
 mod fit;
+mod front;
 mod observe;
 mod phase;
 mod session;
@@ -203,7 +204,7 @@ impl<'a, S: Seams> Exec<'a, S> {
     pub async fn next_damage(&mut self) -> Option<DamageAt> {
         use maskcap::CaptureSession;
         match self.held.as_mut() {
-            Some(held) => held.capture.damage().await.ok(),
+            Some(held) => held.session().damage().await.ok(),
             None => None,
         }
     }

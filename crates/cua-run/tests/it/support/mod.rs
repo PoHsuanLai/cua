@@ -108,6 +108,7 @@ pub fn window_info() -> ToplevelInfo {
         },
         state: BTreeSet::new(),
         trust: WindowTrust::Native,
+        parent: None,
     }
 }
 

@@ -70,6 +70,7 @@ pub fn window() -> ToplevelInfo {
         // The focused window: input only goes to a window that has the focus on a shared seat.
         state: BTreeSet::from([cua_desktop::ToplevelState::Activated]),
         trust: WindowTrust::Native,
+        parent: None,
     }
 }
 

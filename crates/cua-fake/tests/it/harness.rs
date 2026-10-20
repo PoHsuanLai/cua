@@ -72,6 +72,7 @@ fn window() -> cua_desktop::ToplevelInfo {
         },
         state: BTreeSet::from([cua_desktop::ToplevelState::Activated]),
         trust: WindowTrust::Native,
+        parent: None,
     }
 }
 
@@ -379,4 +380,61 @@ fn keys_for_an_unfocused_leased_window_ask_casement_to_focus_it_and_land() {
         "not refused: {steps:?}"
     );
     assert_eq!(performed, 1, "the keys landed: {steps:?}");
+}
+
+/// A dialog the leased window opened (a file chooser) is what the run looks at and clicks in:
+/// the capture opens a session on it and the click is aimed in its frame. Another window of the
+/// app is not followed.
+#[test]
+fn the_run_looks_at_and_clicks_in_the_dialog_its_window_opened() {
+    let click = CuaAction::Click {
+        at: Target::Point(Point::new(Coord(10), Coord(10))),
+        button: Button::Left,
+        count: ClickCount::One,
+        mods: BTreeSet::new(),
+    };
+    let finish = CuaAction::Finish {
+        outcome: FinishOutcome::Done,
+        summary: Summary::new("Opened.").unwrap(),
+        extracted: vec![],
+    };
+    let mut world = new_world(vec![Ok(reply(click)), Ok(reply(finish))]);
+    let mut dialog = window();
+    dialog.ident = ToplevelIdent::parse("d1").unwrap();
+    dialog.title = cua_desktop::WindowTitle("Open File".into());
+    dialog.geometry.x = cua_desktop::GlobalCoord(200);
+    dialog.geometry.y = cua_desktop::GlobalCoord(100);
+    dialog.parent = Some(ToplevelIdent::parse("w1").unwrap());
+    let mut other = window();
+    other.ident = ToplevelIdent::parse("w2").unwrap();
+    let mut behind = window();
+    behind.state = BTreeSet::new();
+    world.desktop = FakeDesktop::new(BackendKind::Casement, vec![behind, dialog.clone(), other]);
+    let report = block_on(run_harness_answering(
+        new_run(),
+        &mut world,
+        vec![FORCED_YES.to_owned()],
+    ))
+    .expect("the run ends");
+
+    assert_eq!(report.run.phase, RunPhase::Finished(CuaOutcome::Done));
+    let opened: Vec<String> = world
+        .capture
+        .opened()
+        .iter()
+        .map(|w| w.as_str().to_owned())
+        .collect();
+    assert_eq!(opened, ["w1", "d1"], "the leased window, then its dialog");
+    let performed = world
+        .seat
+        .events()
+        .into_iter()
+        .filter(|e| matches!(e, SeatEvent::Performed(..)))
+        .count();
+    assert_eq!(performed, 1, "the click went");
+    assert_eq!(
+        world.seat.rebinds().last().map(|(_, frame)| *frame),
+        Some(dialog.geometry),
+        "aimed in the dialog's frame"
+    );
 }

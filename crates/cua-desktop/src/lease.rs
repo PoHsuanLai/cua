@@ -148,6 +148,7 @@ mod tests {
             },
             state: BTreeSet::new(),
             trust,
+            parent: None,
         }
     }
 

@@ -12,7 +12,8 @@ use crate::turn::FrameAttachment;
 use cua_desktop::{
     DesktopError, GlowState, LeaseControl, LeaseGrant, LeaseId, LeaseRequest, Stamp, Suspend,
 };
-use maskcap::WindowCapture;
+use cua_desktop::{ToplevelIdent, ToplevelInfo};
+use maskcap::{CaptureError, WindowCapture};
 use porter_infer::{CuaBegin, CuaStepRequest};
 use seat_input::{AgentSeat, Emulation, InputOp, PlannedAction, SeatError, plan};
 
@@ -20,6 +21,38 @@ use seat_input::{AgentSeat, Emulation, InputOp, PlannedAction, SeatError, plan};
 pub(super) struct Held<S: Seams> {
     pub grant: LeaseGrant,
     pub capture: <S::Capture as WindowCapture>::Session,
+    /// The session over the dialog the window opened, while one is in front of it.
+    pub dialog: Option<Dialog<S>>,
+}
+
+/// A dialog in front of the leased window, and the capture session over it.
+pub(super) struct Dialog<S: Seams> {
+    ident: ToplevelIdent,
+    capture: <S::Capture as WindowCapture>::Session,
+}
+
+/// Which window the capture follows.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum Following {
+    /// The leased window itself.
+    Window,
+    /// A dialog it opened.
+    Dialog,
+}
+
+impl<S: Seams> Held<S> {
+    /// The session over the window in front: the dialog's while there is one.
+    pub(super) fn session(&mut self) -> &mut <S::Capture as WindowCapture>::Session {
+        match &mut self.dialog {
+            Some(dialog) => &mut dialog.capture,
+            None => &mut self.capture,
+        }
+    }
+
+    /// The dialog's session ends (it closed): the capture is back on the window.
+    pub(super) fn unfollow(&mut self) {
+        self.dialog = None;
+    }
 }
 
 /// Forwards what a model says while it thinks to the run, as it says it.
@@ -103,6 +136,7 @@ impl<S: Seams> Exec<'_, S> {
                 self.held = Some(Held {
                     grant: grant.clone(),
                     capture,
+                    dialog: None,
                 });
                 out.input(RunInput::Leased(grant));
             }
@@ -146,6 +180,38 @@ impl<S: Seams> Exec<'_, S> {
             step,
             progress,
         });
+    }
+
+    /// Points the capture at `front`, the window in front of the lease: the leased window's own
+    /// session, or a session opened on the dialog it opened (ended once the dialog is not in
+    /// front any more).
+    pub(super) async fn follow(&mut self, front: &ToplevelInfo) -> Result<Following, CaptureError> {
+        let held = self.held.as_mut().ok_or(CaptureError::SourceGone)?;
+        if front.ident == held.grant.window.ident {
+            held.unfollow();
+            return Ok(Following::Window);
+        }
+        if held.dialog.as_ref().is_some_and(|d| d.ident == front.ident) {
+            return Ok(Following::Dialog);
+        }
+        let grant = LeaseGrant {
+            window: front.clone(),
+            ..held.grant.clone()
+        };
+        let capture =
+            match bounded(self.seam.clock, PHASE_LIMIT, self.seam.capture.open(&grant)).await {
+                Bound::Done(opened) => opened?,
+                Bound::TimedOut => {
+                    return Err(CaptureError::Protocol(
+                        "the dialog's capture did not open in time".to_owned(),
+                    ));
+                }
+            };
+        held.dialog = Some(Dialog {
+            ident: front.ident.clone(),
+            capture,
+        });
+        Ok(Following::Dialog)
     }
 
     pub(super) async fn release(&mut self, lease: LeaseId) {

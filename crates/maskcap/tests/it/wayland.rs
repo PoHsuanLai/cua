@@ -41,6 +41,7 @@ fn grant(ident: &str) -> LeaseGrant {
             },
             state: BTreeSet::new(),
             trust: WindowTrust::Native,
+            parent: None,
         },
         seat: SeatIsolation::SharedSeat,
         ei: EiOrigin::SenderSocket,

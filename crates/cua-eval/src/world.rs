@@ -269,6 +269,7 @@ fn window_of(stage: &Stage, ident: &ToplevelIdent) -> Result<ToplevelInfo, Deskt
         },
         state: std::collections::BTreeSet::from([cua_desktop::ToplevelState::Activated]),
         trust: cua_action::WindowTrust::Native,
+        parent: None,
     })
 }
 

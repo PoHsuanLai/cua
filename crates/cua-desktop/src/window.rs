@@ -108,4 +108,7 @@ pub struct ToplevelInfo {
     pub state: BTreeSet<ToplevelState>,
     /// How far cua may trust it; `Shell` windows are never leasable.
     pub trust: WindowTrust,
+    /// The window that opened it (a dialog's window), when the compositor says.
+    #[serde(default)]
+    pub parent: Option<ToplevelIdent>,
 }

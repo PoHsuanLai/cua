@@ -9,12 +9,13 @@ use super::observe::visibility_of;
 use crate::machine::input::Moved;
 use crate::observation::{Focus, Visibility};
 use cua_action::{Coord, CuaAction, Size, WindowSpace};
-use cua_desktop::{GlobalRect, Pid, SeatIsolation, ToplevelInfo, ToplevelState};
+use cua_desktop::{GlobalRect, Pid, SeatIsolation, ToplevelIdent, ToplevelInfo, ToplevelState};
 use porter_core::AppName;
 
 /// The window as the last observation saw it: what an action was aimed at.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct Seen {
+    ident: ToplevelIdent,
     app: AppName,
     pid: Pid,
     geometry: GlobalRect,
@@ -32,6 +33,7 @@ fn focus_of(window: &ToplevelInfo) -> Focus {
 impl Seen {
     pub(super) fn of(window: &ToplevelInfo) -> Self {
         Self {
+            ident: window.ident.clone(),
             app: window.app.clone(),
             pid: window.pid,
             geometry: window.geometry,
@@ -53,7 +55,8 @@ impl Seen {
 
     /// What about the window is not as it was seen, if anything.
     pub(super) fn moved_by(&self, now: &ToplevelInfo) -> Option<Moved> {
-        if self.app != now.app || self.pid != now.pid {
+        // Another window in front (a dialog opened or closed) is another window.
+        if self.ident != now.ident || self.app != now.app || self.pid != now.pid {
             Some(Moved::Identity)
         } else if self.geometry != now.geometry {
             Some(Moved::Geometry)
@@ -165,6 +168,7 @@ mod tests {
             },
             state: state.iter().copied().collect::<BTreeSet<_>>(),
             trust: cua_desktop::WindowTrust::Native,
+            parent: None,
         }
     }
 

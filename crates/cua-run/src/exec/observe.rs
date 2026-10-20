@@ -1,8 +1,10 @@
 //! Looking at the window: the tree, the frame, the messages that wait, and the success check.
 
 use super::fit::{Fit, Refocus, Seen, Takes, fit_of};
+use super::front::front_of;
 use seat_input::AgentSeat;
 
+use super::session::Following;
 use super::{Exec, Outlet};
 use crate::machine::effect::HintSource;
 use crate::machine::input::{CheckResult, RunInput};
@@ -21,7 +23,7 @@ use cua_action::{Coord, Point, Rect, Size, WindowSpace};
 use cua_bus::WindowRef;
 use cua_desktop::{Desktop, LeaseControl, ToplevelInfo, ToplevelState, WorkspaceShown};
 use docket_core::InboxAsk;
-use maskcap::{CaptureError, CaptureSession, FrameWant, MaskReason, MaskRegion, WholeMask};
+use maskcap::{CaptureError, CaptureSession, Frame, FrameWant, MaskReason, MaskRegion, WholeMask};
 use porter_infer::StepIndex;
 use prov::{AgentRef, Label, Labelled, Source};
 
@@ -29,6 +31,8 @@ use prov::{AgentRef, Label, Labelled, Source};
 const FOCUS_TRIES: u32 = 10;
 /// The pause between those reads: about half a second in all.
 const FOCUS_POLL: std::time::Duration = std::time::Duration::from_millis(50);
+/// How many times a frame is taken again after the dialog in front closed under it.
+const DIALOG_RETRIES: u32 = 1;
 
 /// What the first effects of a look found, kept until the capture builds the observation.
 #[derive(Debug)]
@@ -81,17 +85,12 @@ pub(super) fn visibility_of(info: &ToplevelInfo) -> Visibility {
 }
 
 impl<S: Seams> Exec<'_, S> {
-    /// The window as the desktop reports it now; the lease's own record when it is not listed.
+    /// The window in front of the lease as the desktop reports it now (the leased window, or
+    /// the dialog it opened: [`front_of`]); the lease's own record when it is not listed.
     pub(super) async fn window_now(&mut self) -> Option<ToplevelInfo> {
         let leased = self.held.as_ref()?.grant.window.clone();
-        let listed = self
-            .seam
-            .desktop
-            .windows()
-            .await
-            .ok()
-            .and_then(|all| all.into_iter().find(|w| w.ident == leased.ident));
-        listed.or(Some(leased))
+        let all = self.seam.desktop.windows().await.unwrap_or_default();
+        Some(front_of(&leased.ident, &all).cloned().unwrap_or(leased))
     }
 
     /// Keys for a leased window that does not have the focus: the desktop is first asked to
@@ -244,23 +243,41 @@ impl<S: Seams> Exec<'_, S> {
         }
     }
 
+    /// The window in front and a frame of it. A dialog that closed between the read and the
+    /// frame is not the run's window going away: the window is read once more and the frame
+    /// taken of what is in front then.
+    async fn framed(
+        &mut self,
+        want: FrameWant,
+        source: HintSource,
+    ) -> Result<(ToplevelInfo, Frame, Option<MaskRegion>), CaptureError> {
+        let mut again = DIALOG_RETRIES;
+        loop {
+            let info = self.window_now().await.ok_or(CaptureError::SourceGone)?;
+            let mut hints = self.hints_of(source);
+            let blackout = self.blackout_of(&info);
+            hints.extend(blackout);
+            let following = self.follow(&info).await?;
+            let held = self.held.as_mut().ok_or(CaptureError::SourceGone)?;
+            match held.session().frame(want, &hints).await {
+                Ok(frame) => return Ok((info, frame, blackout)),
+                Err(CaptureError::SourceGone) if following == Following::Dialog && again > 0 => {
+                    again -= 1;
+                    held.unfollow();
+                }
+                Err(error) => return Err(error),
+            }
+        }
+    }
+
     pub(super) async fn capture(
         &mut self,
         want: FrameWant,
         hints: HintSource,
         out: &mut impl Outlet,
     ) {
-        let Some(info) = self.window_now().await else {
-            return out.input(RunInput::CaptureFailed(CaptureError::SourceGone));
-        };
-        let mut hints = self.hints_of(hints);
-        let blackout = self.blackout_of(&info);
-        hints.extend(blackout);
-        let Some(held) = self.held.as_mut() else {
-            return out.input(RunInput::CaptureFailed(CaptureError::SourceGone));
-        };
-        let mut frame = match held.capture.frame(want, &hints).await {
-            Ok(frame) => frame,
+        let (info, mut frame, blackout) = match self.framed(want, hints).await {
+            Ok(framed) => framed,
             Err(error) => return out.input(RunInput::CaptureFailed(error)),
         };
         if blackout.is_some() {
