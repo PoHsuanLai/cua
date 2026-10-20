@@ -94,7 +94,7 @@ only; the pure set never reaches an effect crate; `wayland-client` is behind the
 | `cua-eval` | `surface/{def, state, render, access}`, `keys`, `stage`, `world`, `gate`, `script`, `task`, `corpus`, `verdict`, `run/{arena, timed, record}`, `eval`, `metrics`, `report`, `live`, `main` |
 | `cua-eval-cloud` | `watch`, `request`, `entry`, `isolation`, `provider`, `main` |
 | `cua-host` | `lock`, `clock`, `config`, `guard`, `gate`, `links`, `settings` (`keys`, `apps`, `read`, `locate`) < `supervisor`, `drive`, `events` |
-| `cuad` | `backend`, `model`, `connect`, `provider`, `reach`, `watch` < `bus`, `desktop`, `system`, `serve` |
+| `cuad` | `backend`, `model`, `connect`, `provider`, `reach`, `watch`, `casement/{leases, map, proxy, watch}` < `bus`, `desktop`, `system`, `serve` |
 
 ## 3. One home per concept
 
@@ -187,7 +187,20 @@ observation, so no effect of a look follows it.
 
 **Add a backend.** A `BackendKind` variant and its row in `BackendCaps::of`; its rows in the
 `mode_support` table test; a `CaptureKind` row in `cuad::capture_kind`; the `Desktop` and
-`LeaseControl` implementation behind a feature of `cua-desktop`.
+`LeaseControl` implementation behind a feature of `cua-desktop`, or, for a compositor with a
+bus door of its own, a module of `cuad` (`casement`) with a variant of `SystemDesktop`.
+
+**The casement backend** (`BackendKind::Casement`, `cuad::CasementDesktop`) is the interim one.
+`Reached::find` takes it when `org.quire.Compositor1` has an owner on the session bus (or when
+`BackendChoice::Only(Casement)` forces it, and then fails if the name is absent). cuad asks
+`Connect("agent")` twice: one Wayland connection feeds `desktop-client` (windows, geometry,
+Spaces; on its own thread, published to the async side), the other is capture's (stock toplevel
+source, masked in cuad). A lease is `LeaseWindow(identifier, 7)`: the reply's socket is an EIS
+socket (`EiOrigin::LeaseSocket`) whose input reaches only that window and its popups, and
+`EndLease` gives it back. It is a shared seat (`SeatIsolation::SharedSeat`): the person's cursor
+and focus are still the one set, so in-place runs only, and the agent workspace is refused with
+`HiddenCaptureWithheld`. The agent seat of its own, compositor masking and the agent Space are
+casement P4.
 
 **Add a member to `Cua1`.** (1) The method or signal in `cua-dbus` (`manager.rs` or `run.rs`),
 on the proxy and the skeleton; run `cargo test -p cua-dbus`, which prints the new XML; replace

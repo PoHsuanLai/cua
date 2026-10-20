@@ -649,3 +649,21 @@ over `ValueSchema::Choice([clear, instructions])`); no caller row, because infer
 a caller row for cuad's unit in `readerd-callers.toml` (or no row if intentd keeps the call). (a)
 needs: docket pin bump, `docket-reader` in `[workspace.dependencies]`, and cuad's
 `ReaderMode` switch (a `cua.screen_reader` setting, off by default).
+
+## The casement desktop backend (lane casdesk, 2026-10-20)
+
+- `BackendKind::Casement` is an interim backend: lease-scoped input on a shared seat over
+  `Compositor1.LeaseWindow` (agent tier: window identifier and device set 7 in, lease number and
+  EIS socket out; `EndLease` gives it back; the lease ends with the window or with cuad's bus
+  connection). Windows come from `desktop-client` on an agent connection (`Connect("agent")`).
+  Its row: masking `Cuad` (casement does not mask yet), consent `CuadSuspendsInput`, hidden
+  capture `Withheld` (a window on another Space is not rendered), glow `ShellOnly`, seat
+  `SharedSeat`; so `in_place` is `hands_off` and the agent workspace is
+  `unsupported:hidden_capture_withheld`.
+- Not built, and still casement P4: the agent seat of its own (own cursor and focus, so
+  `AgentSeat` and `Full` in place), masking in the compositor (`QuireMasked`), the agent Space,
+  suspend, resume and glow in the compositor. The pid of a window is unknown (`Pid(0)`): no
+  protocol read here says which process owns it.
+- Assumption to check against casement: the lease socket's EI region is taken as window-local
+  (`EiOrigin::LeaseSocket`, identity mapping); if casement advertises the output's global region
+  the origin is `SenderSocket`.
