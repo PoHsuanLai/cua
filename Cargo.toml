@@ -41,6 +41,8 @@ cua-eval-cloud        = { path = "crates/cua-eval-cloud" }
 
 # The one home of every quire_*_v1 protocol: the XML, the vocabulary, the bindings (by git at a pinned rev; a local checkout overrides it through a [patch], FINDINGS.md).
 casement-protocols    = { git = "https://github.com/PoHsuanLai/casement-protocols", rev = "890a4632c8d10705c7003b78b312b5c024c4f3a9" }
+# cuad's casement backend: the window model over the agent connection (the `client` feature binds the globals).
+desktop-client        = { git = "https://github.com/PoHsuanLai/casement-protocols", rev = "890a4632c8d10705c7003b78b312b5c024c4f3a9", features = ["client"] }
 
 # stoker's frozen interfaces, by git at a pinned rev (quire
 # CONSUMING.md section 1). stoker has no cua dependency, so there is no cycle.

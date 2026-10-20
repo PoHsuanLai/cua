@@ -6,7 +6,7 @@
 //! `org.quire.IntentProvider1` as `org.quire.Cua` with one action, `cua.run.start` ([`CuaProvider`]).
 //!
 //! Backends are closed sets: [`SeatBackend`] (`Ei`), [`CaptureBackend`] (`StockToplevel`,
-//! `QuireMasked`), and [`cua_desktop::BackendKind`] (`KwinStock`).
+//! `QuireMasked`), and [`cua_desktop::BackendKind`] (`KwinStock`, `Casement`).
 //! On a stock compositor masking is cuad's (`MaskReport::applied_by = Cuad`) and the consent
 //! guard is cuad stopping its own input; the fork moves both into the compositor.
 //!
@@ -25,6 +25,7 @@
 mod backend;
 mod bus;
 mod callers;
+mod casement;
 mod connect;
 mod desktop;
 mod frame_fd;
@@ -42,6 +43,7 @@ pub use callers::{
     FILE as CALLERS_FILE, SHELL_BUS, classify, identity as caller_identity, read as read_callers,
     shipped as shipped_callers,
 };
+pub use casement::{CasementDesktop, Door};
 pub use connect::Links;
 pub use cua_host::{
     A11yChoice, AppAllow, AppRule, Apps, BackendChoice, ConfigError, CuaSettings, CuadConfig,
@@ -58,5 +60,5 @@ pub use provider::{
 };
 pub use reach::{follow_settings, reach_json};
 pub use serve::{ServeError, Serving, serve, serve_on, serve_on_as, serve_on_with};
-pub use system::{SystemSeams, WaylandPair};
+pub use system::{ReachError, Reached, SystemSeams, WaylandPair};
 pub use watch::{DEBOUNCE, SettingsWatch, WatchState};

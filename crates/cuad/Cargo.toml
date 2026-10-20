@@ -28,6 +28,7 @@ fixture-callers = ["docket-dbus/fixture-callers"]
 
 [dependencies]
 cua-desktop = { workspace = true }
+desktop-client = { workspace = true }
 maskcap = { workspace = true, features = ["wayland"] }
 seat-input = { workspace = true, features = ["ei"] }
 a11y-tree = { workspace = true, features = ["atspi"] }

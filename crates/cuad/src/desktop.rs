@@ -1,6 +1,7 @@
 //! The desktop and the accessibility source of the running daemon, each with the case where
 //! there is nothing to reach: cuad still starts, answers the bus, and says what is missing.
 
+use crate::casement::CasementDesktop;
 use a11y_tree::{A11yError, A11ySnapshot, A11ySource, A11yTarget, AtspiSource, NodeBudget};
 use cua_desktop::{
     BackendCaps, BackendKind, Desktop, DesktopError, DesktopEvent, GlowState, LeaseControl,
@@ -13,6 +14,8 @@ pub enum SystemDesktop {
     /// No compositor backend is built: `Backend` reads `none`, no window is listed and no lease
     /// is granted.
     Absent,
+    /// casement: windows from its desktop protocols and a lease per window over `Compositor1`.
+    Casement(CasementDesktop),
 }
 
 fn nobody() -> DesktopError {
@@ -24,56 +27,65 @@ impl Desktop for SystemDesktop {
         match self {
             // Never offered (`backend` is `None`); a value is needed all the same.
             SystemDesktop::Absent => BackendCaps::of(BackendKind::KwinStock),
+            SystemDesktop::Casement(desktop) => desktop.caps(),
         }
     }
 
     fn backend(&self) -> Option<BackendKind> {
         match self {
             SystemDesktop::Absent => None,
+            SystemDesktop::Casement(desktop) => desktop.backend(),
         }
     }
 
     async fn windows(&self) -> Result<Vec<ToplevelInfo>, DesktopError> {
         match self {
             SystemDesktop::Absent => Err(nobody()),
+            SystemDesktop::Casement(desktop) => desktop.windows().await,
         }
     }
 
     async fn next_event(&self) -> DesktopEvent {
         match self {
             SystemDesktop::Absent => std::future::pending().await,
+            SystemDesktop::Casement(desktop) => desktop.next_event().await,
         }
     }
 }
 
 impl LeaseControl for SystemDesktop {
-    async fn lease(&self, _req: LeaseRequest) -> Result<Leased, DesktopError> {
+    async fn lease(&self, req: LeaseRequest) -> Result<Leased, DesktopError> {
         match self {
             SystemDesktop::Absent => Err(nobody()),
+            SystemDesktop::Casement(desktop) => desktop.lease(req).await,
         }
     }
 
-    async fn release(&self, _lease: LeaseId) -> Result<(), DesktopError> {
+    async fn release(&self, lease: LeaseId) -> Result<(), DesktopError> {
         match self {
             SystemDesktop::Absent => Ok(()),
+            SystemDesktop::Casement(desktop) => desktop.release(lease).await,
         }
     }
 
-    async fn suspend(&self, _lease: LeaseId, _why: Suspend) -> Result<(), DesktopError> {
+    async fn suspend(&self, lease: LeaseId, why: Suspend) -> Result<(), DesktopError> {
         match self {
             SystemDesktop::Absent => Err(DesktopError::NoSuchWindow),
+            SystemDesktop::Casement(desktop) => desktop.suspend(lease, why).await,
         }
     }
 
-    async fn resume(&self, _lease: LeaseId) -> Result<(), DesktopError> {
+    async fn resume(&self, lease: LeaseId) -> Result<(), DesktopError> {
         match self {
             SystemDesktop::Absent => Err(DesktopError::NoSuchWindow),
+            SystemDesktop::Casement(desktop) => desktop.resume(lease).await,
         }
     }
 
-    async fn glow(&self, _lease: LeaseId, _glow: GlowState) -> Result<(), DesktopError> {
+    async fn glow(&self, lease: LeaseId, glow: GlowState) -> Result<(), DesktopError> {
         match self {
             SystemDesktop::Absent => Err(DesktopError::NoSuchWindow),
+            SystemDesktop::Casement(desktop) => desktop.glow(lease, glow).await,
         }
     }
 }
