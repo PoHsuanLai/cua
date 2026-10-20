@@ -42,6 +42,9 @@ const LOGICAL: Scale120 = Scale120(120);
 /// The pause between two looks at a window that has not changed.
 const PACE: Duration = Duration::from_millis(50);
 
+/// The longest the first frame of a session is waited for (the compositor owes one at once).
+const FIRST_FRAME_LIMIT: Duration = Duration::from_secs(20);
+
 /// Who blacks the regions of a frame.
 #[derive(Debug, Clone, Copy)]
 pub(crate) enum Masking {
@@ -160,6 +163,27 @@ impl WaylandSession {
         }
     }
 
+    /// The window did not answer within the settle window: it is still, so the last look is the
+    /// current frame, with no damage. The frame still on its way stays the session's one frame
+    /// and is waited for by the next request. With no look yet (the first frame has to come) the
+    /// wait is bounded by `FIRST_FRAME_LIMIT`, and its end names the capture.
+    async fn unchanged(&mut self) -> Result<(PixelBuf, Vec<Rect<WindowSpace>>), CaptureError> {
+        if let Some(raw) = self.last.clone() {
+            return Ok((raw, Vec::new()));
+        }
+        match tokio::time::timeout(FIRST_FRAME_LIMIT, self.capture()).await {
+            Ok(raw) => {
+                let raw = raw?;
+                self.last = Some(raw.clone());
+                let damage = vec![whole(&raw)];
+                Ok((raw, damage))
+            }
+            Err(_) => Err(CaptureError::Protocol(
+                "the compositor sent no first frame of the window".into(),
+            )),
+        }
+    }
+
     /// Frames until one differs from the last, or the first when there was none: what changed
     /// and when.
     async fn next_change(&mut self) -> Result<(PixelBuf, Rect<WindowSpace>), CaptureError> {
@@ -197,30 +221,27 @@ impl CaptureSession for WaylandSession {
                 .await
                 .map_err(lost)?;
         }
+        let limit = Duration::from_millis(AFTER_DAMAGE_LIMIT_MS);
         let (raw, damage) = match want {
-            FrameWant::AfterDamage => {
-                let limit = Duration::from_millis(AFTER_DAMAGE_LIMIT_MS);
-                match tokio::time::timeout(limit, self.next_change()).await {
-                    Ok(changed) => {
-                        let (raw, region) = changed?;
-                        (raw, vec![region])
-                    }
-                    // Nothing moved: the window is still, so the last look is the current frame.
-                    Err(_) => match self.last.clone() {
-                        Some(raw) => (raw, Vec::new()),
-                        None => (self.capture().await?, Vec::new()),
-                    },
+            FrameWant::AfterDamage => match tokio::time::timeout(limit, self.next_change()).await {
+                Ok(changed) => {
+                    let (raw, region) = changed?;
+                    (raw, vec![region])
                 }
-            }
-            FrameWant::Now => {
-                let raw = self.capture().await?;
-                let region = match &self.last {
-                    None => Some(whole(&raw)),
-                    Some(last) => pixel_diff(last, &raw),
-                };
-                self.last = Some(raw.clone());
-                (raw, region.into_iter().collect())
-            }
+                Err(_) => self.unchanged().await?,
+            },
+            FrameWant::Now => match tokio::time::timeout(limit, self.capture()).await {
+                Ok(raw) => {
+                    let raw = raw?;
+                    let region = match &self.last {
+                        None => Some(whole(&raw)),
+                        Some(last) => pixel_diff(last, &raw),
+                    };
+                    self.last = Some(raw.clone());
+                    (raw, region.into_iter().collect())
+                }
+                Err(_) => self.unchanged().await?,
+            },
         };
         let logical = Size::new(Coord(raw.size.w), Coord(raw.size.h));
         let (pixels, regions, applied_by) = match self.masking {

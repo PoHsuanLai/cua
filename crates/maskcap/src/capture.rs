@@ -11,7 +11,9 @@ use std::future::Future;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum FrameWant {
-    /// The current content.
+    /// The current content. A compositor that sends frames only on damage may hold the frame of
+    /// a still window; after the settle window (`AFTER_DAMAGE_LIMIT_MS`) the last frame is the
+    /// current one, with no damage.
     Now,
     /// The first frame after the content changed (on stock: after a pixel diff). A session waits
     /// at most `AFTER_DAMAGE_LIMIT`; a window that stayed still answers with its current frame
@@ -19,8 +21,8 @@ pub enum FrameWant {
     AfterDamage,
 }
 
-/// The longest a session waits for a changed frame under `FrameWant::AfterDamage`, in
-/// milliseconds.
+/// The longest a session waits for a changed frame under either want once it has a frame to
+/// fall back on, in milliseconds.
 pub const AFTER_DAMAGE_LIMIT_MS: u64 = 1000;
 
 /// Why a capture failed.

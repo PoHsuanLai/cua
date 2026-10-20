@@ -6,6 +6,7 @@ pub use agent::Stance;
 
 use rustix::event::{PollFd, PollFlags, poll};
 use rustix::io::pwrite;
+use std::collections::BTreeSet;
 use std::os::fd::OwnedFd;
 use std::os::unix::net::UnixStream;
 use std::sync::Arc;
@@ -95,6 +96,21 @@ pub struct Compositor {
     pub frames_served: usize,
     stance: Stance,
     hints: Vec<Vec<u8>>,
+    damage: Damage,
+    /// The sessions that have been given a frame.
+    served: BTreeSet<usize>,
+    /// Frames kept back until the window shows something new.
+    held: Vec<ExtImageCopyCaptureFrameV1>,
+}
+
+/// When the compositor completes a frame.
+#[derive(Debug, Clone, Copy)]
+pub enum Damage {
+    /// At once, with full damage (a stock compositor).
+    Always,
+    /// The first frame of a session at once, the next only after the window shows new pixels
+    /// (ext-image-copy-capture on damage).
+    OnChange,
 }
 
 struct Anyone;
@@ -156,6 +172,9 @@ impl FakeCompositor {
             frames_served: 0,
             stance: agent.unwrap_or(Stance::Grant),
             hints: Vec::new(),
+            damage: Damage::Always,
+            served: BTreeSet::new(),
+            held: Vec::new(),
         };
         let thread = std::thread::spawn(move || serve(display, state, queue, ring));
         Self {
@@ -196,7 +215,19 @@ impl FakeCompositor {
 
     /// What window `index` shows from the next frame on.
     pub fn show(&self, index: usize, pixels: Vec<u8>) {
-        self.call(move |c| c.windows[index].pixels = pixels);
+        self.call(move |c| {
+            c.windows[index].pixels = pixels;
+            for frame in std::mem::take(&mut c.held) {
+                if let Some(data) = frame.data::<FrameData>() {
+                    c.serve_frame(&frame, data);
+                }
+            }
+        });
+    }
+
+    /// From now on a session gets its first frame at once and later ones only after `show`.
+    pub fn damage_only_on_change(&self) {
+        self.call(|c| c.damage = Damage::OnChange);
     }
 
     /// The window is resized: every session is told its new constraints.
@@ -297,6 +328,14 @@ impl Compositor {
             if *top == index {
                 session.stopped();
             }
+        }
+    }
+
+    fn capture(&mut self, frame: &ExtImageCopyCaptureFrameV1, data: &FrameData) {
+        let first = self.served.insert(data.session);
+        match (self.damage, first) {
+            (Damage::OnChange, false) => self.held.push(frame.clone()),
+            _ => self.serve_frame(frame, data),
         }
     }
 
@@ -517,7 +556,7 @@ impl Dispatch<ExtImageCopyCaptureFrameV1, FrameData> for Compositor {
             Request::AttachBuffer { buffer } => {
                 *data.buffer.lock().expect("frame lock") = Some(buffer)
             }
-            Request::Capture => state.serve_frame(frame, data),
+            Request::Capture => state.capture(frame, data),
             _ => {}
         }
     }
