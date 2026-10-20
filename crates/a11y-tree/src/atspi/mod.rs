@@ -18,8 +18,8 @@ use tokio::sync::OnceCell;
 pub use tree::{AtspiTree, Extents, RawNode};
 pub use walk::read_window;
 
-/// How long a snapshot may take before the run goes on without a tree (the run's own limit on
-/// the effect is 30 s).
+/// How long a snapshot may take, reaching the bus included, before the run goes on without a
+/// tree (the run's own limit on the effect is 30 s).
 const SNAPSHOT_LIMIT: Duration = Duration::from_secs(8);
 
 /// The accessibility bus, connected on first use.
@@ -78,8 +78,13 @@ impl A11ySource for AtspiSource {
         target: &A11yTarget,
         budget: NodeBudget,
     ) -> Result<A11ySnapshot, A11yError> {
-        let tree = BusTree::over(self.connected().await?.clone());
-        match tokio::time::timeout(SNAPSHOT_LIMIT, read_window(&tree, target, budget)).await {
+        // Reaching the bus counts against the limit too: a bus that never answers must not hold
+        // the step until the run's own effect limit.
+        let read = async {
+            let tree = BusTree::over(self.connected().await?.clone());
+            read_window(&tree, target, budget).await
+        };
+        match tokio::time::timeout(SNAPSHOT_LIMIT, read).await {
             Ok(snapshot) => snapshot,
             Err(_) => Err(A11yError::Timeout),
         }

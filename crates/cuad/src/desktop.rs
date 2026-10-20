@@ -114,7 +114,20 @@ impl A11ySource for SystemA11y {
     ) -> Result<A11ySnapshot, A11yError> {
         match self {
             SystemA11y::Unavailable => Err(A11yError::NoBus),
-            SystemA11y::Atspi(source) => source.snapshot(target, budget).await,
+            SystemA11y::Atspi(source) => {
+                let started = std::time::Instant::now();
+                let snapshot = source.snapshot(target, budget).await;
+                // One line per tree read: its size, or why a run goes on from pixels alone.
+                let ms = started.elapsed().as_millis();
+                match &snapshot {
+                    Ok(tree) => eprintln!(
+                        "cuad: accessibility tree: {} nodes in {ms} ms",
+                        tree.nodes.len()
+                    ),
+                    Err(error) => eprintln!("cuad: no accessibility tree after {ms} ms: {error:?}"),
+                }
+                snapshot
+            }
         }
     }
 }
