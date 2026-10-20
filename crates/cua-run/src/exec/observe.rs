@@ -103,7 +103,8 @@ impl<S: Seams> Exec<'_, S> {
     ) -> (ToplevelInfo, Refocus) {
         let isolation = self.seam.seat.caps().isolation;
         let lease = self.held.as_ref().map(|held| held.grant.id);
-        let Some(lease) = lease.filter(|_| fit_of(&now, aimed, isolation, takes) == Fit::NotFocused)
+        let Some(lease) =
+            lease.filter(|_| fit_of(&now, aimed, isolation, takes) == Fit::NotFocused)
         else {
             return (now, Refocus::Not);
         };
