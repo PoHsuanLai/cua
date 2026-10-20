@@ -8,8 +8,8 @@
 //! start.
 
 use cuad::{
-    Apps, CuaSettings, CuadConfig, Links, Locator, ServeError, SettingsWatch, Supervisor,
-    SystemClock, SystemSeams, WatchState, WaylandPair, caller_identity, follow_settings,
+    Apps, CuaSettings, CuadConfig, Links, Locator, ReachError, Reached, ServeError, SettingsWatch,
+    Supervisor, SystemClock, SystemSeams, WatchState, caller_identity, follow_settings,
     read_callers, serve_on_as,
 };
 use futures_util::StreamExt;
@@ -25,6 +25,8 @@ enum Fatal {
     Config(String),
     #[error("session bus: {0}")]
     Bus(String),
+    #[error("compositor: {0}")]
+    Compositor(#[from] ReachError),
     #[error("{0}")]
     Serve(#[from] ServeError),
     #[error("signal handler: {0}")]
@@ -87,15 +89,10 @@ async fn run() -> Result<(), Fatal> {
     let connection = zbus::Connection::session()
         .await
         .map_err(|e| Fatal::Bus(e.to_string()))?;
-    let wayland = match WaylandPair::connect_env() {
-        Ok(pair) => Some(pair),
-        Err(error) => {
-            eprintln!("cuad: no compositor ({error}); the backend is unavailable");
-            None
-        }
-    };
+    let reached = Reached::find(&config, &connection).await?;
+    eprintln!("cuad: {}", reached.describe());
     let links = Links::over(&connection, config.tier);
-    let parts = SystemSeams::parts(&config, links, wayland, SystemClock::start());
+    let parts = SystemSeams::parts(&config, links, reached, SystemClock::start());
     let supervisor = Arc::new(Supervisor::with_hints(parts, config, hints));
     // The person's settings (`cua/settings.toml`) over the configuration's values, now and
     // whenever the file changes. Until the file lists an app, none is on.
