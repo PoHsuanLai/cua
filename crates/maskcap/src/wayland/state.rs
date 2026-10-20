@@ -183,11 +183,16 @@ impl CapState {
         key
     }
 
-    /// Asks for one frame into `buffer`.
+    /// Asks for one frame into `buffer`. A frame still on its way (its capture was given up,
+    /// e.g. by a timeout) is waited for instead: a session may hold one frame at a time, and a
+    /// second `create_frame` is a protocol error that ends the connection.
     pub(crate) fn request_frame(&mut self, key: Key, buffer: &WlBuffer, size: (u32, u32)) {
         let Some(rec) = self.sessions.get_mut(&key) else {
             return;
         };
+        if matches!(rec.frame, FrameSlot::Waiting) {
+            return;
+        }
         rec.frame = FrameSlot::Waiting;
         rec.damage.clear();
         let frame = rec.proxy.create_frame(&self.qh, key);
