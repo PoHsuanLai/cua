@@ -148,15 +148,10 @@ impl LeaseControl for CasementDesktop {
     }
 
     async fn release(&self, lease: LeaseId) -> Result<(), DesktopError> {
-        // Giving back a lease that has already ended (its window closed) is not a failure.
-        if self.leases().end(lease) {
-            self.door
-                .proxy()
-                .end_lease(lease.0)
-                .await
-                .map_err(protocol)?;
-        }
-        Ok(())
+        // A lease whose window closed has ended here already, but casement still holds its socket
+        // until it is given back; ending a lease casement does not know is not an error.
+        let _ = self.leases().end(lease);
+        self.door.proxy().end_lease(lease.0).await.map_err(protocol)
     }
 
     async fn suspend(&self, lease: LeaseId, why: Suspend) -> Result<(), DesktopError> {
