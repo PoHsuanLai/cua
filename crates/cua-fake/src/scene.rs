@@ -86,11 +86,11 @@ pub fn click() -> CuaAction<WindowSpace> {
     }
 }
 
-/// Ctrl+N: an action that sends keys.
-pub fn ctrl_n() -> CuaAction<WindowSpace> {
+/// Ctrl+A: an action that sends keys (the fake keymap has `a`).
+pub fn ctrl_a() -> CuaAction<WindowSpace> {
     CuaAction::Key {
-        chord: serde_json::from_str(r#"{"mods":["ctrl"],"key":{"Character":"n"}}"#)
-            .expect("Ctrl+N"),
+        chord: serde_json::from_str(r#"{"mods":["ctrl"],"key":{"Character":"a"}}"#)
+            .expect("Ctrl+A"),
         repeat: cua_action::Repeat::ONCE,
     }
 }

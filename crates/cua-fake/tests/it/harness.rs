@@ -312,6 +312,7 @@ fn on_an_unfocused_window(
     let mut unfocused = window();
     unfocused.state = BTreeSet::new();
     world.desktop = FakeDesktop::new(kind, vec![unfocused]);
+    world.seat = FakeSeat::new(cua_desktop::SeatIsolation::SharedSeat, Stamp(0)).with_us_keymap();
     world.clock = FixedClock::at(Stamp(0), UnixSeconds(1_700_000_000)).impatient();
     let report = block_on(run_harness_answering(
         new_run(),
@@ -342,7 +343,7 @@ fn on_an_unfocused_window(
 #[test]
 fn keys_need_the_focus_on_the_persons_seat_and_a_click_does_not() {
     let (performed, steps, calls) =
-        on_an_unfocused_window(BackendKind::KwinStock, cua_fake::scene::ctrl_n());
+        on_an_unfocused_window(BackendKind::KwinStock, cua_fake::scene::ctrl_a());
     assert_eq!(performed, 0, "no key reached a window without the focus");
     assert!(
         !calls.iter().any(|c| matches!(c, DesktopCall::Focused(_))),
@@ -368,8 +369,7 @@ fn keys_need_the_focus_on_the_persons_seat_and_a_click_does_not() {
 #[test]
 fn keys_for_an_unfocused_leased_window_ask_casement_to_focus_it_and_land() {
     let (performed, steps, calls) =
-        on_an_unfocused_window(BackendKind::Casement, cua_fake::scene::ctrl_n());
-    assert_eq!(performed, 1, "the keys landed");
+        on_an_unfocused_window(BackendKind::Casement, cua_fake::scene::ctrl_a());
     assert!(
         calls.iter().any(|c| matches!(c, DesktopCall::Focused(_))),
         "the window was asked to take the focus: {calls:?}"
@@ -378,4 +378,5 @@ fn keys_for_an_unfocused_leased_window_ask_casement_to_focus_it_and_land() {
         !steps.iter().any(|s| s.contains("NotFocused")),
         "not refused: {steps:?}"
     );
+    assert_eq!(performed, 1, "the keys landed: {steps:?}");
 }

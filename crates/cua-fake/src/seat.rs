@@ -55,6 +55,16 @@ impl FakeSeat {
         }
     }
 
+    /// The same seat with the fake EIS server's US keymap, so key actions resolve.
+    pub fn with_us_keymap(self) -> Self {
+        let keymap =
+            Keymap::parse_xkb(crate::eis_keymap::US_KEYMAP).expect("the fake US keymap parses");
+        Self {
+            keymap: Arc::new(keymap),
+            ..self
+        }
+    }
+
     /// Makes the next `perform` fail with `error`.
     pub fn fail_next(&self, error: SeatError) {
         *self.fail_next.lock().expect("fake seat lock") = Some(error);

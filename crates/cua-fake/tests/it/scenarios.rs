@@ -98,7 +98,7 @@ fn input_goes_only_to_the_window_that_is_focused_and_visible() {
     // Keys need the focus; a click does not (it is how a window gets it), but no input goes to a
     // window the person cannot see.
     let cases: [(&str, Action, Change); 3] = [
-        ("keys after the focus is lost", ctrl_n, |w| w.state.clear()),
+        ("keys after the focus is lost", ctrl_a, |w| w.state.clear()),
         ("minimized", click, |w| {
             w.state.insert(cua_desktop::ToplevelState::Minimized);
         }),
