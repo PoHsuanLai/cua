@@ -10,8 +10,8 @@ use cua_action::{
 use cua_bus::{ActionOutcome, ActionResult, LocalRefusal, Refusal, TargetedAction, WindowRef};
 use cua_desktop::{MaskWhere, Stamp};
 use cua_run::{
-    ContextObs, CursorObs, Focus, Observation, TreeAbsence, TreeObs, Visibility, WindowInfo,
-    note_of, turn,
+    ContextObs, CursorObs, Effect, Focus, Observation, TreeAbsence, TreeObs, Visibility,
+    WindowInfo, note_of, turn, turn_after,
 };
 use docket_core::{CallRefusal, DenyCode, InboundLine, InboundPart, Reveal};
 use maskcap::{Frame, FrameSeq, MaskReason, MaskReport, PixelBuf, WholeMask};
@@ -306,4 +306,45 @@ fn a_tree_that_is_present_but_empty_is_still_present() {
     };
     let (request, _) = turn(&obs);
     assert_eq!(request.tree, porter_infer::TreeText::Present(String::new()));
+}
+
+#[test]
+fn an_input_that_changed_nothing_is_told_with_plain_words_and_a_repeat_is_refused_in_words() {
+    let table = [
+        (
+            "changed",
+            ActionResult::Done,
+            Effect::Changed,
+            PrevResult::Done,
+        ),
+        (
+            "no visible change",
+            ActionResult::Done,
+            Effect::NoVisibleChange,
+            PrevResult::Failed(
+                "the click ran but nothing changed on screen: try something visible instead".into(),
+            ),
+        ),
+        (
+            "refused as a repeat",
+            ActionResult::Refused(Refusal::Local(LocalRefusal::NoProgress)),
+            Effect::NoVisibleChange,
+            PrevResult::Refused(
+                "the last click changed nothing on screen: try something visible instead".into(),
+            ),
+        ),
+        (
+            "no control in the tree",
+            ActionResult::Refused(Refusal::Local(LocalRefusal::HasControl)),
+            Effect::Changed,
+            PrevResult::Refused("a control does this".into()),
+        ),
+    ];
+    for (name, result, effect, want) in table {
+        let obs = Observation {
+            prev: vec![outcome(result)],
+            ..observation()
+        };
+        assert_eq!(turn_after(&obs, effect).0.prev, vec![want], "{name}");
+    }
 }

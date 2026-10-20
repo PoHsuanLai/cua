@@ -972,3 +972,74 @@ fn a_sensitive_window_asks_the_person_even_when_the_router_says_run() {
         }
     }
 }
+
+/// Runs one click, lets the screen settle on frame byte 1 again, and has the model answer with
+/// `second` after a look at frame byte `look`.
+fn repeat_after_click(look: u8, second: CuaAction<cua_action::WindowSpace>) -> Drive {
+    let mut d = Drive::thinking(STOCK, task(model_says()), tree(vec![]));
+    d.feed(RunInput::ModelReplied(reply(vec![click_at(1, 1)])));
+    d.feed(RunInput::Verdict(GateAnswer::Run));
+    d.feed_after(0, RunInput::Injected(receipt(0)));
+    d.feed_after(300, RunInput::Tick);
+    d.feed(RunInput::Observed(Box::new(observation(
+        look,
+        tree(vec![]),
+    ))));
+    d.feed(RunInput::ModelReplied(reply(vec![second])));
+    d
+}
+
+#[test]
+fn the_same_input_on_a_screen_that_did_not_change_is_refused_before_it_is_asked() {
+    // (name, frame after the first click, second action, refused)
+    let table = [
+        ("same click, same screen", 1, click_at(1, 1), true),
+        ("same click, screen changed", 2, click_at(1, 1), false),
+        ("other click, same screen", 1, click_at(2, 2), false),
+    ];
+    for (name, look, second, refused) in table {
+        let d = repeat_after_click(look, second);
+        let asked = d.has(|e| matches!(e, RunEffect::Check(_)));
+        assert_eq!(!asked, refused, "{name}");
+        if refused {
+            assert_eq!(*d.phase(), RunPhase::Observing(StepIndex(3)), "{name}");
+            assert!(!d.has(|e| matches!(e, RunEffect::Inject(_))), "{name}");
+        }
+    }
+}
+
+fn press(
+    mods: &[cua_action::Modifier],
+    key: keyboard_types::Key,
+) -> CuaAction<cua_action::WindowSpace> {
+    CuaAction::Key {
+        chord: cua_action::Chord::new(mods.iter().copied().collect(), key).unwrap(),
+        repeat: cua_action::Repeat::ONCE,
+    }
+}
+
+#[test]
+fn a_chord_for_a_control_the_tree_shows_is_refused_and_one_without_a_tree_is_not() {
+    use a11y_tree::Role;
+    use cua_action::Modifier::Ctrl;
+    let ctrl_n = || press(&[Ctrl], keyboard_types::Key::Character("n".into()));
+    let ctrl_c = || press(&[Ctrl], keyboard_types::Key::Character("c".into()));
+    let new_tab = || {
+        tree(vec![
+            node(0, Role::Window, "Browser", (0, 0, 100, 80)),
+            node(1, Role::Button, "New Tab", (0, 0, 20, 10)),
+        ])
+    };
+    // (name, tree, chord, refused)
+    let table = [
+        ("new, with a New Tab button", new_tab(), ctrl_n(), true),
+        ("new, with no tree", tree(vec![]), ctrl_n(), false),
+        ("copy, with a New Tab button", new_tab(), ctrl_c(), false),
+    ];
+    for (name, tree, chord, refused) in table {
+        let mut d = Drive::thinking(STOCK, task(model_says()), tree);
+        d.feed(RunInput::ModelReplied(reply(vec![chord])));
+        let asked = d.has(|e| matches!(e, RunEffect::Check(_)));
+        assert_eq!(!asked, refused, "{name}");
+    }
+}

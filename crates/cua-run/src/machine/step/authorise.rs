@@ -1,6 +1,7 @@
 //! Authorising the next action: the router's gate, the person's questions and the confirmation.
 
 use super::act::act;
+use super::refuse;
 use super::screen;
 use crate::machine::control::{self, pause};
 use crate::machine::effect::{CuaSignal, RunEffect};
@@ -35,6 +36,18 @@ pub(super) fn authorise(
         finish_plain(run, fx, CuaOutcome::Failed(FailReason::Capture));
         return;
     };
+    if let Some(why) = refuse::before_input(run, &obs, &head.action) {
+        run.pending.actions.pop_front();
+        let result = ActionResult::Refused(Refusal::Local(why));
+        let outcome = ActionOutcome {
+            action: head,
+            result,
+        };
+        action_ended(run, fx, outcome, None);
+        drop_rest(run);
+        observe(run, fx, next(n), FrameWant::Now, AlsoContext::No);
+        return;
+    }
     // Only the app the person allowed is driven: a window of another app is never aimed at,
     // whatever the lease said at the start.
     let aimed = if obs.window.app == run.task.app {
@@ -80,6 +93,8 @@ pub(super) fn wait(run: &mut Run, fx: &mut Vec<RunEffect>, at: Stamp, n: StepInd
         return;
     };
     let ms = asked.min(run.env.wait_max.0);
+    // After a wait the same action is a fresh try: the job it waited for may be done.
+    run.track.last_input = None;
     let until = Stamp(at.0.saturating_add(u64::from(ms)));
     run.track.waited = run.track.waited.and(Ms(ms));
     action_ended(

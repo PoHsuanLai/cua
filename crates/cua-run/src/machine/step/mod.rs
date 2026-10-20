@@ -5,6 +5,7 @@ mod act;
 mod authorise;
 mod model;
 mod observe;
+mod refuse;
 mod screen;
 
 use act::{checked, damaged, inject_failed, injected, settling, state_moved};

@@ -19,7 +19,7 @@ use crate::screen::{
     ScreenVerdict, ScreenView, Suspicion, WindowKey,
 };
 use crate::sensitivity::{FORCED_NO, FORCED_YES};
-use crate::turn::turn;
+use crate::turn::turn_after;
 use cua_bus::{BlockedOn, ConfirmBy, CuaOutcome, CuaRecord, FailReason, ScreenAsk, ScreenKind};
 use cua_desktop::GlowState;
 use porter_infer::StepIndex;
@@ -50,7 +50,7 @@ pub(super) fn call_model(run: &mut Run, fx: &mut Vec<RunEffect>, n: StepIndex) {
         finish_plain(run, fx, CuaOutcome::Failed(FailReason::Capture));
         return;
     };
-    let (request, frame) = turn(obs);
+    let (request, frame) = turn_after(obs, run.track.effect);
     enter(run, fx, RunPhase::Thinking(n));
     fx.push(RunEffect::CallModel {
         request: Box::new(request),

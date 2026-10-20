@@ -1,8 +1,10 @@
 //! What the machine remembers between inputs beyond the phase: small, typed, and never pixels or
 //! thought text.
 
+use crate::progress::{Effect, Look};
 use crate::screen::ScreenTrack;
 use crate::sensitivity::WindowSensitivity;
+use cua_action::{CuaAction, WindowSpace};
 use cua_bus::{ActionOutcome, AuthorisedBy, FrameNote, ThoughtDigest};
 use cua_desktop::{Ms, Stamp};
 use maskcap::DamageAt;
@@ -134,6 +136,16 @@ pub struct RunTrack {
     /// What the screen check found and what the person said of it.
     #[serde(default)]
     pub screen: ScreenTrack,
+    /// The last look at the window, to tell what the last action changed.
+    #[serde(default)]
+    pub look: Option<Look>,
+    /// What the last action did to the window, from the last two looks.
+    #[serde(default)]
+    pub effect: Effect,
+    /// The input action that ran last, until a wait: repeating it on an unchanged screen is
+    /// refused.
+    #[serde(default)]
+    pub last_input: Option<CuaAction<WindowSpace>>,
 }
 
 impl RunTrack {
@@ -152,6 +164,9 @@ impl RunTrack {
             last_question: 0,
             waited: Waited::No,
             screen: ScreenTrack::default(),
+            look: None,
+            effect: Effect::Changed,
+            last_input: None,
         }
     }
 }

@@ -1,7 +1,10 @@
 //! From an observation to the model's turn.
 
 use crate::observation::{CursorObs, Observation, TreeObs};
-use a11y_tree::render;
+use crate::progress::Effect;
+use crate::shortcut_guard::control_for;
+use a11y_tree::{A11yNode, render};
+use cua_action::{ActionClass, CuaAction, WindowSpace};
 use cua_bus::{ActionOutcome, ActionResult, LocalRefusal, Refusal};
 use docket_core::{InboundLine, InboundPart, Reveal};
 use maskcap::{PixelBuf, WholeMask};
@@ -21,8 +24,16 @@ pub struct FrameAttachment(pub PixelBuf);
 /// How an earlier action ended, in the words the model is told: a refusal says only that it was
 /// refused (the router's reasons are coarse on purpose and are not an oracle to probe), and a
 /// failure names what went wrong with the input.
-fn prev_result(outcome: &ActionOutcome) -> PrevResult {
+fn prev_result(outcome: &ActionOutcome, nodes: &[A11yNode], effect: Effect) -> PrevResult {
     match &outcome.result {
+        ActionResult::Done
+            if sent_input(&outcome.action.action) && effect == Effect::NoVisibleChange =>
+        {
+            PrevResult::Failed(format!(
+                "the {} ran but nothing changed on screen: try something visible instead",
+                verb(&outcome.action.action)
+            ))
+        }
         ActionResult::Done | ActionResult::Answered(_) => PrevResult::Done,
         ActionResult::NotExecuted => PrevResult::NotRun,
         ActionResult::Refused(Refusal::Gate(_)) => PrevResult::Refused("not allowed".to_owned()),
@@ -38,12 +49,40 @@ fn prev_result(outcome: &ActionOutcome) -> PrevResult {
         ActionResult::Refused(Refusal::Local(LocalRefusal::StateMoved)) => {
             PrevResult::Refused("the window changed".to_owned())
         }
+        ActionResult::Refused(Refusal::Local(LocalRefusal::NoProgress)) => {
+            PrevResult::Refused(format!(
+                "the last {} changed nothing on screen: try something visible instead",
+                verb(&outcome.action.action)
+            ))
+        }
+        ActionResult::Refused(Refusal::Local(LocalRefusal::HasControl)) => PrevResult::Refused(
+            control_for(&outcome.action.action, nodes)
+                .map_or_else(|| "a control does this".to_owned(), |c| c.words()),
+        ),
         ActionResult::UserDeclined => PrevResult::UserDeclined,
         ActionResult::Failed(error) => PrevResult::Failed(error.to_string()),
         ActionResult::UserActed { .. } => PrevResult::UserActed,
         ActionResult::CheckFailed => {
             PrevResult::Failed("the success check did not pass".to_owned())
         }
+    }
+}
+
+/// Whether the action sent input to the window.
+fn sent_input(action: &CuaAction<WindowSpace>) -> bool {
+    matches!(action.class(), ActionClass::Pointer | ActionClass::Keyboard)
+}
+
+/// What the action is called in the words to the model.
+fn verb(action: &CuaAction<WindowSpace>) -> &'static str {
+    match action {
+        CuaAction::Click { .. } => "click",
+        CuaAction::MoveTo { .. } => "pointer move",
+        CuaAction::Drag { .. } => "drag",
+        CuaAction::Scroll { .. } => "scroll",
+        CuaAction::Type { .. } => "typing",
+        CuaAction::Key { .. } => "key press",
+        _ => "action",
     }
 }
 
@@ -105,6 +144,17 @@ fn masked_regions(obs: &Observation) -> MaskedRegions {
 /// person's is their own words, and neither is authority), then the person's answers to the
 /// model's own questions. Pure.
 pub fn turn(obs: &Observation) -> (CuaStepRequest, FrameAttachment) {
+    turn_after(obs, Effect::Changed)
+}
+
+/// [`turn`], telling the model what the last input did to the window: an input that ran and left
+/// the screen as it was is reported to the model as such (porter's `PrevResult` has no word for
+/// "ran, no change", so it goes as a failure with plain words).
+pub fn turn_after(obs: &Observation, effect: Effect) -> (CuaStepRequest, FrameAttachment) {
+    let nodes: &[A11yNode] = match &obs.tree {
+        TreeObs::Present(snapshot) => &snapshot.nodes,
+        TreeObs::Absent(_) => &[],
+    };
     let pixels = obs.frame.pixels.clone();
     let tree = match &obs.tree {
         TreeObs::Absent(_) => TreeText::Absent,
@@ -126,7 +176,12 @@ pub fn turn(obs: &Observation) -> (CuaStepRequest, FrameAttachment) {
         },
         tree,
     )
-    .with_prev(obs.prev.iter().map(prev_result).collect())
+    .with_prev(
+        obs.prev
+            .iter()
+            .map(|o| prev_result(o, nodes, effect))
+            .collect(),
+    )
     .with_masked(masked_regions(obs))
     .with_notes(
         obs.notes

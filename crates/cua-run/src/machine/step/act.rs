@@ -68,6 +68,7 @@ pub(super) fn injected(run: &mut Run, fx: &mut Vec<RunEffect>, at: Stamp, receip
         finish_plain(run, fx, CuaOutcome::Failed(FailReason::Input));
         return;
     };
+    run.track.last_input = Some(head.action.clone());
     if let (Some(obs), Some(point)) = (run.working.as_mut(), pointer_end(&head.action, &receipt)) {
         obs.cursor = CursorObs::At(point);
     }

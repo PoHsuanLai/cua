@@ -65,15 +65,17 @@ mod machine;
 mod mode;
 mod model;
 mod observation;
+mod progress;
 mod screen;
 mod seams;
 mod sensitivity;
+mod shortcut_guard;
 mod shortcuts;
 mod stall;
 mod turn;
 mod window_class;
 
-pub use chord_scope::{KeyWorld, acts_on_desktop};
+pub use chord_scope::{KeyWorld, acts_on_desktop, standard_actions_of};
 pub use commit::{Commit, commit_of};
 pub use config::{
     Autopause, CuaConfig, Days, DefaultMode, Enabled, KeepScreens, SETTING_ROWS, SettingRow,
@@ -96,6 +98,7 @@ pub use model::{
 pub use observation::{
     ContextObs, CursorObs, Focus, Observation, TreeAbsence, TreeObs, Visibility, WindowInfo,
 };
+pub use progress::{Effect, Look};
 pub use screen::{
     Asking, EXCERPT_CHARS, Excerpt, Family, HiddenKind, MAX_REASONS, MIN_WORDS, PatternCheck,
     READER_CHARS, ReaderMode, ReaderWait, Reason, ScreenCheck, ScreenRead, ScreenText, ScreenTrack,
@@ -105,7 +108,8 @@ pub use seams::{
     Clock, GateCheck, GateEvent, GateLink, LinkError, MessageLink, Parts, RecordSink, Seams,
 };
 pub use sensitivity::{FORCED_NO, FORCED_YES, WindowSensitivity, window_sensitivity};
+pub use shortcut_guard::{Control, control_for};
 pub use shortcuts::shortcut_hint;
 pub use stall::{Repeats, Stall};
-pub use turn::{FrameAttachment, note_of, turn};
+pub use turn::{FrameAttachment, note_of, turn, turn_after};
 pub use window_class::{window_class_in, window_class_of};

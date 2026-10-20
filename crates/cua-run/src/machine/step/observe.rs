@@ -9,11 +9,24 @@ use crate::machine::phase::RunPhase;
 use crate::machine::run::Run;
 use crate::machine::track::Waited;
 use crate::observation::{CursorObs, Observation};
+use crate::progress::Look;
 use crate::stall::{Repeats, Stall};
-use cua_bus::FrameNote;
+use cua_action::ActionClass;
+use cua_bus::{ActionOutcome, ActionResult, FrameNote};
 use cua_bus::{CuaOutcome, FailReason, RunBudgetKind};
 use maskcap::{FrameDigest, FrameWant, digest};
 use porter_core::Count;
+
+/// Whether one of the actions ended as done and sent input.
+fn input_ran(prev: &[ActionOutcome]) -> bool {
+    prev.iter().any(|o| {
+        o.result == ActionResult::Done
+            && matches!(
+                o.action.action.class(),
+                ActionClass::Pointer | ActionClass::Keyboard
+            )
+    })
+}
 
 pub(super) fn observed(run: &mut Run, fx: &mut Vec<RunEffect>, mut obs: Observation) {
     let RunPhase::Observing(n) = run.phase else {
@@ -28,6 +41,15 @@ pub(super) fn observed(run: &mut Run, fx: &mut Vec<RunEffect>, mut obs: Observat
     }
     let frame_digest: FrameDigest = digest(&obs.frame.pixels);
     run.frames = run.frames.seen(frame_digest);
+    let look = Look::of(frame_digest, &obs.tree);
+    // Only an input that ran says what it did: a look after a refusal or a model failure keeps
+    // the effect of the input before it.
+    if input_ran(&obs.prev)
+        && let Some(before) = &run.track.look
+    {
+        run.track.effect = look.effect_since(before);
+    }
+    run.track.look = Some(look);
     // A slow job (a render, an export) looks like a screen that stopped changing: while the
     // run has been waiting for no longer than its total, that is not a stall.
     let stall = match run.track.waited {

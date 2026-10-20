@@ -131,6 +131,38 @@ fn function_key(key: &Key) -> Option<ChordKey> {
     ChordKey::function(n)
 }
 
+/// Every world's conventions, to read a chord whichever desktop the model had in mind.
+const WORLDS: [KeyWorld; 6] = [
+    KeyWorld::MacOs,
+    KeyWorld::Windows,
+    KeyWorld::Kde,
+    KeyWorld::Gnome,
+    KeyWorld::Ours,
+    KeyWorld::OtherLinux,
+];
+
+/// The standard actions `chord` is bound to in any world's conventions (Ctrl+N and Command+N
+/// are both "new"). Empty for a key no shortcut here uses.
+pub fn standard_actions_of(chord: &Chord) -> Vec<StandardAction> {
+    let Some(key) = key_of(&chord.key) else {
+        return Vec::new();
+    };
+    let pressed = KeyChord::new(modifiers_of(chord), key);
+    WORLDS
+        .iter()
+        .flat_map(|world| {
+            Keymap::conventional(world.platform())
+                .bindings(Context::Normal)
+                .iter()
+                .filter_map(|(action, bound)| match action {
+                    Action::Standard(a) if *bound == pressed => Some(*a),
+                    _ => None,
+                })
+                .collect::<Vec<_>>()
+        })
+        .collect()
+}
+
 /// Whether `chord` is one the desktop acts on itself in `world`: bound to a desktop-wide action
 /// in the platform's conventions, or reserved by the platform. Ordinary shortcuts (copy, paste,
 /// undo, save, find) are not.
