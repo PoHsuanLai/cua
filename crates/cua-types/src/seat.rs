@@ -62,6 +62,9 @@ pub enum SeatError {
     /// The operation lies outside the lease's window.
     #[error("outside the lease")]
     OutsideLease,
+    /// Keys for a window that does not have the focus on the person's seat.
+    #[error("the window is not focused")]
+    NotFocused,
     /// The window is gone.
     #[error("the target is gone")]
     TargetGone,

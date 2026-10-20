@@ -1,7 +1,7 @@
 //! The lease and what hangs on it: the seat, the capture session, the model's session, input.
 
 use super::cost::reply_cost;
-use super::fit::{Fit, fit_of};
+use super::fit::{Fit, takes};
 use super::phase::{Bound, PHASE_LIMIT, bounded};
 use super::{Exec, ModelSession, Outlet, Progress, Step, StepNote};
 use crate::machine::acquire::{AcquireFailure, AcquirePhase, AcquireWhy};
@@ -188,9 +188,22 @@ impl<S: Seams> Exec<'_, S> {
         let Some(now) = self.window_now().await else {
             return out.input(RunInput::InjectFailed(SeatError::TargetGone));
         };
-        if fit_of(&now, planned.window, self.seam.seat.caps().isolation) != Fit::Ready {
-            return out.input(RunInput::InjectFailed(SeatError::OutsideLease));
-        }
+        let now = match self
+            .settled(now, planned.window, takes(&planned.action))
+            .await
+        {
+            (now, Fit::Ready) => now,
+            (_, Fit::NotVisible) => {
+                return out.input(RunInput::InjectFailed(SeatError::OutsideLease));
+            }
+            // Resized under the aim: the run looks again.
+            (_, Fit::Resized) => return out.input(RunInput::StateMoved(Moved::Geometry)),
+            // Keys for a window that does not have the focus, and it did not come: the model is
+            // told, and a click in the window gives it the focus.
+            (_, Fit::NotFocused) => {
+                return out.input(RunInput::InjectFailed(SeatError::NotFocused));
+            }
+        };
         // Only the app the person allowed is driven: the same window id under another app is
         // not the window that was leased.
         if now.app != self.task.app {

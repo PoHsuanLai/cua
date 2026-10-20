@@ -32,6 +32,9 @@ fn prev_result(outcome: &ActionOutcome) -> PrevResult {
         ActionResult::Refused(Refusal::Local(LocalRefusal::SecretField)) => {
             PrevResult::Refused("a secret field".to_owned())
         }
+        ActionResult::Refused(Refusal::Local(LocalRefusal::NotFocused)) => {
+            PrevResult::Refused("the window is not focused: click in it first".to_owned())
+        }
         ActionResult::Refused(Refusal::Local(LocalRefusal::StateMoved)) => {
             PrevResult::Refused("the window changed".to_owned())
         }

@@ -171,6 +171,10 @@ fn how_the_last_actions_ended_is_told_without_the_routers_reasons() {
             PrevResult::Refused("outside the window".into()),
         ),
         (
+            ActionResult::Refused(Refusal::Local(LocalRefusal::NotFocused)),
+            PrevResult::Refused("the window is not focused: click in it first".into()),
+        ),
+        (
             ActionResult::Refused(Refusal::Local(LocalRefusal::SecretField)),
             PrevResult::Refused("a secret field".into()),
         ),

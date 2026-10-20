@@ -94,25 +94,31 @@ fn a_refused_action_is_told_to_the_model_and_the_run_goes_on() {
 #[test]
 fn input_goes_only_to_the_window_that_is_focused_and_visible() {
     type Change = fn(&mut cua_desktop::ToplevelInfo);
-    let cases: [(&str, Change); 3] = [
-        ("lost the focus", |w| w.state.clear()),
-        ("minimized", |w| {
+    type Action = fn() -> cua_action::CuaAction<cua_action::WindowSpace>;
+    // Keys need the focus; a click does not (it is how a window gets it), but no input goes to a
+    // window the person cannot see.
+    let cases: [(&str, Action, Change); 3] = [
+        ("keys after the focus is lost", ctrl_n, |w| w.state.clear()),
+        ("minimized", click, |w| {
             w.state.insert(cua_desktop::ToplevelState::Minimized);
         }),
-        ("on a hidden workspace", |w| {
+        ("on a hidden workspace", click, |w| {
             w.workspace.shown = cua_desktop::WorkspaceShown::Hidden;
         }),
     ];
-    for (name, change) in cases {
+    for (name, action, change) in cases {
         let mut w = world_over(
             BackendKind::KwinStock,
-            vec![reply(click()), reply(finish())],
+            vec![reply(action()), reply(finish())],
             FakePdp::allow_all(),
             Fixture::Gtk4Dialog,
         );
         let mut window = cua_fake::scene::window();
         change(&mut window);
         w.desktop = FakeDesktop::new(BackendKind::KwinStock, vec![window]);
+        // The keys wait a moment for the focus: a clock that answers at once.
+        w.clock = cua_fake::FixedClock::at(cua_desktop::Stamp(0), porter_core::UnixSeconds(0))
+            .impatient();
         let report = block_on(run_harness(started(BackendKind::KwinStock), &mut w)).expect("ends");
         assert_eq!(outcome_of(&report), CuaOutcome::Done, "{name}");
         assert!(

@@ -2,12 +2,13 @@
 //!
 //! The aim of an action was made against an observation. Before it is injected the window is read
 //! again: input only goes to a window that is still where and what it was aimed at, visible, and
-//! (on a shared seat, where keys land in whichever window has the focus) focused.
+//! (on a shared seat, where keys land in whichever window has the focus) focused for an action
+//! that sends keys. A pointer action needs no focus: a click is how a window gets it.
 
 use super::observe::visibility_of;
 use crate::machine::input::Moved;
 use crate::observation::{Focus, Visibility};
-use cua_action::{Coord, Size, WindowSpace};
+use cua_action::{Coord, CuaAction, Size, WindowSpace};
 use cua_desktop::{GlobalRect, Pid, SeatIsolation, ToplevelInfo, ToplevelState};
 use porter_core::AppName;
 
@@ -65,11 +66,29 @@ pub(super) enum Fit {
     NotFocused,
 }
 
+/// What an action sends: keys go to the focused window, the pointer to the one under it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum Takes {
+    /// Keys or text.
+    Keys,
+    /// The pointer, or nothing at all.
+    Pointer,
+}
+
+/// What `action` sends.
+pub(super) fn takes(action: &CuaAction<WindowSpace>) -> Takes {
+    match action {
+        CuaAction::Type { .. } | CuaAction::Key { .. } => Takes::Keys,
+        _ => Takes::Pointer,
+    }
+}
+
 /// The window as the desktop reports it now, against the size the action was aimed at.
 pub(super) fn fit_of(
     window: &ToplevelInfo,
     aimed: Size<WindowSpace>,
     isolation: SeatIsolation,
+    takes: Takes,
 ) -> Fit {
     let size = Size::new(Coord(window.geometry.w.0), Coord(window.geometry.h.0));
     if visibility_of(window) != Visibility::Shown {
@@ -77,6 +96,7 @@ pub(super) fn fit_of(
     } else if size != aimed {
         Fit::Resized
     } else if isolation == SeatIsolation::SharedSeat
+        && takes == Takes::Keys
         && !window.state.contains(&ToplevelState::Activated)
     {
         Fit::NotFocused
@@ -142,15 +162,21 @@ mod tests {
         let minimized = window(&[ToplevelState::Activated, ToplevelState::Minimized]);
         let shared = SeatIsolation::SharedSeat;
         let own = SeatIsolation::AgentSeat;
+        let (keys, pointer) = (Takes::Keys, Takes::Pointer);
         let table = [
-            (&focused, aimed, shared, Fit::Ready),
-            (&focused, wrong, shared, Fit::Resized),
-            (&unfocused, aimed, shared, Fit::NotFocused),
-            (&unfocused, aimed, own, Fit::Ready),
-            (&minimized, aimed, own, Fit::NotVisible),
+            (&focused, aimed, shared, keys, Fit::Ready),
+            (&focused, wrong, shared, pointer, Fit::Resized),
+            (&unfocused, aimed, shared, keys, Fit::NotFocused),
+            (&unfocused, aimed, shared, pointer, Fit::Ready),
+            (&unfocused, aimed, own, keys, Fit::Ready),
+            (&minimized, aimed, own, pointer, Fit::NotVisible),
         ];
-        for (window, size, seat, want) in table {
-            assert_eq!(fit_of(window, size, seat), want, "{window:?} {seat:?}");
+        for (window, size, seat, takes, want) in table {
+            assert_eq!(
+                fit_of(window, size, seat, takes),
+                want,
+                "{window:?} {seat:?} {takes:?}"
+            );
         }
     }
 }

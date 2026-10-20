@@ -22,6 +22,8 @@ pub struct TargetedAction {
 pub enum LocalRefusal {
     /// The action lies outside the leased window.
     OutsideLease,
+    /// The action sends keys and the window does not have the focus: nothing was injected.
+    NotFocused,
     /// The action would type into a secret field.
     SecretField,
     /// The window was not what the action was aimed at when it came to be injected (moved,

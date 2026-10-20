@@ -296,3 +296,60 @@ fn a_stalled_step_of_taking_the_window_names_itself_and_gives_the_lease_back() {
         assert!(steps.contains(&(named, true)), "{name}: {steps:?}");
     }
 }
+
+/// The run on a window without the focus: what reached the seat, and the steps' results.
+fn on_an_unfocused_window(first: CuaAction<WindowSpace>) -> (usize, Vec<String>) {
+    let finish = CuaAction::Finish {
+        outcome: FinishOutcome::Done,
+        summary: Summary::new("Signed in.").unwrap(),
+        extracted: vec![],
+    };
+    let mut world = new_world(vec![Ok(reply(first)), Ok(reply(finish))]);
+    let mut unfocused = window();
+    unfocused.state = BTreeSet::new();
+    world.desktop = FakeDesktop::new(BackendKind::KwinStock, vec![unfocused]);
+    world.clock = FixedClock::at(Stamp(0), UnixSeconds(1_700_000_000)).impatient();
+    let report = block_on(run_harness_answering(
+        new_run(),
+        &mut world,
+        vec![FORCED_YES.to_owned()],
+    ))
+    .expect("the run ends");
+    assert_eq!(report.run.phase, RunPhase::Finished(CuaOutcome::Done));
+    let performed = world
+        .seat
+        .events()
+        .into_iter()
+        .filter(|e| matches!(e, SeatEvent::Performed(..)))
+        .count();
+    let steps = world
+        .events
+        .records()
+        .into_iter()
+        .filter(|r| r.kind() == "cua.step")
+        .map(|r| format!("{r:?}"))
+        .collect();
+    (performed, steps)
+}
+
+/// On the person's seat keys wait a moment for their window to have the focus; when it never
+/// comes they are not sent and the model is told the window is not focused. A click needs no
+/// focus (it is how a window gets it) and goes.
+#[test]
+fn keys_need_the_focus_on_the_persons_seat_and_a_click_does_not() {
+    let (performed, steps) = on_an_unfocused_window(cua_fake::scene::ctrl_n());
+    assert_eq!(performed, 0, "no key reached a window without the focus");
+    assert!(
+        steps.iter().any(|s| s.contains("NotFocused")),
+        "refused as not focused: {steps:?}"
+    );
+
+    let click = CuaAction::Click {
+        at: Target::Point(Point::new(Coord(10), Coord(10))),
+        button: Button::Left,
+        count: ClickCount::One,
+        mods: BTreeSet::new(),
+    };
+    let (performed, _) = on_an_unfocused_window(click);
+    assert_eq!(performed, 1, "the click went");
+}

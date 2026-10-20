@@ -86,6 +86,15 @@ pub fn click() -> CuaAction<WindowSpace> {
     }
 }
 
+/// Ctrl+N: an action that sends keys.
+pub fn ctrl_n() -> CuaAction<WindowSpace> {
+    CuaAction::Key {
+        chord: serde_json::from_str(r#"{"mods":["ctrl"],"key":{"Character":"n"}}"#)
+            .expect("Ctrl+N"),
+        repeat: cua_action::Repeat::ONCE,
+    }
+}
+
 pub fn finish() -> CuaAction<WindowSpace> {
     CuaAction::Finish {
         outcome: FinishOutcome::Done,

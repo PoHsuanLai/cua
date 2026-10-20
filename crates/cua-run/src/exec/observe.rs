@@ -1,6 +1,8 @@
 //! Looking at the window: the tree, the frame, the messages that wait, and the success check.
 
-use super::fit::Seen;
+use super::fit::{Fit, Seen, Takes, fit_of};
+use seat_input::AgentSeat;
+
 use super::{Exec, Outlet};
 use crate::machine::effect::HintSource;
 use crate::machine::input::{CheckResult, RunInput};
@@ -21,6 +23,11 @@ use docket_core::InboxAsk;
 use maskcap::{CaptureError, CaptureSession, FrameWant, MaskReason, MaskRegion, WholeMask};
 use porter_infer::StepIndex;
 use prov::{AgentRef, Label, Labelled, Source};
+
+/// How many times a window that is only not focused is read again before an action.
+const FOCUS_TRIES: u32 = 10;
+/// The pause between those reads: about half a second in all.
+const FOCUS_POLL: std::time::Duration = std::time::Duration::from_millis(50);
 
 /// What the first effects of a look found, kept until the capture builds the observation.
 #[derive(Debug)]
@@ -82,6 +89,33 @@ impl<S: Seams> Exec<'_, S> {
             .ok()
             .and_then(|all| all.into_iter().find(|w| w.ident == leased.ident));
         listed.or(Some(leased))
+    }
+
+    /// The window and its fit for an action aimed at `aimed` that sends what `takes` says. A
+    /// window that is only not focused is read again for a moment: right after a confirmation sheet the focus is on its way back
+    /// (the sheet that took the person's answer is closing), so the action waits for it instead
+    /// of being refused. It waits on the run's clock: a harness clock that never fires waits as
+    /// long as it likes (an impatient one reads again at once).
+    pub(super) async fn settled(
+        &mut self,
+        mut now: ToplevelInfo,
+        aimed: Size<WindowSpace>,
+        takes: Takes,
+    ) -> (ToplevelInfo, Fit) {
+        let isolation = self.seam.seat.caps().isolation;
+        for _ in 0..FOCUS_TRIES {
+            let fit = fit_of(&now, aimed, isolation, takes);
+            if fit != Fit::NotFocused {
+                return (now, fit);
+            }
+            self.seam.clock.after(FOCUS_POLL).await;
+            match self.window_now().await {
+                Some(again) => now = again,
+                None => return (now, fit),
+            }
+        }
+        let fit = fit_of(&now, aimed, isolation, takes);
+        (now, fit)
     }
 
     async fn tree_of(&mut self, budget: NodeBudget) -> TreeObs {

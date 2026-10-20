@@ -137,6 +137,7 @@ pub(super) fn inject_failed(run: &mut Run, fx: &mut Vec<RunEffect>, error: SeatE
         SeatError::OutsideLease => {
             ActionResult::Refused(Refusal::Local(LocalRefusal::OutsideLease))
         }
+        SeatError::NotFocused => ActionResult::Refused(Refusal::Local(LocalRefusal::NotFocused)),
         other => ActionResult::Failed(other),
     };
     end_head(run, fx, n, head, result);
