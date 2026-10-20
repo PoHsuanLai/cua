@@ -193,6 +193,7 @@ pub fn observation(byte: u8, tree: TreeObs) -> Observation {
         cursor: CursorObs::Unknown,
         prev: vec![],
         notes: vec![],
+        withheld: cua_run::Withheld::default(),
     }
 }
 

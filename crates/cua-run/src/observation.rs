@@ -1,5 +1,6 @@
 //! What a run sees at the start of a step.
 
+use crate::screen::Withheld;
 use a11y_tree::A11ySnapshot;
 use cua_action::WindowTrust;
 use cua_action::{Point, Scale120, Size, WindowSpace};
@@ -109,8 +110,11 @@ pub struct Observation {
     pub window: WindowInfo,
     /// The masked frame.
     pub frame: Frame,
-    /// The tree.
+    /// The tree as the model reads it: without the nodes the person cannot see.
     pub tree: TreeObs,
+    /// Those nodes, for the screen check alone. Never serialised.
+    #[serde(skip)]
+    pub withheld: Withheld,
     /// The context.
     pub context: ContextObs,
     /// The agent's pointer.

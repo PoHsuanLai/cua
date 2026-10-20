@@ -8,7 +8,9 @@
 //! - text that reads as instructions for an assistant (the phrase table in [`Family`]'s home,
 //!   `phrases.rs`, and links that carry credentials);
 //! - text hidden from the person with invisible characters ([`HiddenKind`]);
-//! - words the tree carries that the person cannot see ([`UnseenWhy`]).
+//! - either of those in a node the person cannot see ([`UnseenWhy`]): reported as well, as
+//!   [`Reason::Unseen`]. Plain words the person cannot see are not a reason: they are left out of
+//!   the tree the model reads ([`split_unseen`]), so there is nothing for it to read.
 //!
 //! A [`ScreenVerdict::Suspicious`] makes the run pause and ask the person; see `FINDINGS.md` for
 //! what the check does not catch. A reason holds typed causes and at most one bounded
@@ -27,7 +29,7 @@ pub use hidden::HiddenKind;
 pub use phrases::Family;
 pub use reader::{READER_CHARS, ScreenRead, ScreenText};
 pub use track::{Asking, ReaderMode, ReaderWait, ScreenTrack, Suspicion};
-pub use unseen::{MIN_WORDS, UnseenWhy};
+pub use unseen::{UnseenWhy, Withheld, split_unseen};
 
 use crate::observation::{Observation, TreeObs};
 use a11y_tree::{A11yNode, NodeValue, Role, Sensitivity};
@@ -37,7 +39,6 @@ use cua_desktop::Digest32;
 use excerpt::{fold, readable};
 use porter_core::AppName;
 use serde::{Deserialize, Serialize};
-use unseen::{Geometry, why_unseen};
 
 /// The most reasons one verdict carries: enough to say what was found, few enough to read.
 pub const MAX_REASONS: usize = 6;
@@ -61,11 +62,12 @@ pub enum Reason {
         /// What they do.
         kind: HiddenKind,
     },
-    /// Words the tree carries and the person cannot see.
+    /// A node the person cannot see holds an instruction or hidden characters (reported along
+    /// with that reason, never alone).
     Unseen {
         /// Why they cannot be seen.
         why: UnseenWhy,
-        /// The start of the words, as screen text.
+        /// The start of the node's words, as screen text.
         excerpt: Excerpt,
     },
     /// The quarantined reader called the screen's text instructions for an assistant. It says
@@ -164,6 +166,8 @@ pub struct ScreenView<'a> {
     pub window: Size<WindowSpace>,
     /// The tree's nodes; none when there is no tree.
     pub nodes: &'a [A11yNode],
+    /// The unseen nodes left out of the tree the model reads: only their findings count.
+    pub withheld: &'a Withheld,
 }
 
 impl<'a> ScreenView<'a> {
@@ -176,6 +180,7 @@ impl<'a> ScreenView<'a> {
                 TreeObs::Present(snapshot) => &snapshot.nodes,
                 TreeObs::Absent(_) => &[],
             },
+            withheld: &obs.withheld,
         }
     }
 }
@@ -188,7 +193,7 @@ pub trait ScreenCheck {
     fn check(&self, view: &ScreenView<'_>) -> ScreenVerdict;
 }
 
-/// The default check: the phrase table, hidden characters and unseen text. No model.
+/// The default check: the phrase table and hidden characters, and whether the node holding them is unseen. No model.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct PatternCheck;
 
@@ -223,14 +228,16 @@ impl Found {
 
     /// The reasons in one text: its hidden characters, then its phrases and links, the latter
     /// also read backwards when a bidi override is there to display them reversed.
-    fn read(&mut self, raw: &str) {
+    /// Returns how many findings the text held, repeats included.
+    fn read(&mut self, raw: &str) -> usize {
         let kinds = hidden::kinds(raw);
+        let mut hits = kinds.len();
         for kind in &kinds {
             self.add(Reason::Hidden { kind: *kind });
         }
         let shown = readable(raw);
         if shown.chars().count() < MIN_TEXT_CHARS {
-            return;
+            return hits;
         }
         let mut views = vec![shown.clone()];
         if kinds.contains(&HiddenKind::BidiOverride) {
@@ -238,30 +245,37 @@ impl Found {
         }
         for view in &views {
             for hit in phrases::scan(&fold(view)) {
+                hits += 1;
                 self.add(Reason::Instruction {
                     family: hit.family,
                     excerpt: Excerpt::around(view, hit.at),
                 });
             }
             if let Some(excerpt) = link::credential_link(view) {
+                hits += 1;
                 self.add(Reason::Instruction {
                     family: Family::CredentialLink,
                     excerpt,
                 });
             }
         }
+        hits
     }
 
-    /// The reason a node's words are unseen, when it has a sentence's worth of them.
-    fn read_unseen(&mut self, node: &A11yNode, geometry: Geometry) {
-        let Some(why) = why_unseen(node, geometry) else {
+    /// A node's name and value, read; when they hold a finding and the person cannot see the
+    /// node, the finding is also an [`Reason::Unseen`].
+    fn read_node(&mut self, node: &A11yNode, unseen: Option<UnseenWhy>) {
+        let mut hits = self.read(&node.name.value);
+        if let NodeValue::Text(text) = &node.value {
+            hits += self.read(&text.value);
+        }
+        if hits == 0 {
             return;
-        };
-        let shown = readable(&node_text(node));
-        if shown.split_whitespace().count() >= MIN_WORDS {
+        }
+        if let Some(why) = unseen {
             self.add(Reason::Unseen {
                 why,
-                excerpt: Excerpt::start_of(&shown),
+                excerpt: Excerpt::start_of(&readable(&node_text(node))),
             });
         }
     }
@@ -269,15 +283,13 @@ impl Found {
 
 impl ScreenCheck for PatternCheck {
     fn check(&self, view: &ScreenView<'_>) -> ScreenVerdict {
-        let geometry = Geometry::of(view.nodes, view.window);
         let mut found = Found::default();
         found.read(view.title);
         for node in view.nodes.iter().filter(|n| !is_secret(n)) {
-            found.read(&node.name.value);
-            if let NodeValue::Text(text) = &node.value {
-                found.read(&text.value);
-            }
-            found.read_unseen(node, geometry);
+            found.read_node(node, None);
+        }
+        for (why, node) in view.withheld.0.iter().filter(|(_, n)| !is_secret(n)) {
+            found.read_node(node, Some(*why));
         }
         ScreenVerdict::of(found.reasons)
     }

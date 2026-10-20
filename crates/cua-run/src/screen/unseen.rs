@@ -1,21 +1,21 @@
 //! Text the tree carries and the person cannot see.
 //!
 //! A node can hold words that are not on the screen: it has no size, it stands to the right of
-//! the window, or the tree says it is neither visible nor showing. The model reads the whole
-//! tree, so such a node is a place to hide a sentence for it. Short labels are not worth a
-//! question (a zero-size separator named "Close"), so only a node with a sentence's worth of
-//! words counts ([`MIN_WORDS`]).
+//! the window, or the tree says it is neither visible nor showing. Browsers always carry such
+//! nodes (background tabs' documents, zero-size labels), and the model would read them as if the
+//! person saw them. So [`seen_snapshot`] leaves them out of the tree the model reads, whatever
+//! their word count, and re-parents their children; the check reports an unseen node only when
+//! it also holds an instruction or hidden characters.
 //!
 //! What is not judged, on purpose: a node below the bottom edge (a long page scrolled to its
 //! top is full of them), a node whose bounds are unknown (a tree where no node has any extent has
-//! no geometry to judge), and a tree that sets no state bits at all.
+//! no geometry to judge), and a tree that sets no state bits at all. The window root stays.
 
-use a11y_tree::{A11yNode, NodeState};
-use cua_action::{Size, WindowSpace};
+use a11y_tree::{A11yNode, A11ySnapshot, NodeState, Parent, Truncation};
+use cua_action::{NodeId, Size, WindowSpace};
+use porter_core::Count;
 use serde::{Deserialize, Serialize};
-
-/// How many words a node's text needs before unseen text is worth a question.
-pub const MIN_WORDS: usize = 4;
+use std::collections::{BTreeMap, BTreeSet};
 
 /// A side shorter than this many logical pixels is no room for text.
 const TINY_SIDE: u32 = 3;
@@ -68,4 +68,86 @@ pub(super) fn why_unseen(node: &A11yNode, geometry: Geometry) -> Option<UnseenWh
         && !node.states.contains(&NodeState::Visible)
         && !node.states.contains(&NodeState::Showing);
     marked.then_some(UnseenWhy::NotShown)
+}
+
+/// The nearest ancestor (or the root) of a node whose parent is `at` that is not in `unseen`.
+fn nearest_seen(
+    mut at: Parent,
+    unseen: &BTreeSet<NodeId>,
+    parents: &BTreeMap<NodeId, Parent>,
+    limit: usize,
+) -> Parent {
+    for _ in 0..=limit {
+        match at {
+            Parent::Node(up) if unseen.contains(&up) => {
+                at = parents.get(&up).copied().unwrap_or(Parent::Root);
+            }
+            Parent::Node(_) | Parent::Root => break,
+        }
+    }
+    at
+}
+
+/// The nodes taken out of the tree the model reads, with why. Only the screen check reads them
+/// (to find an instruction hidden in one); it is never serialised, so the words go nowhere else.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Withheld(pub Vec<(UnseenWhy, A11yNode)>);
+
+impl Withheld {
+    /// How many nodes were taken out.
+    pub fn count(&self) -> usize {
+        self.0.len()
+    }
+}
+
+/// The snapshot without the nodes the person cannot see, for a window of `window`, and those
+/// nodes. This is the one place the model's view of the tree is made: every later reader (the
+/// rendered tree, `Target::Node` resolution, the step record, the reader's text) takes the
+/// pruned tree. Node ids are not renumbered, so every id left is the one the source gave; the
+/// children of a dropped node move up to its nearest kept ancestor. The dropped nodes are
+/// counted in `truncated`. The window root (`nodes[0]`) stays.
+pub fn split_unseen(snapshot: A11ySnapshot, window: Size<WindowSpace>) -> (A11ySnapshot, Withheld) {
+    let geometry = Geometry::of(&snapshot.nodes, window);
+    let why: BTreeMap<NodeId, UnseenWhy> = snapshot
+        .nodes
+        .iter()
+        .skip(1)
+        .filter_map(|n| why_unseen(n, geometry).map(|w| (n.id, w)))
+        .collect();
+    if why.is_empty() {
+        return (snapshot, Withheld::default());
+    }
+    let unseen: BTreeSet<NodeId> = why.keys().copied().collect();
+    let parents: BTreeMap<NodeId, Parent> =
+        snapshot.nodes.iter().map(|n| (n.id, n.parent)).collect();
+    let limit = snapshot.nodes.len();
+    let (gone, kept): (Vec<A11yNode>, Vec<A11yNode>) = snapshot
+        .nodes
+        .iter()
+        .cloned()
+        .partition(|n| unseen.contains(&n.id));
+    let nodes: Vec<A11yNode> = kept
+        .into_iter()
+        .map(|n| A11yNode {
+            parent: nearest_seen(n.parent, &unseen, &parents, limit),
+            ..n
+        })
+        .collect();
+    let before = match snapshot.truncated {
+        Truncation::Complete => 0,
+        Truncation::Pruned { dropped } => dropped.0,
+    };
+    let now = u32::try_from(gone.len()).unwrap_or(u32::MAX);
+    let withheld = gone
+        .into_iter()
+        .filter_map(|n| why.get(&n.id).map(|w| (*w, n)))
+        .collect();
+    let pruned = A11ySnapshot {
+        nodes,
+        truncated: Truncation::Pruned {
+            dropped: Count(before.saturating_add(now)),
+        },
+        ..snapshot
+    };
+    (pruned, Withheld(withheld))
 }

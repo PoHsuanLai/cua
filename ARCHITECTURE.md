@@ -114,7 +114,7 @@ only; the pure set never reaches an effect crate; `wayland-client` is behind the
 | the accessibility tree, selectors | `a11y-tree` |
 | run states and slugs, outcomes, `ModeSupport`/`ModeGap`, the log records, `RunBudget`, control refusals and who may call which member | `cua-bus` |
 | the machine, the phase table, effects, `mode_support`, `classify_effect` | `cua-run` |
-| the screen check: the phrase table, hidden and unseen text, the verdict and its reasons | `cua_run::screen` (`PatternCheck`, `ScreenVerdict`, `Reason`); the closed kinds the log keeps are `cua_bus::ScreenKind` |
+| the screen check: the phrase table, hidden text and unseen nodes (`split_unseen` makes the model's tree), the verdict and its reasons | `cua_run::screen` (`PatternCheck`, `ScreenVerdict`, `Reason`); the closed kinds the log keeps are `cua_bus::ScreenKind` |
 | the proposed values | `cua_run::CuaConfig` and `SETTING_ROWS`; the keys are sill's |
 | the D-Bus interface | `cua-dbus` and `dbus/org.quire.Cua1.xml` |
 | the Wayland protocol | `quire-agent-v1.xml` in `~/casement-protocols` (the one home), used by cua-desktop and maskcap (feature `wayland`); the server side is the fork's, later casement's |

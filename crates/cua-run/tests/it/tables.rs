@@ -464,6 +464,7 @@ fn observation(tree: A11ySnapshot, masked: usize) -> Observation {
         cursor: CursorObs::Unknown,
         prev: vec![],
         notes: vec![],
+        withheld: cua_run::Withheld::default(),
     }
 }
 

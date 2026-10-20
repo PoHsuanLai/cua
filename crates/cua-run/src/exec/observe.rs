@@ -10,10 +10,11 @@ use crate::observation::{
     ContextObs, CursorObs, Focus, Observation, TreeAbsence, TreeObs, Visibility, WindowInfo,
 };
 use crate::seams::{Clock, MessageLink, Seams};
+use crate::screen::{Withheld, split_unseen};
 use crate::sensitivity::window_sensitivity;
 use crate::turn::note_of;
 use a11y_tree::{
-    A11yError, A11ySource, A11yTarget, NodeBudget, NodeSelector, Resolution, prune, resolve,
+    A11yError, A11ySnapshot, A11ySource, A11yTarget, NodeBudget, NodeSelector, Resolution, prune, resolve,
     secret_rects,
 };
 use cua_action::{Coord, Point, Rect, Size, WindowSpace};
@@ -33,6 +34,7 @@ const FOCUS_POLL: std::time::Duration = std::time::Duration::from_millis(50);
 #[derive(Debug)]
 pub(super) struct Staged {
     tree: TreeObs,
+    withheld: Withheld,
     context: ContextObs,
 }
 
@@ -40,6 +42,7 @@ impl Default for Staged {
     fn default() -> Self {
         Self {
             tree: TreeObs::Absent(TreeAbsence::Off),
+            withheld: Withheld::default(),
             context: ContextObs::Absent,
         }
     }
@@ -144,12 +147,16 @@ impl<S: Seams> Exec<'_, S> {
         (now, fit)
     }
 
-    async fn tree_of(&mut self, budget: NodeBudget) -> TreeObs {
+    /// The window's tree as the source gave it, cut to `budget`, with the window's size.
+    async fn full_tree(
+        &mut self,
+        budget: NodeBudget,
+    ) -> Result<(A11ySnapshot, Size<WindowSpace>), TreeAbsence> {
         if budget.0 == 0 {
-            return TreeObs::Absent(TreeAbsence::Off);
+            return Err(TreeAbsence::Off);
         }
         let Some(info) = self.window_now().await else {
-            return TreeObs::Absent(TreeAbsence::NoMatch);
+            return Err(TreeAbsence::NoMatch);
         };
         let target = A11yTarget {
             pid: info.pid,
@@ -162,14 +169,26 @@ impl<S: Seams> Exec<'_, S> {
             Ok(mut snapshot) => {
                 // A source does not read the clock: the tree is stamped when the run got it.
                 snapshot.taken = self.seam.clock.now();
-                TreeObs::Present(prune(&snapshot, budget))
+                Ok((prune(&snapshot, budget), size_of(&info)))
             }
-            Err(error) => TreeObs::Absent(absence_of(&error)),
+            Err(error) => Err(absence_of(&error)),
+        }
+    }
+
+    /// The tree the model reads: [`Self::full_tree`] without the nodes the person cannot see.
+    /// The only place that is done; the nodes left out go to the screen check.
+    async fn tree_of(&mut self, budget: NodeBudget) -> (TreeObs, Withheld) {
+        match self.full_tree(budget).await {
+            Ok((snapshot, window)) => {
+                let (seen, withheld) = split_unseen(snapshot, window);
+                (TreeObs::Present(seen), withheld)
+            }
+            Err(absence) => (TreeObs::Absent(absence), Withheld::default()),
         }
     }
 
     pub(super) async fn snapshot(&mut self, budget: NodeBudget) {
-        self.staged.tree = self.tree_of(budget).await;
+        (self.staged.tree, self.staged.withheld) = self.tree_of(budget).await;
     }
 
     /// The masks the tree asks for: every secret node's rectangle.
@@ -273,6 +292,7 @@ impl<S: Seams> Exec<'_, S> {
             },
             frame,
             tree: staged.tree,
+            withheld: staged.withheld,
             context: staged.context,
             cursor: CursorObs::Unknown,
             prev: Vec::new(),
@@ -283,12 +303,13 @@ impl<S: Seams> Exec<'_, S> {
     /// The success check on the tree: a fresh snapshot must have the node the selector names.
     pub(super) async fn verify(&mut self, selector: NodeSelector, out: &mut impl Outlet) {
         let budget = NodeBudget(u32::MAX);
-        let result = match self.tree_of(budget).await {
-            TreeObs::Present(snapshot) => match resolve(&snapshot, &selector) {
+        // The task's own check, not the model's view: it reads the whole tree.
+        let result = match self.full_tree(budget).await {
+            Ok((snapshot, _)) => match resolve(&snapshot, &selector) {
                 Resolution::None => CheckResult::Fail,
                 Resolution::One(_) | Resolution::Many(_) => CheckResult::Pass,
             },
-            TreeObs::Absent(_) => CheckResult::Fail,
+            Err(_) => CheckResult::Fail,
         };
         out.input(RunInput::Checked(result));
     }

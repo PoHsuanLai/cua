@@ -579,11 +579,19 @@ what the model is about to be shown, each turn, before the model is called.
   - *hidden characters*: bidi overrides (U+202D, U+202E), Unicode tag characters, two or more
     zero-width characters (or joiners between ASCII letters). The honest uses (emoji joiners, the
     joiners of Persian and Indic scripts, a flag emoji's tag run, one soft break) are not flagged.
-  - *unseen text*: a node of four words or more that has no size, stands right of the window's
-    edge, or is marked neither visible nor showing.
+  - *unseen text*: a node that has no size, stands right of the window's edge, or is marked neither
+    visible nor showing is **taken out of the tree the model reads**, whatever its word count
+    (`screen::split_unseen`, called once, in `exec/observe.rs`, before the budget is spent on
+    the rest; ids are not renumbered and the children of a dropped node move up). Browsers always
+    carry such nodes (background tabs' documents, zero-size labels), so plain unseen words are
+    no reason to ask: the model never reads them. The dropped nodes ride in
+    `Observation::withheld` (never serialised) for the check alone: an instruction or hidden
+    characters in one is still found, reported as that reason plus `Reason::Unseen` (event-log
+    kind `unseen_text`, which is never alone). Below the bottom edge and unknown bounds stay.
 - **What a finding does.** The run records `cua.screen.suspicious` (kinds only, never the text) and
   pauses with the question "The screen shows text that looks like instructions for the assistant.
-  Continue?", plus one line for hidden or unseen text and one short quoted excerpt, labelled as
+  Continue?" (or "...text with characters hidden in it. Continue?" when hidden characters are all
+  there is), plus one line for hidden or unseen text and one short quoted excerpt, labelled as
   screen text. No ends the run as `Blocked(ScreenSuspicious(kind))`. Yes goes on and is remembered
   for that window (app and title digest) and that kind for the rest of the run, so it is not asked
   again, but each look is still recorded (`ask: remembered`). The run is marked as having seen

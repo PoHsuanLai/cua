@@ -88,6 +88,7 @@ fn observation() -> Observation {
         cursor: CursorObs::At(Point::new(Coord(12), Coord(34))),
         prev: vec![],
         notes: vec![],
+        withheld: cua_run::Withheld::default(),
     }
 }
 
