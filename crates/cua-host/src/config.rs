@@ -23,10 +23,11 @@ pub enum BackendChoice {
 #[serde(rename_all = "snake_case")]
 pub enum A11yChoice {
     /// No tree: every snapshot says there is no accessibility bus, and a run goes on from pixels.
-    /// The default, so that nothing reads the session's bus unless the person turned it on.
-    #[default]
+    /// For a person who turned it off.
     Off,
-    /// AT-SPI, over the session's accessibility bus.
+    /// AT-SPI, over the session's accessibility bus. The default: where there is no such bus (a
+    /// sandbox), a snapshot says so and the run goes on from pixels.
+    #[default]
     Atspi,
 }
 

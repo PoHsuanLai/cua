@@ -100,7 +100,7 @@ impl LeaseControl for SystemDesktop {
 /// The accessibility tree, or none.
 #[derive(Debug)]
 pub enum SystemA11y {
-    /// No tree (`cuad.toml` `a11y = "off"`, the default until the AT-SPI source is built).
+    /// No tree (`cuad.toml` `a11y = "off"`).
     Unavailable,
     /// AT-SPI.
     Atspi(AtspiSource),
