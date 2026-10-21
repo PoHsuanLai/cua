@@ -94,11 +94,28 @@ pub struct StartRequest {
     pub reply: oneshot::Sender<Result<RunId, StartRefusal>>,
 }
 
+/// A question to the daemon: which apps are open, and so may be named in `app`?
+#[derive(Debug)]
+pub struct OpenAppsAsk {
+    /// Where the answer goes: ids only, never titles, in a stable order.
+    pub reply: oneshot::Sender<Vec<AppName>>,
+}
+
+/// What the daemon reads to serve the provider: its starts and its questions about open apps.
+#[derive(Debug)]
+pub struct ProviderQueues {
+    /// The starts `perform` hands over.
+    pub starts: mpsc::UnboundedReceiver<StartRequest>,
+    /// The questions `suggest` asks.
+    pub open_apps: mpsc::UnboundedReceiver<OpenAppsAsk>,
+}
+
 /// cuad's provider.
 #[derive(Debug)]
 pub struct CuaProvider {
     manifest: ValidManifest,
     starts: Option<mpsc::UnboundedSender<StartRequest>>,
+    open_apps: Option<mpsc::UnboundedSender<OpenAppsAsk>>,
 }
 
 impl CuaProvider {
@@ -108,21 +125,26 @@ impl CuaProvider {
         Ok(Self {
             manifest: manifest_for(enabled)?,
             starts: None,
+            open_apps: None,
         })
     }
 
-    /// A provider whose `perform` hands each start to whoever reads the returned queue (the
-    /// daemon turns them into runs through its supervisor).
-    pub fn starting(
-        enabled: Enabled,
-    ) -> Result<(Self, mpsc::UnboundedReceiver<StartRequest>), ProviderError> {
-        let (starts, queue) = mpsc::unbounded_channel();
+    /// A provider whose `perform` hands each start to whoever reads the returned queues, and
+    /// whose `suggest` asks them which apps are open (the daemon turns the starts into runs and
+    /// answers the questions through its supervisor).
+    pub fn starting(enabled: Enabled) -> Result<(Self, ProviderQueues), ProviderError> {
+        let (starts, start_queue) = mpsc::unbounded_channel();
+        let (open_apps, app_queue) = mpsc::unbounded_channel();
         Ok((
             Self {
                 manifest: manifest_for(enabled)?,
                 starts: Some(starts),
+                open_apps: Some(open_apps),
             },
-            queue,
+            ProviderQueues {
+                starts: start_queue,
+                open_apps: app_queue,
+            },
         ))
     }
 }
@@ -168,13 +190,13 @@ fn start_of(
         }) => Some(ToplevelIdent::parse(entity.key.as_str()).map_err(|_| needs("window"))?),
         _ => None,
     };
-    let app = match param(inv, "app") {
-        Some(Labelled {
-            value: Value::Text(text),
-            ..
-        }) => Some(AppName::parse(text).map_err(|_| needs("app"))?),
+    let app = match param(inv, "app").map(|p| &p.value) {
+        Some(Value::Text(id)) => Some(id.as_str()),
+        Some(Value::Entity(entity)) => Some(entity.key.as_str()),
         _ => None,
-    };
+    }
+    .map(|id| AppName::parse(id).map_err(|_| needs("app")))
+    .transpose()?;
     let mode = match param(inv, "mode").map(|p| &p.value) {
         Some(Value::Choice(choice)) => match choice.as_str() {
             "in_place" => ModeChoice::InPlace,
@@ -283,8 +305,23 @@ impl IntentProvider for CuaProvider {
     }
 
     async fn suggest(&self, ask: SuggestAsk) -> Vec<EntityRef> {
-        let _ = ask;
-        Vec::new()
+        let asks_for_app =
+            ask.action.name.as_str() == "cua.run.start" && ask.param.as_str() == "app";
+        let Some(asks) = self.open_apps.as_ref().filter(|_| asks_for_app) else {
+            return Vec::new();
+        };
+        let (reply, answer) = oneshot::channel();
+        if asks.send(OpenAppsAsk { reply }).is_err() {
+            return Vec::new();
+        }
+        let typed = ask.typed.to_lowercase();
+        answer
+            .await
+            .unwrap_or_default()
+            .into_iter()
+            .filter(|app| app.as_str().to_lowercase().contains(&typed))
+            .filter_map(app_option)
+            .collect()
     }
 }
 

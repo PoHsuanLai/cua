@@ -601,14 +601,80 @@ async fn start_with(
     fx: &Fixture,
     app: Option<&str>,
 ) -> Result<docket_core::Outcome, docket_core::AppRefusal> {
+    start_with_value(fx, app.map(|app| docket_core::Value::Text(app.to_owned()))).await
+}
+
+async fn start_with_value(
+    fx: &Fixture,
+    app: Option<docket_core::Value>,
+) -> Result<docket_core::Outcome, docket_core::AppRefusal> {
     let router = named(fx, Who::Router).await;
     let mut args = vec![("goal", docket_core::Value::Text("draw the lamp".to_owned()))];
-    if let Some(app) = app {
-        args.push(("app", docket_core::Value::Text(app.to_owned())));
-    }
+    args.extend(app.map(|app| ("app", app)));
     perform(&router, &invocation(&args, planner_actor()))
         .await
         .expect("a reply")
+}
+
+async fn suggest_apps(fx: &Fixture, typed: &str, param: &str) -> Vec<String> {
+    let router = named(fx, Who::Router).await;
+    let ask = docket_core::SuggestAsk {
+        action: docket_core::ActionRef {
+            app: porter_core::AppName::parse("org.quire.Cua").unwrap(),
+            name: prov::ActionName::parse("cua.run.start").unwrap(),
+        },
+        param: docket_core::ParamName::parse(param).unwrap(),
+        typed: typed.to_owned(),
+    };
+    let reply = router
+        .call_method(
+            Some("org.quire.Cua"),
+            "/org/quire/IntentProvider1",
+            Some("org.quire.IntentProvider1"),
+            "Suggest",
+            &(serde_json::to_string(&ask).unwrap(),),
+        )
+        .await
+        .expect("a reply");
+    let json: String = reply.body().deserialize().unwrap();
+    let options: Vec<docket_core::EntityRef> = serde_json::from_str(&json).unwrap();
+    options
+        .iter()
+        .map(|o| o.id.key.as_str().to_owned())
+        .collect()
+}
+
+#[tokio::test]
+async fn the_open_apps_are_offered_as_choices_for_app_and_for_nothing_else() {
+    let fx = two_windows(None).await;
+    assert_eq!(
+        suggest_apps(&fx, "", "app").await,
+        ["app.zen_browser.zen", "org.example.Draw"],
+        "ids only, not the shell's own"
+    );
+    assert_eq!(suggest_apps(&fx, "DRAW", "app").await, ["org.example.Draw"]);
+    assert!(suggest_apps(&fx, "", "goal").await.is_empty());
+}
+
+#[tokio::test]
+async fn the_app_parameter_reads_as_text_or_an_entity() {
+    let draw = "org.example.Draw";
+    let forms = [
+        docket_core::Value::Text(draw.to_owned()),
+        docket_core::Value::Entity(prov::EntityId {
+            app: porter_core::AppName::parse("org.quire.Cua").unwrap(),
+            kind: prov::EntityKind::parse("desktop.app").unwrap(),
+            key: prov::EntityKey::parse(draw).unwrap(),
+        }),
+    ];
+    for form in forms {
+        let fx = two_windows(None).await;
+        start_with_value(&fx, Some(form.clone()))
+            .await
+            .unwrap_or_else(|e| panic!("{form:?}: {e:?}"));
+        let view = fx.supervisor.view(&"r-1".parse_run()).expect("a live run");
+        assert_eq!(view.task.app.as_str(), draw, "{form:?}");
+    }
 }
 
 #[tokio::test]

@@ -3,7 +3,7 @@
 
 use crate::bus::{MANAGER_PATH, ManagerObject, RunObject, enveloped};
 use crate::callers::shell_owner;
-use crate::provider::{CuaProvider, ModeChoice, StartRefusal, StartRequest};
+use crate::provider::{CuaProvider, ModeChoice, OpenAppsAsk, StartRefusal, StartRequest};
 use crate::reach::ReachObject;
 use crate::reasons::words_of;
 use cua_bus::{
@@ -122,13 +122,18 @@ fn window_of_app<'a>(windows: &'a [ToplevelInfo], app: &AppName) -> Option<&'a T
     Some(focused.unwrap_or(first))
 }
 
+/// The open apps the person allows, by id, in a stable order.
+fn allowed_open_apps(windows: &[ToplevelInfo], allows: &Apps) -> Vec<AppName> {
+    open_apps(windows)
+        .into_iter()
+        .filter(|app| allows.rule_for(app).is_some())
+        .collect()
+}
+
 /// The refusal that lists the open apps the person allows (an app not on their list would only be
 /// refused next); with none there is nothing to choose from.
 fn choose_app(windows: &[ToplevelInfo], allows: &Apps) -> TaskRefusal {
-    let apps: Vec<AppName> = open_apps(windows)
-        .into_iter()
-        .filter(|app| allows.rule_for(app).is_some())
-        .collect();
+    let apps = allowed_open_apps(windows, allows);
     if apps.is_empty() {
         TaskRefusal::Control(ControlRefusal::BadTask)
     } else {
@@ -234,6 +239,20 @@ async fn starts<S: Drivable>(
             TaskRefusal::NeedsApp(apps) => StartRefusal::NeedsApp(apps),
         });
         let _ = request.reply.send(started);
+    }
+}
+
+/// Answers the provider's questions about which apps are open; with no window list, none are.
+async fn answer_open_apps<S: Drivable>(
+    supervisor: Arc<Supervisor<S>>,
+    mut queue: mpsc::UnboundedReceiver<OpenAppsAsk>,
+) {
+    while let Some(ask) = queue.recv().await {
+        let apps = match supervisor.desktop().windows().await {
+            Ok(windows) => allowed_open_apps(&windows, &supervisor.apps()),
+            Err(_) => Vec::new(),
+        };
+        let _ = ask.reply.send(apps);
     }
 }
 
@@ -515,7 +534,7 @@ async fn serve_as<S: Drivable>(
         )
         .await
         .map_err(bus)?;
-    let (provider, queue) = CuaProvider::starting(supervisor.settings().enabled).map_err(bus)?;
+    let (provider, queues) = CuaProvider::starting(supervisor.settings().enabled).map_err(bus)?;
     match answering {
         Answering::IntentdOnly => {
             docket_client::serve_on(connection, provider, NoContext, NoSummon)
@@ -541,7 +560,8 @@ async fn serve_as<S: Drivable>(
     Ok(Serving {
         tasks: vec![
             tokio::spawn(relay(connection.clone(), supervisor.clone(), who, events)),
-            tokio::spawn(starts(supervisor, queue)),
+            tokio::spawn(answer_open_apps(supervisor.clone(), queues.open_apps)),
+            tokio::spawn(starts(supervisor, queues.starts)),
         ],
     })
 }

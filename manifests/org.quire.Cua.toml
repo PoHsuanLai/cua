@@ -4,7 +4,9 @@
 # the app is asked through `Gate.Grant` on first use. The run's result is not this action's
 # value: it is a `prov::Message` of kind Report in the requester's inbox. This action returns the
 # run's id once the run has begun. `reach` is `hidden` while `cua.enabled` is off: cuad rewrites
-# it when the setting is on. Every field is written (porter's provider-file rule).
+# it when the setting is on. `app` is a dynamic parameter: its options are the open apps, by id,
+# which `Suggest` answers so the planner can offer them before it guesses one. Every field is
+# written (porter's provider-file rule).
 vocab = 1
 app = "org.quire.Cua"
 
@@ -49,7 +51,7 @@ sink = "inert"
 [[actions.params]]
 name = "app"
 label = "App"
-ty = { kind = "text", v = { max = 128, lines = "one" } }
+ty = { kind = "dynamic", v = "cua.run.start" }
 need = { kind = "optional" }
 sink = "inert"
 
