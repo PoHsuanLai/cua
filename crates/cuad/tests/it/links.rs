@@ -144,6 +144,7 @@ impl Desk {
                 external: None,
                 helper: None,
                 started_from: None,
+                acts_for: None,
             })
             .await
             .expect("the planner's session");
@@ -157,6 +158,7 @@ impl Desk {
                 external: None,
                 helper: None,
                 started_from: None,
+                acts_for: None,
             })
             .await
             .expect("the run's session")
@@ -513,12 +515,14 @@ async fn the_daemon_links_are_built_over_one_connection_and_each_reaches_its_nei
 async fn the_run_opens_its_own_session_once_and_a_withdrawn_check_leaves_the_gate_usable() {
     let desk = desk(vec![yes()]).await;
     let gate = IntentsGate::over(DbusTransport::new(desk.cuad_connection().await));
+    // A conversation the router does not hold is ignored: the run opens in the start mode.
+    let conversation = SessionId::parse("s-9").unwrap();
     let session = gate
-        .open_session(&run(), &work())
+        .open_session(&run(), &work(), &conversation)
         .await
         .expect("the cua role opens the session of its own run");
     assert_eq!(
-        gate.open_session(&run(), &work()).await,
+        gate.open_session(&run(), &work(), &conversation).await,
         Err(cua_run::LinkError::Refused(
             docket_core::WireRefusal::Malformed
         )),

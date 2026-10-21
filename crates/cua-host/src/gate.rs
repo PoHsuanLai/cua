@@ -109,7 +109,12 @@ impl<T: Transport + 'static> GateLink for IntentsGate<T> {
             .map_err(link_error)
     }
 
-    async fn open_session(&self, run: &RunId, space: &SpaceId) -> Result<SessionId, LinkError> {
+    async fn open_session(
+        &self,
+        run: &RunId,
+        space: &SpaceId,
+        conversation: &SessionId,
+    ) -> Result<SessionId, LinkError> {
         let open = SessionOpen {
             space: space.clone(),
             agent: AgentRef::Cua { run: run.clone() },
@@ -120,6 +125,7 @@ impl<T: Transport + 'static> GateLink for IntentsGate<T> {
             external: None,
             helper: None,
             started_from: None,
+            acts_for: Some(conversation.clone()),
         };
         Intents::over(Shared(self.transport.clone()))
             .session_open(open)
@@ -442,12 +448,14 @@ mod tests {
             Some(IntentsReply::SessionOpened(docket_core::SessionOpened {
                 session: SessionId::parse("s-7").unwrap(),
                 task: prov::TaskId::parse("t-7").unwrap(),
+                mode: docket_core::Mode::Auto,
             }));
         let gate = IntentsGate::over(transport);
         let run = RunId::parse("r-1").unwrap();
         let space = SpaceId::parse("work").unwrap();
+        let conversation = SessionId::parse("s-1").unwrap();
         assert_eq!(
-            gate.open_session(&run, &space).await,
+            gate.open_session(&run, &space, &conversation).await,
             Ok(SessionId::parse("s-7").unwrap())
         );
         let asked = gate.transport().asked.lock().expect("lock").clone();
@@ -461,6 +469,7 @@ mod tests {
                 external: None,
                 helper: None,
                 started_from: None,
+                acts_for: Some(conversation),
             })]
         );
     }

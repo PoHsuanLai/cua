@@ -148,7 +148,12 @@ impl GateLink for FakePdp {
             .unwrap_or(GrantAnswer::Granted))
     }
 
-    async fn open_session(&self, run: &RunId, space: &SpaceId) -> Result<SessionId, LinkError> {
+    async fn open_session(
+        &self,
+        run: &RunId,
+        space: &SpaceId,
+        _conversation: &SessionId,
+    ) -> Result<SessionId, LinkError> {
         self.opened
             .lock()
             .expect("fake gate lock")

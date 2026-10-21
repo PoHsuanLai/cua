@@ -319,7 +319,15 @@ impl<S: Drivable> Supervisor<S> {
         };
         // The run acts in a session of its own, opened before its first check: the router
         // finds the run's rules by it, and the run's reports go out as the run.
-        match self.shared.gate.open_session(&id, &task.space).await {
+        // The run follows the mode of the conversation that started it, which the task names until
+        // the run's own session replaces it.
+        let conversation = task.session.clone();
+        match self
+            .shared
+            .gate
+            .open_session(&id, &task.space, &conversation)
+            .await
+        {
             Ok(session) => task.session = session,
             Err(_) => {
                 let mut state = self.shared.state();

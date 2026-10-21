@@ -120,7 +120,12 @@ impl GateLink for EvalGate {
         Ok(GrantAnswer::Granted)
     }
 
-    async fn open_session(&self, _run: &RunId, _space: &SpaceId) -> Result<SessionId, LinkError> {
+    async fn open_session(
+        &self,
+        _run: &RunId,
+        _space: &SpaceId,
+        _conversation: &SessionId,
+    ) -> Result<SessionId, LinkError> {
         SessionId::parse("s-1").map_err(|e| LinkError::Protocol(e.to_string()))
     }
 

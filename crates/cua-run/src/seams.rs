@@ -81,10 +81,12 @@ pub trait GateLink: Send + Sync {
 
     /// Opens the session a run acts in (`Session.Open` with `AgentRef::Cua { run }`). The
     /// router finds a run's rules by that session, so it comes before the run's first check.
+    /// `conversation` is the session that started the run: the run follows its mode.
     fn open_session(
         &self,
         run: &RunId,
         space: &SpaceId,
+        conversation: &SessionId,
     ) -> impl Future<Output = Result<SessionId, LinkError>> + Send;
 
     /// One step's check (`Gate.Check`).
