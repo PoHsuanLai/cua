@@ -67,9 +67,9 @@ porter-daemon   = { git = "https://github.com/PoHsuanLai/porter", rev = "96ac46e
 
 # chordkit: the portable keymap core. cua reads the desktop's shortcut conventions from it (a
 # Keymap and a Platform) and restates none of them.
-chordkit        = { git = "https://github.com/PoHsuanLai/chordkit.git", rev = "7b80eddb86559909eeb63b882d5563d36f5bad37" }
+chordkit        = { git = "https://github.com/PoHsuanLai/chordkit.git", rev = "ae28c234f10aa79bb4a9167bc58e0911b21fedae" }
 # keycap's client: this desktop's chordkit source, with the person's own overrides. cuad only, behind its `keycap` feature.
-keycap-client   = { git = "https://github.com/PoHsuanLai/keycap", rev = "52c66c7c768eac3b9ad6749f22ec3a43b08bd48f" }
+keycap-client   = { git = "https://github.com/PoHsuanLai/keycap", rev = "a66556b054f8e0442f3b40be6b35e24a79a1035c" }
 
 # almanac's frozen interfaces: cuad records `CuaRecord`s as `EventBody::Area` through memoryd.
 almanac-core    = { git = "https://github.com/PoHsuanLai/almanac", rev = "6207670341327ba02be9604f455bb4413112cfe0" }
