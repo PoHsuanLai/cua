@@ -61,6 +61,7 @@ fn yes() -> ConfirmAnswer {
             at: UnixSeconds(1),
             covers: prov::Confidentiality::Secret,
         },
+        written: None,
     }
 }
 
@@ -206,6 +207,7 @@ async fn the_gate_asks_the_person_once_per_app_and_then_runs_reads_and_asks_agai
             app: mail(),
             space: work(),
             level: docket_core::Level::AlwaysAllow,
+            run: None,
         })
         .await,
         Ok(GrantAnswer::Granted),
@@ -231,6 +233,7 @@ async fn a_refused_consent_and_a_run_nobody_opened_are_the_routers_answers_not_e
             app: mail(),
             space: work(),
             level: docket_core::Level::AlwaysAllow,
+            run: None,
         })
         .await,
         Ok(GrantAnswer::Refused(ConfirmEnd::Dismissed))
@@ -252,6 +255,7 @@ async fn a_check_that_is_dropped_before_its_answer_leaves_the_gate_usable() {
         app: mail(),
         space: work(),
         level: docket_core::Level::AlwaysAllow,
+        run: None,
     })
     .await
     .unwrap();
@@ -480,6 +484,7 @@ async fn the_daemon_links_are_built_over_one_connection_and_each_reaches_its_nei
                 app: mail(),
                 space: work(),
                 level: docket_core::Level::AlwaysAllow,
+                run: None,
             })
             .await,
         Ok(GrantAnswer::Granted),
@@ -524,6 +529,7 @@ async fn the_run_opens_its_own_session_once_and_a_withdrawn_check_leaves_the_gat
         app: mail(),
         space: work(),
         level: docket_core::Level::AlwaysAllow,
+        run: None,
     })
     .await
     .expect("granted");

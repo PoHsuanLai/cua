@@ -223,7 +223,14 @@ impl<'a, S: Seams> Exec<'a, S> {
         }
         match effect {
             RunEffect::Grant { app, space, level } => {
-                let answer = self.seam.gate.grant(GrantAsk { app, space, level }).await;
+                // The start sheet covers this run only, not every screen run in the Space.
+                let ask = GrantAsk {
+                    app,
+                    space,
+                    level,
+                    run: Some(self.run.clone()),
+                };
+                let answer = self.seam.gate.grant(ask).await;
                 out.input(match answer {
                     Ok(answer) => RunInput::Granted(answer),
                     Err(error) => RunInput::GrantFailed(error),
