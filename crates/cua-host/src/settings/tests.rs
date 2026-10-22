@@ -233,7 +233,7 @@ fn every_schema_key_is_read_by_the_daemon() {
     for row in rows() {
         let p = path(&row);
         let value = if p == APPS_KEY {
-            toml::Value::Array(vec![app_row("org.gnome.Calculator", "session")])
+            toml::Value::Array(vec![app_row("org.gnome.Calculator", "always")])
         } else {
             other_than_default(&row)
         };
@@ -400,7 +400,7 @@ allow = "session"
             },
             AppRule {
                 app: app("org.gnome.Calculator"),
-                allow: AppAllow::Session
+                allow: AppAllow::Ask
             },
         ])
     );

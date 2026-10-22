@@ -38,7 +38,7 @@ on = "On"
 path = "cua.apps"
 default = []
 label = "Apps it may use"
-help = "The apps computer use may work in. An app that is not listed is never touched. Ask means every run asks you first; Session asks once a session; Always never asks, and is not offered for web browsers."
+help = "The apps computer use may work in. An app that is not listed is never touched. Ask asks the first time the assistant uses the app in a conversation, and your answer holds for that conversation; Always never asks, and is not offered for web browsers."
 section = "Computer use"
 exposure = "basic"
 
@@ -63,7 +63,7 @@ label = "Asks"
 kind = "choice"
 
 [key.kind.v.columns.kind.v]
-variants = ["ask", "session", "always"]
+variants = ["ask", "always"]
 
 [key.page]
 kind = "intelligence"

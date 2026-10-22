@@ -3,26 +3,26 @@
 use docket_core::Level;
 use porter_core::AppName;
 
-/// How computer use is allowed for one app (design/22 section 3.29, QUESTIONS S9).
+/// How computer use is allowed for one app (design/22 section 3.29, QUESTIONS S9). It is the
+/// default the person set up: the start sheet of a conversation's first run in the app answers
+/// for that conversation (the router keeps it), and the mode switch changes the rest in use.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum AppAllow {
-    /// Ask every run.
+    /// Ask at a conversation's first run in the app; the answer holds for the conversation.
     Ask,
-    /// Ask once a session.
-    Session,
-    /// Never ask again. Never for a browser.
+    /// Never ask. Never for a browser.
     Always,
 }
 
 impl AppAllow {
     /// The words of the schema's `allow` column, in order.
-    pub const WORDS: [&'static str; 3] = ["ask", "session", "always"];
+    pub const WORDS: [&'static str; 2] = ["ask", "always"];
 
-    /// The allow a word names.
+    /// The allow a word names. `session`, a word of an earlier schema, reads as `ask`: a
+    /// conversation is what it meant, and the router now remembers the answer for one.
     pub fn of_word(word: &str) -> Option<Self> {
         match word {
-            "ask" => Some(AppAllow::Ask),
-            "session" => Some(AppAllow::Session),
+            "ask" | "session" => Some(AppAllow::Ask),
             "always" => Some(AppAllow::Always),
             _ => None,
         }
@@ -30,14 +30,12 @@ impl AppAllow {
 }
 
 impl AppAllow {
-    /// The consent level the router is asked for under this allow.
-    ///
-    /// `Session` maps to `AlwaysAllow` because docket's level has no per-session form: the
-    /// router's own store and its own question cover the rest, and it can only be stricter.
+    /// The consent level the router is asked for under this allow: `Ask` is asked (and the
+    /// router keeps the answer for the conversation), `Always` is remembered for the Space.
     pub fn grant_level(self) -> Level {
         match self {
             AppAllow::Ask => Level::AlwaysAsk,
-            AppAllow::Session | AppAllow::Always => Level::AlwaysAllow,
+            AppAllow::Always => Level::AlwaysAllow,
         }
     }
 }

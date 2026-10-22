@@ -503,7 +503,6 @@ async fn the_grant_carries_the_level_the_persons_row_for_the_app_gives() {
     use docket_core::Level;
     let rows = [
         (cuad::AppAllow::Ask, Level::AlwaysAsk),
-        (cuad::AppAllow::Session, Level::AlwaysAllow),
         (cuad::AppAllow::Always, Level::AlwaysAllow),
     ];
     for (allow, level) in rows {
