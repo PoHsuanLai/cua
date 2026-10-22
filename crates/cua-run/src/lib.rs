@@ -55,6 +55,8 @@
 //! assert!(effects.iter().any(|e| matches!(e, RunEffect::Capture { .. })));
 //! ```
 
+mod attempts;
+mod briefing;
 mod chord_scope;
 mod commit;
 mod config;
@@ -75,6 +77,8 @@ mod stall;
 mod turn;
 mod window_class;
 
+pub use attempts::{Limits, Mark, Tried, Verb, digest, digest_within, stall_words, steps_words};
+pub use briefing::{hints as briefing_hints, task_line};
 pub use chord_scope::{KeyWorld, acts_on_desktop, standard_actions_of};
 pub use commit::{Commit, commit_of};
 pub use config::{

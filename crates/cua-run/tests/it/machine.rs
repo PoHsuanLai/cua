@@ -56,6 +56,8 @@ fn task(target: TaskTarget, mode: RunMode) -> CuaTask {
     CuaTask {
         app: app(),
         goal: user_goal(),
+        asked: None,
+        earlier: None,
         target,
         mode,
         space: space(),

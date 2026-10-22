@@ -65,3 +65,19 @@ ty = { kind = "choice", v = [
 ] }
 need = { kind = "defaulted", v = { kind = "choice", v = "auto" } }
 sink = "inert"
+
+[[actions.params]]
+name = "asked"
+label = "What the person asked"
+ty = { kind = "text", v = { max = 2000, lines = "many" } }
+need = { kind = "optional" }
+sink = "inert"
+filled = { kind = "person_words" }
+
+[[actions.params]]
+name = "earlier"
+label = "Earlier attempts"
+ty = { kind = "text", v = { max = 400000, lines = "many" } }
+need = { kind = "optional" }
+sink = "inert"
+filled = { kind = "own_history", v = { kinds = "cua.*" } }

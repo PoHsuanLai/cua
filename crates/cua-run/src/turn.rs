@@ -1,5 +1,6 @@
 //! From an observation to the model's turn.
 
+use crate::attempts::Verb;
 use crate::observation::{CursorObs, Observation, TreeObs};
 use crate::progress::Effect;
 use crate::shortcut_guard::control_for;
@@ -69,21 +70,13 @@ fn prev_result(outcome: &ActionOutcome, nodes: &[A11yNode], effect: Effect) -> P
 }
 
 /// Whether the action sent input to the window.
-fn sent_input(action: &CuaAction<WindowSpace>) -> bool {
+pub(crate) fn sent_input(action: &CuaAction<WindowSpace>) -> bool {
     matches!(action.class(), ActionClass::Pointer | ActionClass::Keyboard)
 }
 
 /// What the action is called in the words to the model.
 fn verb(action: &CuaAction<WindowSpace>) -> &'static str {
-    match action {
-        CuaAction::Click { .. } => "click",
-        CuaAction::MoveTo { .. } => "pointer move",
-        CuaAction::Drag { .. } => "drag",
-        CuaAction::Scroll { .. } => "scroll",
-        CuaAction::Type { .. } => "typing",
-        CuaAction::Key { .. } => "key press",
-        _ => "action",
-    }
+    Verb::of(action).map_or("action", Verb::words)
 }
 
 /// The note an answer to the model's own question becomes: the person's words, or an agent's

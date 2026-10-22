@@ -148,6 +148,8 @@ pub fn task() -> CuaTask {
     CuaTask {
         app: app(),
         goal: user_goal(),
+        asked: None,
+        earlier: None,
         target: TaskTarget::Window(ToplevelIdent::parse("w1").unwrap()),
         mode: RunMode::InPlace,
         space: space(),

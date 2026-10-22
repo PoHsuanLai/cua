@@ -275,6 +275,8 @@ fn a_task_round_trips_with_its_report_route() {
     let task = CuaTask {
         app: AppName::parse("org.mozilla.firefox").unwrap(),
         goal: user("download the March invoice"),
+        asked: None,
+        earlier: None,
         target: TaskTarget::App(AppName::parse("org.mozilla.firefox").unwrap()),
         mode: RunMode::InPlace,
         space: space(),

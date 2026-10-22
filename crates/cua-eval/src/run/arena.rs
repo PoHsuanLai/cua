@@ -120,6 +120,8 @@ impl Arena {
                     sources: BTreeSet::from([Source::User]),
                 },
             ),
+            asked: None,
+            earlier: None,
             target: TaskTarget::Window(ToplevelIdent::parse(WINDOW).map_err(|e| id(&e))?),
             mode: RunMode::InPlace,
             space: space.clone(),

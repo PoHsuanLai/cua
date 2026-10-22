@@ -78,16 +78,16 @@ almanac-client  = { git = "https://github.com/PoHsuanLai/almanac", rev = "115eaf
 # docket's frozen interfaces: the gate contract (`CuaAsk`, `GateAnswer`, `RunMode`,
 # `WindowTrust`), the message draft and the provider trait. docket sits below cua and has no cua
 # dependency.
-docket-core     = { git = "https://github.com/PoHsuanLai/docket", rev = "5db50ca9b56e3ed3c840bfb29c6b38e9d5df4535" }
-docket-client   = { git = "https://github.com/PoHsuanLai/docket", rev = "5db50ca9b56e3ed3c840bfb29c6b38e9d5df4535", default-features = false }
+docket-core     = { git = "https://github.com/PoHsuanLai/docket", rev = "fc29de2730b34be16853196f35a1047e30419982" }
+docket-client   = { git = "https://github.com/PoHsuanLai/docket", rev = "fc29de2730b34be16853196f35a1047e30419982", default-features = false }
 # Who is calling a daemon: porter's process identity (`Identity`, `Standing`, the callers table), the one way every daemon of the agent tier asks.
-docket-dbus     = { git = "https://github.com/PoHsuanLai/docket", rev = "5db50ca9b56e3ed3c840bfb29c6b38e9d5df4535" }
+docket-dbus     = { git = "https://github.com/PoHsuanLai/docket", rev = "fc29de2730b34be16853196f35a1047e30419982" }
 
 # Dev-dependencies of cuad's tests only: a real intentd on a private bus over docket's fakes, and
 # a real memory service over almanac's fakes. Nothing outside `[dev-dependencies]` names them.
-intentd         = { git = "https://github.com/PoHsuanLai/docket", rev = "5db50ca9b56e3ed3c840bfb29c6b38e9d5df4535" }
-docket-fake     = { git = "https://github.com/PoHsuanLai/docket", rev = "5db50ca9b56e3ed3c840bfb29c6b38e9d5df4535" }
-docket-router   = { git = "https://github.com/PoHsuanLai/docket", rev = "5db50ca9b56e3ed3c840bfb29c6b38e9d5df4535" }
+intentd         = { git = "https://github.com/PoHsuanLai/docket", rev = "fc29de2730b34be16853196f35a1047e30419982" }
+docket-fake     = { git = "https://github.com/PoHsuanLai/docket", rev = "fc29de2730b34be16853196f35a1047e30419982" }
+docket-router   = { git = "https://github.com/PoHsuanLai/docket", rev = "fc29de2730b34be16853196f35a1047e30419982" }
 almanac-fake    = { git = "https://github.com/PoHsuanLai/almanac", rev = "115eafdf6ad6a352c46587a3e70ba0b8d92fd7b2" }
 almanac-service = { git = "https://github.com/PoHsuanLai/almanac", rev = "115eafdf6ad6a352c46587a3e70ba0b8d92fd7b2" }
 

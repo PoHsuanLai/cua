@@ -309,7 +309,7 @@ impl<S: Seams> Exec<'_, S> {
     ) {
         if self.model == ModelSession::NotYet {
             let begin = CuaBegin::new(
-                self.task.goal.value.clone(),
+                crate::briefing::task_line(&self.task),
                 porter_core::capability::CuaEnv::Desktop,
             )
             .with_hints(self.hints.clone());

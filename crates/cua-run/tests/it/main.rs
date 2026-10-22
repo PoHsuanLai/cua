@@ -1,3 +1,5 @@
+mod attempts;
+mod briefing;
 mod machine;
 mod screen;
 mod support;

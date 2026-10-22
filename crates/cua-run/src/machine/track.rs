@@ -1,6 +1,7 @@
 //! What the machine remembers between inputs beyond the phase: small, typed, and never pixels or
 //! thought text.
 
+use crate::attempts::Tried;
 use crate::progress::{Effect, Look};
 use crate::screen::ScreenTrack;
 use crate::sensitivity::WindowSensitivity;
@@ -146,6 +147,9 @@ pub struct RunTrack {
     /// refused.
     #[serde(default)]
     pub last_input: Option<CuaAction<WindowSpace>>,
+    /// Every action the run has tried and how it ended, for the words of a stall.
+    #[serde(default)]
+    pub tried: Vec<Tried>,
 }
 
 impl RunTrack {
@@ -167,6 +171,7 @@ impl RunTrack {
             look: None,
             effect: Effect::Changed,
             last_input: None,
+            tried: Vec::new(),
         }
     }
 }

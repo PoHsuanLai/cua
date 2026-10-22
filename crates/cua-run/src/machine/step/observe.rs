@@ -2,8 +2,9 @@
 
 use super::over_budget;
 use super::screen;
+use crate::attempts::Tried;
 use crate::machine::effect::{HintSource, RunEffect};
-use crate::machine::finish::finish_plain;
+use crate::machine::finish::{finish_plain, finish_stalled};
 use crate::machine::ops::screen_label;
 use crate::machine::phase::RunPhase;
 use crate::machine::run::Run;
@@ -49,6 +50,11 @@ pub(super) fn observed(run: &mut Run, fx: &mut Vec<RunEffect>, mut obs: Observat
     {
         run.track.effect = look.effect_since(before);
     }
+    run.track.tried.extend(
+        obs.prev
+            .iter()
+            .filter_map(|o| Tried::of(&o.action.action, &o.result, run.track.effect)),
+    );
     run.track.look = Some(look);
     // A slow job (a render, an export) looks like a screen that stopped changing: while the
     // run has been waiting for no longer than its total, that is not a stall.
@@ -69,7 +75,7 @@ pub(super) fn observed(run: &mut Run, fx: &mut Vec<RunEffect>, mut obs: Observat
     run.track.proposed = 0;
     run.used.steps = Count(n.0);
     if stall == Stall::Stalled {
-        finish_plain(run, fx, CuaOutcome::BudgetOut(RunBudgetKind::Stall));
+        finish_stalled(run, fx);
         return;
     }
     if over_budget(run, RunBudgetKind::Steps) {

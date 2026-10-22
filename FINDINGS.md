@@ -678,3 +678,12 @@ needs: docket pin bump, `docket-reader` in `[workspace.dependencies]`, and cuad'
 - casement's lease socket offers the desktop's whole extent as its absolute region (the same
   region as the portal's remote sockets), so the grant says `EiOrigin::SenderSocket` and
   seat-input offsets window points by the window's geometry.
+
+## Earlier attempts in the model's briefing
+
+- A stored step does not keep whether the screen changed (the record's `effect` is the action's
+  class, not a look), so an earlier attempt shows "no visible change" only for a step the run
+  refused for lack of progress. The run's own stall report knows more (`RunTrack.tried` has the
+  look after each action). Closing the gap means a field on `cua.step`.
+- The digest reads whatever the router hands over (the newest 200 records of the conversation); a
+  conversation with more runs than that loses its oldest attempts first.

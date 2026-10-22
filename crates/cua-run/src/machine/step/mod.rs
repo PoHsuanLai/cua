@@ -46,7 +46,15 @@ fn window_of(task: &CuaTask) -> Option<&ToplevelIdent> {
 /// A run, started: `Granting`, asking the router for the per-app consent; or, at once, over:
 /// the mode is one the backend cannot run, or the task names an app and not a window.
 pub(crate) fn start(id: RunId, task: CuaTask, env: RunEnv, at: Stamp) -> (Run, Vec<RunEffect>) {
-    let taint = task.goal.label.clone();
+    // Never more trusted than the goal, the person's words the router filled, or the records it
+    // read: the join of them.
+    let taint = [
+        task.asked.as_ref().map(|a| &a.label),
+        task.earlier.as_ref().map(|e| &e.label),
+    ]
+    .into_iter()
+    .flatten()
+    .fold(task.goal.label.clone(), |so_far, label| so_far.join(label));
     let mut run = Run {
         id,
         task,

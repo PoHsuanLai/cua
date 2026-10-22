@@ -1,6 +1,6 @@
 //! `org.quire.Cua`: cuad as an intent provider, with one action, `cua.run.start`.
 
-use cua_bus::ControlRefusal;
+use cua_bus::{ControlRefusal, CuaRecord};
 use cua_desktop::ToplevelIdent;
 use cua_run::Enabled;
 use docket_client::IntentProvider;
@@ -78,6 +78,11 @@ pub enum StartRefusal {
 pub struct StartRequest {
     /// What to do: the planner's words, with their label.
     pub goal: Labelled<String>,
+    /// The person's latest sentence, as the router filled it; none when it had none.
+    pub asked: Option<Labelled<String>>,
+    /// This provider's earlier records of the conversation, oldest first, as the router filled
+    /// them; none when it had none.
+    pub earlier: Option<Labelled<Vec<CuaRecord>>>,
     /// The window to work in, when the planner named one.
     pub window: Option<ToplevelIdent>,
     /// The app, when it named that instead. With neither, the window the person is in.
@@ -183,6 +188,20 @@ fn start_of(
         }) => Labelled::new(text.clone(), label.clone()),
         _ => return Err(needs("goal")),
     };
+    let asked = match param(inv, "asked") {
+        Some(Labelled {
+            value: Value::Text(text),
+            label,
+        }) if !text.trim().is_empty() => Some(Labelled::new(text.clone(), label.clone())),
+        _ => None,
+    };
+    let earlier = match param(inv, "earlier") {
+        Some(Labelled {
+            value: Value::Text(json),
+            label,
+        }) => Some(Labelled::new(records_of(json), label.clone())),
+        _ => None,
+    };
     let window = match param(inv, "window") {
         Some(Labelled {
             value: Value::Entity(entity),
@@ -210,6 +229,8 @@ fn start_of(
     Ok((
         StartRequest {
             goal,
+            asked,
+            earlier,
             window,
             app,
             mode,
@@ -220,6 +241,16 @@ fn start_of(
         },
         answer,
     ))
+}
+
+/// The records in `json`, a JSON array of record bodies: an element that is not a record is
+/// skipped, and text that is not an array holds none.
+fn records_of(json: &str) -> Vec<CuaRecord> {
+    serde_json::from_str::<Vec<serde_json::Value>>(json)
+        .unwrap_or_default()
+        .into_iter()
+        .filter_map(|body| serde_json::from_value(body).ok())
+        .collect()
 }
 
 /// An open app as a choice for the `app` parameter: its id, which is also what to pass back.

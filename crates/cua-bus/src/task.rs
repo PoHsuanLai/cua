@@ -2,6 +2,7 @@
 
 use crate::budget::RunBudget;
 use crate::ids::ProcedureId;
+use crate::record::CuaRecord;
 use cua_action::RunMode;
 use cua_desktop::{Stamp, ToplevelIdent};
 use cua_types::NodeSelector;
@@ -82,6 +83,14 @@ pub struct CuaTask {
     /// What to do: trusted when the person typed it, otherwise carrying the label of whoever
     /// wrote it.
     pub goal: Labelled<String>,
+    /// The person's own latest sentence, as the router filled it, with its label. The screen
+    /// model's task line is this when present; the planner's `goal` then follows as a hint.
+    #[serde(default)]
+    pub asked: Option<Labelled<String>>,
+    /// This provider's records of the conversation, oldest first, as the router filled them,
+    /// with the join of their labels. The run tells the model what earlier attempts did.
+    #[serde(default)]
+    pub earlier: Option<Labelled<Vec<CuaRecord>>>,
     /// Where.
     pub target: TaskTarget,
     /// How: the mode is concrete here (`auto` is resolved by cuad before the task is built).

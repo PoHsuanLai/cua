@@ -285,8 +285,8 @@ pub(crate) async fn drive<S: Drivable>(
         shared: shared.clone(),
         run: id.clone(),
     };
-    let mut exec = Exec::<S>::new(shared.seam(), id.clone(), run.task.clone())
-        .with_hints(shared.hints.clone());
+    let hints = cua_run::briefing_hints(&run.task, &id, &shared.hints);
+    let mut exec = Exec::<S>::new(shared.seam(), id.clone(), run.task.clone()).with_hints(hints);
     let (tx, mut wire) = mpsc::unbounded_channel::<Wire>();
     let mut outlet = Channel(tx);
     let mut guard: Option<OwnedMutexGuard<S::Model>> = None;

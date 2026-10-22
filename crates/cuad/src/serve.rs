@@ -199,6 +199,8 @@ pub(crate) async fn task_for<S: Drivable>(
     Ok(CuaTask {
         app,
         goal: request.goal.clone(),
+        asked: request.asked.clone(),
+        earlier: request.earlier.clone(),
         target,
         mode,
         space: request.space.clone(),

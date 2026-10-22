@@ -1,6 +1,7 @@
 //! Ending a run: the one place every road to `Finished` goes through, so the effects of an end
 //! are the same whichever road it was.
 
+use crate::attempts::stall_words;
 use crate::machine::acquire::AcquireFailure;
 use crate::machine::effect::{CuaSignal, RunEffect};
 use crate::machine::phase::RunPhase;
@@ -21,7 +22,7 @@ pub(crate) fn summary(text: &str) -> Summary {
 }
 
 /// What a report says about an outcome the model did not write itself. Machine text, short.
-fn said_of(outcome: CuaOutcome) -> &'static str {
+pub(crate) fn said_of(outcome: CuaOutcome) -> &'static str {
     match outcome {
         CuaOutcome::Done => "",
         CuaOutcome::Failed(FailReason::WindowGone) => "The window went away.",
@@ -119,6 +120,15 @@ pub(crate) fn finish(run: &mut Run, fx: &mut Vec<RunEffect>, outcome: CuaOutcome
     run.pending.actions.clear();
     run.working = None;
     run.track.settle = SettleWatch::Idle;
+}
+
+/// Ends the run because the screen stopped changing, saying what was tried.
+pub(crate) fn finish_stalled(run: &mut Run, fx: &mut Vec<RunEffect>) {
+    let said = Said {
+        summary: summary(&stall_words(&run.track.tried)),
+        extracted: Vec::new(),
+    };
+    finish(run, fx, CuaOutcome::BudgetOut(RunBudgetKind::Stall), said);
 }
 
 /// Ends the run with `outcome` and the machine's own words.
