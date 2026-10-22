@@ -73,7 +73,10 @@ impl Plan {
         let text_out = caps.text_out.as_ref().ok_or(LiveError::NotComputerUse)?;
         let sampling = text_out.sampling.ok_or(LiveError::NotComputerUse)?;
         let CuaSupport::Dialect {
-            dialect, batching, ..
+            dialect,
+            batching,
+            profile: actions,
+            ..
         } = caps.actions_out.ok_or(LiveError::NotComputerUse)?
         else {
             return Err(LiveError::NotComputerUse);
@@ -87,7 +90,8 @@ impl Plan {
             FrameBudget::within(images.per_prompt),
             RepairBudget(1),
             Encoding::Png,
-        );
+        )
+        .with_actions(actions);
         let (sampling, reasoning): (Sampling, Reasoning) = match thinking {
             Thinking::Off => (sampling.reasoning_off, Reasoning::Off),
             Thinking::On => (sampling.reasoning_on, Reasoning::EngineDefault),
@@ -277,7 +281,7 @@ impl<P: Provider + 'static> CuaModel for ProviderModel<P> {
             };
             let turn = collect.finish(end);
             sink.event(StepEvent::ThoughtDelta(ThoughtText(said_in(&turn))));
-            match session.absorb_for(&sent, turn, &map) {
+            match session.absorb_at(&sent, turn, &map, request.cursor) {
                 StepOutcome::Actions {
                     thought,
                     actions,
