@@ -390,6 +390,7 @@ fn record_of_run(run: &RunId) -> Vec<CuaRecord> {
         CuaRecord::RunStarted {
             run: run.clone(),
             session: SessionId::parse("s-2").unwrap(),
+            conversation: SessionId::parse("s-1").unwrap(),
             goal: prov::Labelled::new("sign in".to_owned(), Label::trusted_user()),
             app: mail(),
             space: work(),
@@ -434,6 +435,7 @@ async fn records_reach_memory_as_cua_events_of_the_runs_session_and_space() {
     task.app = mail();
     task.space = work();
     task.session = SessionId::parse("s-2").unwrap();
+    task.conversation = SessionId::parse("s-1").unwrap();
     cuad.open(&run(), &task).await;
     for record in record_of_run(&run()) {
         cuad.record(record).await.expect("recorded");

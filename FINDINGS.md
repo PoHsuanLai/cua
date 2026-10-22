@@ -310,7 +310,10 @@ the machine under it. What was decided:
   that will not open it makes the start `NotPermitted` and the lease claim is released. `FakePdp` opens
   `s-1` (or `opening(session)`), records `opened()` and `closes()`, and `Verdict::AskAndHang` leaves a
   confirmation up. `cua.run.start` still answers the run's id (the planner's handle on it, and what
-  `Cua1` calls name); the session is `Supervisor::view(run).task.session`.
+  `Cua1` calls name); the session is `Supervisor::view(run).task.session`. The asking session stays in
+  `CuaTask.conversation` (and `RunStarted`); every record names it as a `Subject` thing
+  (`org.quire.Companion` / `companion.session`, as docket's log does) and the app as a `Source` thing
+  (`<app>` / `desktop.app`; almanac's `ThingRole` has only `Subject` and `Source`).
 - **Ask 114**: `Cargo.lock` is refreshed (adds `tokio`, `futures-util`, `rustix`, `cua-parse` edges) and
   `--locked` passes against porter, docket, stoker and almanac master.
 

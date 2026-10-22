@@ -4,23 +4,39 @@
 use crate::clock::SystemClock;
 use crate::lock::locked;
 use almanac_client::{Memory, Transport as MemoryTransport};
-use almanac_core::{AreaPayload, AreaTag, Cause, EventBody, JsonText, KindTag, Record};
+use almanac_core::{
+    AreaPayload, AreaTag, Cause, EventBody, JsonText, KindTag, Record, ThingRole, ThingView,
+    UserText,
+};
 use cua_bus::{CuaRecord, CuaTask};
 use cua_run::Clock;
 use cua_run::{LinkError, MessageLink, RecordSink};
 use docket_client::{ClientError, Intents, Transport as IntentsTransport, TransportError};
 use docket_core::{Delivery, InboundLine, InboxAsk, MessageDraft};
-use porter_core::DataClass;
 use porter_core::UnixSeconds;
-use prov::{Effect, Label, RunId, SessionId, Source, SpaceId};
+use porter_core::{AppName, DataClass};
+use prov::{Effect, EntityId, EntityKey, EntityKind, Label, RunId, SessionId, Source, SpaceId};
 use std::collections::BTreeMap;
 use std::sync::Mutex;
+
+/// The app whose things the conversations are. Must match docket's session log
+/// (`docket-memory`'s `SESSION_APP`): the router reads a conversation's records by this thing.
+const CONVERSATION_APP: &str = "org.quire.Companion";
+/// The kind of the thing a conversation names itself as. Must match docket's session log
+/// (`docket-memory`'s `SESSION_KIND`).
+const CONVERSATION_KIND: &str = "companion.session";
+/// The kind of the thing an app is, when a record names the app the run drives.
+const APP_KIND: &str = "desktop.app";
 
 /// What a record needs besides itself.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RecordContext {
     /// The session the run acts for.
     pub session: SessionId,
+    /// The conversation the run works for; every record names it as its `Subject`.
+    pub conversation: SessionId,
+    /// The app of the leased window; every record names it as its `Source`.
+    pub app: AppName,
     /// The Space.
     pub space: SpaceId,
     /// The run's taint: `Untrusted(Screen)` once it has seen the window.
@@ -39,6 +55,42 @@ pub enum RecordError {
     /// The record did not serialise.
     #[error("not JSON: {0}")]
     Json(String),
+    /// The conversation or the app is not a thing (a bug: both are validated ids).
+    #[error("not a thing: {0}")]
+    Thing(String),
+}
+
+/// A thing as an event names it, with no title: the log keeps only who it is.
+fn view_of(app: &str, kind: &str, key: &str) -> Result<ThingView, RecordError> {
+    let thing = |e: String| RecordError::Thing(e);
+    Ok(ThingView {
+        thing: EntityId {
+            app: AppName::parse(app).map_err(|e| thing(e.to_string()))?,
+            kind: EntityKind::parse(kind).map_err(|e| thing(e.to_string()))?,
+            key: EntityKey::parse(key).map_err(|e| thing(e.to_string()))?,
+        },
+        title: UserText::new(""),
+        subtitle: UserText::new(""),
+    })
+}
+
+/// The things every record of a run names: the conversation (`Subject`, exactly as docket's
+/// session log names it) and the app the run drives (`Source`; almanac has no `Object` role).
+fn things_of(ctx: &RecordContext) -> Result<Vec<(ThingView, ThingRole)>, RecordError> {
+    Ok(vec![
+        (
+            view_of(
+                CONVERSATION_APP,
+                CONVERSATION_KIND,
+                ctx.conversation.as_str(),
+            )?,
+            ThingRole::Subject,
+        ),
+        (
+            view_of(ctx.app.as_str(), APP_KIND, ctx.app.as_str())?,
+            ThingRole::Source,
+        ),
+    ])
 }
 
 /// The almanac event for `record`: an `EventBody::Area` of area `Cua` whose JSON is the record's
@@ -52,6 +104,7 @@ pub fn record_of(ctx: &RecordContext, record: &CuaRecord) -> Result<Record, Reco
         CuaRecord::Step { effect, .. } => *effect,
         _ => Effect::Read,
     };
+    let things = things_of(ctx)?;
     Ok(Record {
         space: ctx.space.clone(),
         occurred: ctx.at,
@@ -62,7 +115,7 @@ pub fn record_of(ctx: &RecordContext, record: &CuaRecord) -> Result<Record, Reco
             area: AreaTag::Cua,
             kind,
             json,
-            things: Vec::new(),
+            things,
         }),
         cause: Cause::None,
     })
@@ -150,6 +203,8 @@ impl<M: MemoryTransport, I: IntentsTransport> RecordSink for DaemonLinks<M, I> {
             run.clone(),
             RecordContext {
                 session: task.session.clone(),
+                conversation: task.conversation.clone(),
+                app: task.app.clone(),
                 space: task.space.clone(),
                 label,
                 at: (self.now)(),
@@ -199,6 +254,8 @@ mod tests {
         let space = SpaceId::parse("desktop").unwrap();
         RecordContext {
             session: SessionId::parse("s-1").unwrap(),
+            conversation: SessionId::parse("c-1").unwrap(),
+            app: porter_core::AppName::parse("org.mozilla.firefox").unwrap(),
             space: space.clone(),
             label: Label {
                 integrity: Integrity::Untrusted,
@@ -234,6 +291,37 @@ mod tests {
             payload.json.as_str(),
             serde_json::to_string(&record).unwrap()
         );
-        assert!(payload.things.is_empty());
+        let named: Vec<(String, String, String, ThingRole)> = payload
+            .things
+            .iter()
+            .map(|(view, role)| {
+                (
+                    view.thing.app.as_str().to_owned(),
+                    view.thing.kind.as_str().to_owned(),
+                    view.thing.key.as_str().to_owned(),
+                    *role,
+                )
+            })
+            .collect();
+        let expected = |app: &str, kind: &str, key: &str, role| {
+            (app.to_owned(), kind.to_owned(), key.to_owned(), role)
+        };
+        assert_eq!(
+            named,
+            vec![
+                expected(
+                    "org.quire.Companion",
+                    "companion.session",
+                    "c-1",
+                    ThingRole::Subject
+                ),
+                expected(
+                    "org.mozilla.firefox",
+                    "desktop.app",
+                    "org.mozilla.firefox",
+                    ThingRole::Source
+                ),
+            ]
+        );
     }
 }

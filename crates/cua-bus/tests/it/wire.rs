@@ -78,6 +78,7 @@ fn every_record() -> Vec<(CuaRecord, &'static str)> {
             CuaRecord::RunStarted {
                 run: run(),
                 session: SessionId::parse("s-2").unwrap(),
+                conversation: SessionId::parse("s-1").unwrap(),
                 goal: user("download the March invoice"),
                 app: AppName::parse("org.mozilla.firefox").unwrap(),
                 space: space(),
@@ -278,6 +279,7 @@ fn a_task_round_trips_with_its_report_route() {
         mode: RunMode::InPlace,
         space: space(),
         session: SessionId::parse("s-2").unwrap(),
+        conversation: SessionId::parse("s-1").unwrap(),
         budget: RunBudget::PROPOSED,
         data_in: vec![],
         success: SuccessCheck::ModelSays,

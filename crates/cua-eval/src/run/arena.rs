@@ -124,6 +124,7 @@ impl Arena {
             mode: RunMode::InPlace,
             space: space.clone(),
             session: SessionId::parse("s-1").map_err(|e| id(&e))?,
+            conversation: SessionId::parse("s-1").map_err(|e| id(&e))?,
             budget,
             data_in: vec![],
             success: SuccessCheck::ModelSays,

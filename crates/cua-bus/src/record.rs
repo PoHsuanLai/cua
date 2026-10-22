@@ -85,6 +85,8 @@ pub enum CuaRecord {
         run: RunId,
         /// The session it acts for.
         session: SessionId,
+        /// The conversation it works for (the session that asked for it).
+        conversation: SessionId,
         /// What it was asked.
         goal: Labelled<String>,
         /// The app of the leased window.

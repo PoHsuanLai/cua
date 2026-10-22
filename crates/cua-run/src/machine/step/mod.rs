@@ -188,6 +188,7 @@ fn leased(run: &mut Run, fx: &mut Vec<RunEffect>, lease: cua_desktop::LeaseId) {
     fx.push(RunEffect::Record(Box::new(CuaRecord::RunStarted {
         run: run.id.clone(),
         session: run.task.session.clone(),
+        conversation: run.task.conversation.clone(),
         goal: run.task.goal.clone(),
         app: run.task.app.clone(),
         space: run.task.space.clone(),

@@ -91,6 +91,9 @@ pub struct CuaTask {
     /// The session the run acts for; the actor of its records is
     /// `Actor::Companion { session, role: Cua { run } }`.
     pub session: SessionId,
+    /// The conversation the run works for (the session that asked for it); the run's own
+    /// session replaces `session`, this stays. Every record names it.
+    pub conversation: SessionId,
     /// The limits.
     pub budget: RunBudget,
     /// Values the task may use.

@@ -445,6 +445,7 @@ async fn the_run_acts_in_the_session_it_opened_before_its_first_check() {
     let mut events = sup.subscribe();
     let mut planned = task();
     planned.session = prov::SessionId::parse("s-1").unwrap();
+    planned.conversation = prov::SessionId::parse("s-1").unwrap();
     let id = sup.start(CuaCaller::Router, planned).await.unwrap();
     assert_eq!(
         sup.view(&id).expect("live").task.session,

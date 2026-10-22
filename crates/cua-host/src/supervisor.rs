@@ -321,7 +321,7 @@ impl<S: Drivable> Supervisor<S> {
         // finds the run's rules by it, and the run's reports go out as the run.
         // The run follows the mode of the conversation that started it, which the task names until
         // the run's own session replaces it.
-        let conversation = task.session.clone();
+        let conversation = task.conversation.clone();
         match self
             .shared
             .gate

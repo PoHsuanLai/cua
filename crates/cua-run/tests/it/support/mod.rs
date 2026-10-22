@@ -69,6 +69,7 @@ pub fn task(success: SuccessCheck) -> CuaTask {
         mode: RunMode::InPlace,
         space: space(),
         session: SessionId::parse("s-1").unwrap(),
+        conversation: SessionId::parse("s-1").unwrap(),
         budget: RunBudget::PROPOSED,
         data_in: vec![],
         success,

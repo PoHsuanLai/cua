@@ -119,7 +119,7 @@ only; the pure set never reaches an effect crate; `wayland-client` is behind the
 | the D-Bus interface | `cua-dbus` and `dbus/org.quire.Cua1.xml` |
 | the Wayland protocol | `quire-agent-v1.xml` in `~/casement-protocols` (the one home), used by cua-desktop and maskcap (feature `wayland`); the server side is the fork's, later casement's |
 | the `cua.run.start` action | `manifests/org.quire.Cua.toml`, served by `cuad::CuaProvider` |
-| the event-log record | `cua_bus::CuaRecord`; `cuad::record_of` makes the almanac `EventBody::Area { area: Cua }` |
+| the event-log record | `cua_bus::CuaRecord`; `cuad::record_of` makes the almanac `EventBody::Area { area: Cua }`, naming the conversation (`CuaTask.conversation`, the thing docket's session log uses) as `Subject` and the run's app as `Source`, so the router reads a conversation's earlier runs by `Entries { about }` |
 | views of the above for the shell | sill's `sill-model` (`run_state_of(slug, outcome)`); cua defines none |
 
 ## 4. Traits

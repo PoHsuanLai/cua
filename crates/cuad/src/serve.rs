@@ -203,6 +203,7 @@ pub(crate) async fn task_for<S: Drivable>(
         mode,
         space: request.space.clone(),
         session: request.session.clone(),
+        conversation: request.session.clone(),
         budget: supervisor.settings().budget,
         data_in: Vec::new(),
         success: SuccessCheck::ModelSays,
