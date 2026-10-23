@@ -28,7 +28,7 @@ pub use budget::{BudgetUse, RunBudget, RunBudgetKind};
 pub use control::{ControlRefusal, CuaCaller, CuaMember, permits};
 pub use ids::{CuaEnvelope, CuaVocab, ProcedureId, QuestionId, WindowRef, slug_of};
 pub use record::{
-    AuthorisedBy, ConfirmBy, CuaRecord, FrameNote, ThoughtDigest, ThumbRef, cua_actor,
+    AuthorisedBy, ConfirmBy, CuaRecord, FrameNote, ScreenEffect, ThoughtDigest, ThumbRef, cua_actor,
 };
 pub use report::{ReportDelivery, RunEnd, report_draft};
 pub use screen::{ScreenAsk, ScreenKind};

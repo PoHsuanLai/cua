@@ -14,7 +14,7 @@ use crate::progress::Look;
 use crate::stall::{Repeats, Stall};
 use cua_action::ActionClass;
 use cua_bus::{ActionOutcome, ActionResult, FrameNote};
-use cua_bus::{CuaOutcome, FailReason, RunBudgetKind};
+use cua_bus::{CuaOutcome, CuaRecord, FailReason, RunBudgetKind};
 use maskcap::{FrameDigest, FrameWant, digest};
 use porter_core::Count;
 
@@ -49,6 +49,11 @@ pub(super) fn observed(run: &mut Run, fx: &mut Vec<RunEffect>, mut obs: Observat
         && let Some(before) = &run.track.look
     {
         run.track.effect = look.effect_since(before);
+        fx.push(RunEffect::Record(Box::new(CuaRecord::Seen {
+            run: run.id.clone(),
+            n,
+            effect: run.track.effect,
+        })));
     }
     run.track.tried.extend(
         obs.prev

@@ -6,16 +6,8 @@ use cua_desktop::Digest32;
 use maskcap::FrameDigest;
 use serde::{Deserialize, Serialize};
 
-/// What the last action did to the window, from two looks at it.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum Effect {
-    /// The frame or the tree is different. Also the answer when there is no earlier look.
-    #[default]
-    Changed,
-    /// The frame and the tree (when there is one) are the same as before the action.
-    NoVisibleChange,
-}
+/// What the last action did to the window, from two looks at it: the record's own type.
+pub use cua_bus::ScreenEffect as Effect;
 
 /// What one look at the window held, as digests: the frame, and the rendered tree when there is
 /// one. No pixels and no text are kept.

@@ -197,6 +197,7 @@ fn end_to_end_scripted_run_done() {
             "cua.asked",
             "cua.confirmed",
             "cua.step",
+            "cua.step.seen",
             "cua.run.finished"
         ]
     );

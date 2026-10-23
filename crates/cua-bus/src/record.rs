@@ -54,6 +54,17 @@ pub enum FrameNote {
     },
 }
 
+/// What a step's input did to the window, from the looks before and after it.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ScreenEffect {
+    /// The frame or the tree is different. Also the answer when there is no earlier look.
+    #[default]
+    Changed,
+    /// The frame and the tree (when there is one) are the same as before the action.
+    NoVisibleChange,
+}
+
 /// Who allowed an action.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -132,6 +143,18 @@ pub enum CuaRecord {
         frame: FrameNote,
         /// What was injected, if anything.
         input: Option<InputReceipt>,
+    },
+    /// The look after a step's input: whether the window changed. It follows the `cua.step`
+    /// records of the actions it judges, and is written only when an input ran and there was a
+    /// look before it.
+    #[serde(rename = "cua.step.seen")]
+    Seen {
+        /// The run.
+        run: RunId,
+        /// The step whose look this is (the one after the actions it judges).
+        n: StepIndex,
+        /// What the window showed.
+        effect: ScreenEffect,
     },
     /// The model asked the person something.
     #[serde(rename = "cua.asked")]
@@ -224,6 +247,7 @@ impl CuaRecord {
             CuaRecord::RunStarted { run, .. }
             | CuaRecord::Routed { run, .. }
             | CuaRecord::Step { run, .. }
+            | CuaRecord::Seen { run, .. }
             | CuaRecord::Asked { run, .. }
             | CuaRecord::Confirmed { run, .. }
             | CuaRecord::TakenOver { run, .. }

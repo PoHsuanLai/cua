@@ -1043,3 +1043,47 @@ fn a_chord_for_a_control_the_tree_shows_is_refused_and_one_without_a_tree_is_not
         assert_eq!(!asked, refused, "{name}");
     }
 }
+
+#[test]
+fn the_look_after_an_input_is_recorded_as_changed_or_not() {
+    for (byte, effect) in [
+        (1, cua_bus::ScreenEffect::NoVisibleChange),
+        (2, cua_bus::ScreenEffect::Changed),
+    ] {
+        let mut d = Drive::thinking(STOCK, task(model_says()), tree(vec![]));
+        d.run.track.outcomes = vec![ActionOutcome {
+            action: cua_bus::TargetedAction {
+                window: cua_bus::WindowRef(1),
+                action: click_at(2, 2),
+            },
+            result: ActionResult::Done,
+        }];
+        d.run.phase = RunPhase::Observing(StepIndex(2));
+        d.feed(RunInput::Observed(Box::new(observation(
+            byte,
+            tree(vec![]),
+        ))));
+        let seen: Vec<&CuaRecord> = d
+            .effects
+            .iter()
+            .filter_map(|e| match e {
+                RunEffect::Record(r) if matches!(**r, CuaRecord::Seen { .. }) => Some(&**r),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(
+            seen,
+            [&CuaRecord::Seen {
+                run: run_id(),
+                n: StepIndex(2),
+                effect,
+            }]
+        );
+    }
+    let mut d = Drive::leased(STOCK, task(model_says()));
+    d.feed(RunInput::Observed(Box::new(observation(1, tree(vec![])))));
+    assert!(
+        kinds(&d.effects).is_empty(),
+        "no input ran before the first look"
+    );
+}

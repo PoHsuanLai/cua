@@ -98,9 +98,8 @@ pub struct Tried {
 }
 
 impl Tried {
-    /// `action` and how it ended. `effect` is what the window showed after it; the log keeps no
-    /// look, so a stored step passes `Effect::Changed` and a refusal for lack of progress says
-    /// the rest.
+    /// `action` and how it ended. `effect` is what the window showed after it (a stored step's
+    /// comes from the `cua.step.seen` that follows it).
     pub fn of(
         action: &CuaAction<WindowSpace>,
         result: &ActionResult,
@@ -201,7 +200,32 @@ impl Limits {
 struct Attempt {
     run: RunId,
     tried: Vec<Tried>,
+    /// The actions since the last look, as they read if that look shows no change: where each
+    /// sits in `tried`, and its words then.
+    unseen: Vec<(usize, Tried)>,
     outcome: Option<CuaOutcome>,
+}
+
+impl Attempt {
+    /// A step's action: it reads as done until a look says otherwise.
+    fn step(&mut self, action: &CuaAction<WindowSpace>, result: &ActionResult) {
+        let Some(tried) = Tried::of(action, result, Effect::Changed) else {
+            return;
+        };
+        if let Some(unchanged) = Tried::of(action, result, Effect::NoVisibleChange) {
+            self.unseen.push((self.tried.len(), unchanged));
+        }
+        self.tried.push(tried);
+    }
+
+    /// The look after the actions since the last one, as the run itself judged them.
+    fn seen(&mut self, effect: Effect) {
+        for (i, unchanged) in std::mem::take(&mut self.unseen) {
+            if effect == Effect::NoVisibleChange {
+                self.tried[i] = unchanged;
+            }
+        }
+    }
 }
 
 impl Attempt {
@@ -239,6 +263,7 @@ pub fn digest_within(
                 attempts.push(Attempt {
                     run: run.clone(),
                     tried: Vec::new(),
+                    unseen: Vec::new(),
                     outcome: None,
                 });
             }
@@ -248,9 +273,13 @@ pub fn digest_within(
                 result,
                 ..
             } => {
-                let tried = Tried::of(&action.action, result, Effect::Changed);
                 if let Some(attempt) = attempts.iter_mut().find(|a| &a.run == run) {
-                    attempt.tried.extend(tried);
+                    attempt.step(&action.action, result);
+                }
+            }
+            CuaRecord::Seen { run, effect, .. } => {
+                if let Some(attempt) = attempts.iter_mut().find(|a| &a.run == run) {
+                    attempt.seen(*effect);
                 }
             }
             CuaRecord::Finished { run, outcome, .. } => {

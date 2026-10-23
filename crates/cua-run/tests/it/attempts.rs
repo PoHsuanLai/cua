@@ -296,3 +296,34 @@ fn an_input_that_ran_and_changed_nothing_is_marked() {
         })
     );
 }
+
+fn seen(n: u32, effect: cua_run::Effect) -> CuaRecord {
+    CuaRecord::Seen {
+        run: run(n),
+        n: StepIndex(2),
+        effect,
+    }
+}
+
+#[test]
+fn a_stored_look_marks_the_inputs_since_the_one_before() {
+    let records = vec![
+        started(1, "org.gimp.GIMP"),
+        step(1, click_at(1, 1), ActionResult::Done),
+        seen(1, cua_run::Effect::Changed),
+        step(1, click_at(2, 2), ActionResult::Done),
+        step(1, drag(), ActionResult::Done),
+        seen(1, cua_run::Effect::NoVisibleChange),
+        step(1, crate::support::wait(500), ActionResult::Done),
+        seen(1, cua_run::Effect::NoVisibleChange),
+        seen(2, cua_run::Effect::NoVisibleChange),
+    ];
+    let lines = digest(&records, &app("org.gimp.GIMP"), None);
+    assert_eq!(
+        lines,
+        vec![
+            "Attempt 1:",
+            "Tried: click, click (no visible change), drag (no visible change), wait.",
+        ]
+    );
+}

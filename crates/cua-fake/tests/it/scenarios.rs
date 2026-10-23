@@ -62,6 +62,7 @@ fn on_stock_input_stops_before_the_prompt_shows_and_starts_after_the_answer() {
             "cua.run.started",
             "cua.confirmed",
             "cua.step",
+            "cua.step.seen",
             "cua.run.finished"
         ]
     );
@@ -360,6 +361,7 @@ fn a_yes_goes_on_and_the_same_screen_is_recorded_but_not_asked_again() {
             "cua.asked",
             "cua.confirmed",
             "cua.step",
+            "cua.step.seen",
             "cua.screen.suspicious",
             "cua.run.finished"
         ]

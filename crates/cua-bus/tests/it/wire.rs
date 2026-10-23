@@ -181,6 +181,14 @@ fn every_record() -> Vec<(CuaRecord, &'static str)> {
             },
             "cua.screen.suspicious",
         ),
+        (
+            CuaRecord::Seen {
+                run: run(),
+                n: step,
+                effect: cua_bus::ScreenEffect::NoVisibleChange,
+            },
+            "cua.step.seen",
+        ),
     ]
 }
 
