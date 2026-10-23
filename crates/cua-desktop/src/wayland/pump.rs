@@ -92,6 +92,13 @@ impl<S: Send + 'static> Pump<S> {
         &self.connection
     }
 
+    // tokio 1.54 deprecates `AsyncFd::new` for types whose `as_raw_fd` may not stay the same open
+    // descriptor (RUSTSEC-2026-0386); its replacement is `unsafe`. `Socket` owns its descriptor and
+    // always returns it, so the registration stays valid for the `AsyncFd`'s whole life.
+    #[expect(
+        deprecated,
+        reason = "Socket owns its fd; the replacement needs unsafe"
+    )]
     async fn socket(&self) -> Result<&AsyncFd<Socket>, PumpError> {
         self.socket
             .get_or_try_init(|| async {

@@ -89,6 +89,12 @@ impl FakeEis {
     /// Serves the handshake, offers a keyboard with a US keymap, a pointer and a scroll device
     /// with the regions measured on stock, and returns what the sender sent until it
     /// disconnects (or drops the socket).
+    // `AsyncFd::with_interest` is deprecated in tokio 1.54 (RUSTSEC-2026-0386) and its replacement
+    // is `unsafe`. The borrowed descriptor outlives the `AsyncFd`, which never leaves this call.
+    #[expect(
+        deprecated,
+        reason = "the borrowed fd outlives the AsyncFd; the replacement needs unsafe"
+    )]
     pub async fn serve(&mut self) -> Vec<EisEvent> {
         let mut session = Session::new(&self.server, self.keymap.clone());
         let Ok(ready) = AsyncFd::with_interest(self.server.as_fd(), Interest::READABLE) else {
