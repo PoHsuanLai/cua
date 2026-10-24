@@ -105,6 +105,7 @@ async fn desk(answers: Vec<ConfirmAnswer>) -> Desk {
         who.clone(),
         &ProcRoot::Fake(proc_root),
         AcpGate::shut(),
+        None,
     )
     .await
     .expect("intentd serves");
