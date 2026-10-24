@@ -6,9 +6,10 @@
 #
 # How the settings reach the daemon: cuad reads `cua/settings.toml` from `$XDG_CONFIG_HOME`
 # (under the person's home), then from each of `$XDG_CONFIG_DIRS` (`/etc/xdg` by default). The
-# drop-in (cuad.service.d/sandbox.conf) hides the home folder (`ProtectHome=tmpfs`), so under it the person's own file is out of reach and the
-# system-wide `/etc/xdg/cua/settings.toml` (readable: `ProtectSystem=strict` only forbids
-# writes) is the one that applies. A file that exists and cannot be read is logged at start
+# drop-in (cuad.service.d/sandbox.conf) hides the home folder (`ProtectHome=tmpfs`) and binds
+# back only `$XDG_CONFIG_HOME/cua`, read-only, so the file the Settings app writes is read and
+# watched; the system-wide `/etc/xdg/cua/settings.toml` (readable: `ProtectSystem=strict` only
+# forbids writes) applies when the person has none. A file that exists and cannot be read is logged at start
 # and on every change ("settings: <path>: could not be read"), not skipped silently. Until a
 # file lists an app, no app is on (`cua.apps` starts empty), so an installed unit with no
 # settings file does nothing.
