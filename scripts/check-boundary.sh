@@ -93,9 +93,9 @@ RULES=(
   "maskcap: $EFFECTS"
   "seat-input: $EFFECTS"
   "a11y-tree: $EFFECTS"
-  # The bus bodies: serde only. The capability crates (accessibility, input, capture) are not
-  # reachable, so a consumer that reads the bodies (sill, the D-Bus codec) links none of them;
-  # the leaf types they share live in cua-types.
+  # The bus bodies: serde, plus the vocabulary crates named in ONLY below. The capability crates
+  # (accessibility, input, capture) are not reachable, so a consumer that reads the bodies
+  # (sill, the D-Bus codec) links none of them; the leaf types they share live in cua-types.
   "cua-types: $EFFECTS a11y-tree seat-input maskcap"
   "cua-bus: $EFFECTS a11y-tree seat-input maskcap"
   "cua-run: $EFFECTS"
@@ -220,6 +220,29 @@ for row in "${LAYERS[@]}"; do
     fi
   done
   [ "$bad" -eq 0 ] && echo "layers hold: $crate ($tier) depends only on its own tier or below"
+done
+
+# ONLY: crates whose DIRECT normal and build path dependencies are exactly this list. A dependency
+# not listed is a leak; so is one the crate no longer has, so the table stays exact.
+# cua-bus carries serde bodies, but their fields use the vocabulary of the crates it names:
+# almanac-core (EventRef in the log record), docket-core (Value, EffectBasis and the message
+# drafts of a report), porter-core and porter-infer (counts, money, step and served-by ids) and
+# prov (labels). None of them is a capability crate.
+ONLY=(
+  "cua-bus: almanac-core cua-action cua-desktop cua-types docket-core porter-core porter-infer prov"
+)
+for entry in "${ONLY[@]}"; do
+  crate="${entry%%:*}"
+  read -r -a allowed <<<"${entry#*:}"
+  found=$(cargo tree -p "$crate" --depth 1 -e normal,build --prefix none --all-features 2>/dev/null \
+    | grep -E '\((/|https://github.com/PoHsuanLai/)' | awk '{print $1}' | grep -vx "$crate" | sort -u | tr '\n' ' ')
+  want=$(printf '%s\n' "${allowed[@]}" | sort -u | tr '\n' ' ')
+  if [ "$found" != "$want" ]; then
+    echo "ONLY: $crate depends on [${found% }], the table allows [${want% }]"
+    fail=1
+  else
+    echo "only holds: $crate depends on [${found% }]"
+  fi
 done
 
 # Source bans, with the KNOWN list.

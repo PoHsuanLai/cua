@@ -1,6 +1,6 @@
 [package]
 name = "cua-bus"
-description = "What crosses cuad's bus and its event log: the Cua1 bodies, the Start task, run states and outcomes, CuaRecord, the control refusals and who may call which member. Serde only: no capability crate (accessibility, input, capture) is linked; results are prov Report messages."
+description = "What crosses cuad's bus and its event log: the Cua1 bodies, the Start task, run states and outcomes, CuaRecord, the control refusals and who may call which member. Serde bodies over the vocabulary of almanac-core, docket-core, porter-core, porter-infer, prov and cua-action; no capability crate (accessibility, input, capture) is linked; results are prov Report messages."
 version.workspace = true
 edition.workspace = true
 license.workspace = true

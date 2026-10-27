@@ -27,7 +27,7 @@ picture), section 6 (copy the recipe).
 | `maskcap` | `Frame`, `PixelBuf`, `MaskReport`, `apply_masks`, `FrameDigest`, `settle`, `pixel_diff`, the `WindowCapture` and `CaptureSession` seams. Feature `wayland`: `StockToplevelCapture`, `QuireMaskedCapture`, `StampClock` | none (`wayland`: wayland-client) |
 | `seat-input` | `InputOp`, `Keymap`, `SeatCaps`, `plan`, `InputReceipt`, `region`, the `AgentSeat` seam. Feature `ei`: `EiSeat` | none (`ei`: reis, tokio, futures-util) |
 | `a11y-tree` | `A11ySnapshot`, `A11yNode`, `prune`, `render`, `diff`, `secret_rects`, selectors, the `A11ySource` seam. Feature `atspi`: `AtspiSource` | none (`atspi`: atspi) |
-| `cua-bus` | what crosses the bus and the log, serde only (no capability crate is linked; the leaf types come from `cua-types`): the `Start` body (`CuaTask`), `RunStateSlug`, `CuaOutcome`, `ModeSupport`, `CuaRecord`, `ActionResult`, `RunBudget`, `ControlRefusal`, `permits`, `report_draft` | none |
+| `cua-bus` | what crosses the bus and the log, serde bodies over the vocabulary crates almanac-core, docket-core, porter-core, porter-infer, prov and cua-action (no capability crate is linked; the leaf types come from `cua-types`; `scripts/check-boundary.sh` ONLY pins this list): the `Start` body (`CuaTask`), `RunStateSlug`, `CuaOutcome`, `ModeSupport`, `CuaRecord`, `ActionResult`, `RunBudget`, `ControlRefusal`, `permits`, `report_draft` | none |
 | `cua-run` | the pure run machine (`Run`, `RunTrack`, `RunPhase`, `RunInput`, `RunEffect`), `Observation`, `shortcut_hint` (the desktop's shortcut chords as one line for the model, read from a chordkit `Keymap`; `Exec::with_hints` hands it to the model's session), `classify_effect`, `window_class_of`, `window_sensitivity` (a sensitive window makes the run ask before input even when the router says run), `mode_support`, `choose_mode`, `LeaseBook`, `stalled`, `turn` and `note_of`, `CuaConfig`, `CuaModel`, the seams a run is carried out against (`Seams`, `Clock`, `GateLink`, `RecordSink`, `MessageLink`), and `Exec`, which carries a run's effects out against them (it awaits nothing but seam futures, so it needs no runtime) | none |
 | `cua-dbus` | `org.quire.Cua1` (`Manager`, `Run`) as zbus proxies and skeletons, `introspection`, `CuaError`, bus names and paths | zbus |
 | `cua-fake` | test only: `FakeSeat`, `FakeEis`, `FakeCapture`, `FakeDesktop`, `FakeA11y`, `ScriptedModel`, `FakePdp`, `MemoryEvents`, `FixedClock`, `FakeSeams`, `run_harness`, and `scene` (a window, frames, a world, a task) | none (`FakeEis`: reis, tokio) |
@@ -48,8 +48,8 @@ lower one, and the script bans source patterns per tier):
   environment variable outside `main.rs`.
 
 `scripts/check-boundary.sh --long-files` reports source files over 500 lines and `--self-test`
-seeds violations and asserts each is caught. The direct edges below are a description, no longer a checked allow-list (dev-dependencies are
-outside it):
+seeds violations and asserts each is caught. Of the direct edges below, only `cua-bus`'s list is checked exactly (ONLY in the script); the rest
+is a description (dev-dependencies are outside it):
 
 | Crate | May depend on |
 | --- | --- |
