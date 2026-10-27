@@ -29,7 +29,6 @@ tokio = { workspace = true }
 [dev-dependencies]
 cua-action = { workspace = true }
 cua-fake = { workspace = true }
-tempfile = { workspace = true }
 
 [lints]
 workspace = true

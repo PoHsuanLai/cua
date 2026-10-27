@@ -3,8 +3,9 @@
 //! the inode by rename), a 30 ms debounce, then the whole file is read again through the lenient
 //! reader.
 
-use cua_host::{CuaSettings, Loaded, Locator, SETTINGS_FILE, SettingsFeed};
+use cua_host::{CuaSettings, Loaded, Locator, ReadFailure, ReadText, SETTINGS_FILE, SettingsFeed};
 use porter_daemon::Watch;
+use std::path::Path;
 use std::time::Duration;
 use tokio::sync::{mpsc, watch};
 
@@ -21,6 +22,18 @@ pub enum WatchState {
         /// Why the watch could not start.
         reason: String,
     },
+}
+
+/// The settings text from the disk: the one place the daemon opens the file.
+struct FsText;
+
+impl ReadText for FsText {
+    fn read_text(&self, path: &Path) -> Result<String, ReadFailure> {
+        std::fs::read_to_string(path).map_err(|error| match error.kind() {
+            std::io::ErrorKind::NotFound => ReadFailure::Missing,
+            _ => ReadFailure::Unreadable { source: error },
+        })
+    }
 }
 
 /// A running watch on the settings file. Dropping it stops the watch.
@@ -46,7 +59,7 @@ async fn settle(
                 more = events.recv() => if more.is_none() { return },
             }
         }
-        if out.send(locator.read(&base)).is_err() {
+        if out.send(locator.read(&FsText, &base)).is_err() {
             return;
         }
     }
@@ -61,7 +74,7 @@ impl SettingsFeed for SettingsWatch {
 impl SettingsWatch {
     /// Reads the file now over `base` and starts watching it. Must run inside a tokio runtime.
     pub fn start(locator: Locator, base: CuaSettings) -> Self {
-        let initial = locator.read(&base);
+        let initial = locator.read(&FsText, &base);
         let (out, changes) = watch::channel(initial);
         let (signal, events) = mpsc::unbounded_channel();
         let started = locator

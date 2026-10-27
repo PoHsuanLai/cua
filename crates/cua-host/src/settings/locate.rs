@@ -2,6 +2,7 @@
 //! `$XDG_CONFIG_DIRS` (design/22 section 2). The first file that reads wins.
 
 use super::read::{Fallback, Loaded, Why, read};
+use super::text::{ReadFailure, ReadText};
 use super::{CuaSettings, SETTINGS_FILE};
 use std::path::{Path, PathBuf};
 
@@ -38,24 +39,24 @@ impl Locator {
             .map(|name| person.join(name))
     }
 
-    /// The file as it is now over `base`: the first one that reads; no file is `base`, nothing to
-    /// report.
-    pub fn read(&self, base: &CuaSettings) -> Loaded {
+    /// The file as `reader` shows it over `base`: the first one that reads; no file is `base`,
+    /// nothing to report.
+    pub fn read(&self, reader: &impl ReadText, base: &CuaSettings) -> Loaded {
         let mut unreadable = Vec::new();
         let mut text = None;
         for path in self.dirs.iter().map(|d| d.join(SETTINGS_FILE)) {
-            match std::fs::read_to_string(&path) {
+            match reader.read_text(&path) {
                 Ok(found) => {
                     text = Some(found);
                     break;
                 }
                 // No file in this directory is the ordinary case.
-                Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+                Err(ReadFailure::Missing) => {}
                 // A file that is there and cannot be read is not the same as no file: it is
                 // reported, so a sandbox that hides the settings does not fail silently.
-                Err(error) => unreadable.push(Fallback {
+                Err(ReadFailure::Unreadable { source }) => unreadable.push(Fallback {
                     key: path.display().to_string(),
-                    why: Why::Unreadable(error.to_string()),
+                    why: Why::Unreadable(source.to_string()),
                 }),
             }
         }

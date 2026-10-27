@@ -103,3 +103,29 @@ async fn a_bad_value_in_the_file_leaves_the_running_value_and_is_reported() {
     assert_eq!(loaded.fallbacks[0].key, "cua.budget.spend_microusd");
     assert_eq!(sup.settings().budget.spend, porter_core::MicroUsd(0));
 }
+
+#[tokio::test]
+async fn a_settings_file_that_cannot_be_read_is_reported_and_the_next_directory_answers() {
+    let blocked = tempfile::tempdir().unwrap();
+    let etc = tempfile::tempdir().unwrap();
+    // A directory stands in for a file that is there and cannot be read.
+    std::fs::create_dir_all(blocked.path().join("cua/settings.toml")).unwrap();
+    write_atomically(etc.path(), "[cua.budget]\nspend_microusd = 1900\n");
+    let env = |key: &str| match key {
+        "XDG_CONFIG_HOME" => Some(blocked.path().display().to_string()),
+        "XDG_CONFIG_DIRS" => Some(etc.path().display().to_string()),
+        _ => None,
+    };
+    let sup = supervisor(BackendKind::KwinStock, vec![], FakePdp::allow_all());
+    let base = CuaSettings {
+        config: sup.settings(),
+        apps: Apps::Unrestricted,
+    };
+    let loaded = SettingsWatch::start(Locator::from_env(&env), base).current();
+    assert_eq!(
+        loaded.value.config.budget.spend,
+        porter_core::MicroUsd(1900)
+    );
+    assert_eq!(loaded.fallbacks.len(), 1);
+    assert!(matches!(loaded.fallbacks[0].why, cuad::Why::Unreadable(_)));
+}

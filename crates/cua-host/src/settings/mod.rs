@@ -1,21 +1,25 @@
 //! The person's computer-use settings (design/22 section 3.29): the `cua.*` keys the Settings app
 //! writes to `$XDG_CONFIG_HOME/cua/settings.toml`, read leniently (a bad value falls back, per key,
 //! and is logged) and found through the configuration directories. The pure part (`read`) is text
-//! in, typed values out; the file is the edge, and the live watch on it is the daemon's, which
+//! in, typed values out; the file is the edge (the caller's [`ReadText`]), and the live watch on it is the daemon's, which
 //! feeds a [`SettingsFeed`] to the supervisor.
 
 mod apps;
 mod keys;
 mod locate;
+#[cfg(test)]
+mod locate_tests;
 mod read;
 #[cfg(test)]
 mod tests;
+mod text;
 
 use cua_run::CuaConfig;
 
 pub use apps::{AppAllow, AppRule, Apps, is_browser};
 pub use locate::Locator;
 pub use read::{Fallback, Loaded, Why, read};
+pub use text::{ReadFailure, ReadText};
 
 /// The schema cua ships for its settings (design/22 section 9.2).
 pub const SCHEMA: &str = include_str!("../../../../dist/settings/cua.settings.toml");
