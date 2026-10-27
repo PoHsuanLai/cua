@@ -36,8 +36,20 @@ picture), section 6 (copy the recipe).
 | `cua-host` | the run executor as a library: `Supervisor` (a task per run), `Drivable`, `SupervisorEvent`, `IntentsGate`, `DaemonLinks`, `record_of`, `guard`, `CuadConfig`, `SystemClock`, and the settings read from text: `read`, `Locator`, `SettingsFeed`, `SCHEMA`, `Supervisor::{settings, apps, apply_settings, follow}`. No backend, bus or file watch | docket-client and almanac-client without `dbus` |
 | `cuad` | the daemon and its library: `SeatBackend`, `CaptureBackend`, `InferdCuaModel`, `Links` (the three daemon links over one connection), `CuaProvider` (`org.quire.Cua`), `reach_json` and `follow_settings` (`org.quire.IntentReach1` beside the provider: `Reach()` says `{"cua.run.start": "offered"}` while `cua.enabled` is on, else `hidden`, and `ReachChanged` is emitted when the settings watch changes it; intentd lays that over the installed manifest, which declares the action hidden; a local mirror of docket-dbus's interface until the next docket pin), `SystemSeams`, `SystemDesktop`, `SystemA11y`, `WaylandPair`, `serve`, `serve_on` and `serve_on_with` (who is calling is the process behind the connection, named by `cuad-callers.toml` through docket-dbus's `Identity`; never a bus name), `classify`, `desktop_keymap` (the keymap built once at start: chordkit's conventions, plus the person's keycap overrides with the `keycap` feature). The binary serves both bus names; the person's settings: `SettingsWatch` (the directory watch on `cua/settings.toml`), `cua-host`'s names re-exported, `SCHEMA` (`dist/settings/cua.settings.toml`), and `--write-schema` | everything |
 
-Allowed direct edges between our own crates (checked by `scripts/check-boundary.sh`;
-dev-dependencies are outside it):
+Tiers (the LAYERS table of `scripts/check-boundary.sh`; a crate depends on its own tier or a
+lower one, and the script bans source patterns per tier):
+
+- **P (pure):** `cua-desktop`, `cua-types`, `maskcap`, `seat-input`, `a11y-tree`, `cua-bus`,
+  `cua-run`. No `std::fs/env/process/net`, clock reads, sleeps, tokio, hyper, reqwest, zbus,
+  rustix or UI words. The `wayland`, `ei` and `atspi` backend modules still break these bans and
+  are listed in the script's KNOWN table with the lane that removes them.
+- **C (client/IO):** `cua-host`, `cua-dbus`, `cua-fake`. May do IO; no UI words.
+- **A (app/daemon):** `cuad`, `cua-eval`, `cua-eval-cloud`. Wiring; their libraries read no
+  environment variable outside `main.rs`.
+
+`scripts/check-boundary.sh --long-files` reports source files over 500 lines and `--self-test`
+seeds violations and asserts each is caught. The direct edges below are a description, no longer a checked allow-list (dev-dependencies are
+outside it):
 
 | Crate | May depend on |
 | --- | --- |
