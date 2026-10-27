@@ -8,9 +8,8 @@
 //! `RunMode` and `WindowTrust` live in stoker's `cua-action` (with `WindowClass`) and are
 //! re-exported here.
 //!
-//! Pure by default: no backend lives here. A compositor backend implements [`Desktop`] and
-//! [`LeaseControl`]; the `wayland` feature adds [`Pump`], the shared plumbing that drives a
-//! wayland connection from async code.
+//! Pure: no backend lives here. A compositor backend implements [`Desktop`] and
+//! [`LeaseControl`].
 
 mod caps;
 mod error;
@@ -20,9 +19,6 @@ mod lease;
 mod traits;
 mod units;
 mod window;
-
-#[cfg(feature = "wayland")]
-mod wayland;
 
 pub use caps::{BackendCaps, BackendKind, ConsentGuard, GlowDraw, HiddenCapture, MaskWhere};
 pub use cua_action::{RunMode, WindowTrust};
@@ -35,8 +31,6 @@ pub use lease::{
 };
 pub use traits::{Desktop, LeaseControl};
 pub use units::{Digest32, DigestError, GlobalCoord, GlobalRect, Ms, Pid, Stamp};
-#[cfg(feature = "wayland")]
-pub use wayland::{ObjectKey, Pump, PumpError, Rounds, SyncTag};
 pub use window::{
     IdentError, ToplevelIdent, ToplevelInfo, ToplevelState, WindowTitle, WorkspaceRef,
     WorkspaceShown,

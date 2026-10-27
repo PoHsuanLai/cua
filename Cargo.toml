@@ -6,11 +6,15 @@ members = [
   "crates/maskcap",
   "crates/seat-input",
   "crates/a11y-tree",
+  "crates/a11y-atspi",
+  "crates/seat-ei",
+  "crates/maskcap-wayland",
   "crates/cua-bus",
   "crates/cua-run",
   "crates/cua-host",
   "crates/cua-dbus",
   "crates/cua-fake",
+  "crates/cua-system",
   "crates/cuad",
   "crates/cua-eval",
   "crates/cua-eval-cloud",
@@ -27,6 +31,10 @@ publish = false
 
 [workspace.dependencies]
 a11y-tree             = { path = "crates/a11y-tree" }
+a11y-atspi            = { path = "crates/a11y-atspi" }
+seat-ei               = { path = "crates/seat-ei" }
+maskcap-wayland       = { path = "crates/maskcap-wayland" }
+cua-system            = { path = "crates/cua-system" }
 seat-input            = { path = "crates/seat-input" }
 maskcap               = { path = "crates/maskcap" }
 cua-desktop           = { path = "crates/cua-desktop" }
@@ -41,7 +49,7 @@ cua-eval-cloud        = { path = "crates/cua-eval-cloud" }
 
 # The one home of every quire_*_v1 protocol: the XML, the vocabulary, the bindings (by git at a pinned rev; a local checkout overrides it through a [patch], FINDINGS.md).
 casement-protocols    = { git = "https://github.com/PoHsuanLai/casement-protocols", rev = "fa664f1fcb312abd7e7a0e38ccae216406e88139" }
-# cuad's casement backend: the window model over the agent connection (the `client` feature binds the globals).
+# cua-system's casement backend: the window model over the agent connection (the `client` feature binds the globals).
 desktop-client        = { git = "https://github.com/PoHsuanLai/casement-protocols", rev = "fa664f1fcb312abd7e7a0e38ccae216406e88139", features = ["client"] }
 
 # stoker's frozen interfaces, by git at a pinned rev (quire
@@ -101,7 +109,7 @@ toml = "1"
 notify = "8.2"
 keyboard-types = { version = "0.7", features = ["serde"] }
 zbus = { version = "5.19", default-features = false, features = ["tokio"] }  # shell repos only; they also enable ds-settings/tokio. quire itself builds zbus with its async-io default so app consumers keep their own executor.
-rustix = { version = "1.1", default-features = false, features = ["std", "fs"] }  # porter's line, narrowed to what cuad names: memfd_create and its seals
+rustix = { version = "1.1", default-features = false, features = ["std", "fs"] }  # porter's line, narrowed to what cua-system and maskcap-wayland name: memfd_create and its seals
 wayland-client = "0.31"
 # libxkbcommon, narrowed: seat-input reads the keymap text only (no wayland keymap fds).
 xkbcommon = { version = "0.8", default-features = false }

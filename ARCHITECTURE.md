@@ -12,7 +12,7 @@ is the map of the code that freezes those interfaces. `CONVENTIONS.md` holds the
 **It ships on a stock compositor**, opt-in per app and off by default: the seat is shared (input
 moves the person's cursor and steals focus), masking is cuad's, and a confirmation shows only
 after cuad has stopped its own input. **casement adds the agent seat later**; the protocol it
-implements is the `casement-protocols` repo's `quire-agent-v1.xml`, which cua-desktop and maskcap
+implements is the `casement-protocols` repo's `quire-agent-v1.xml`, which cua-desktop and maskcap-wayland
 name directly.
 
 Reading order: section 1 (find the crate), section 3 (find the home), section 5 (a run in one
@@ -24,9 +24,9 @@ picture), section 6 (copy the recipe).
 | --- | --- | --- |
 | `cua-desktop` | the base: windows (`ToplevelInfo`), leases (`LeaseRequest`, `LeaseGrant`, `Leased`, `EiSocket`), `BackendKind` and `BackendCaps::of`, `GlowState` and the protocol codes, `DesktopEvent`, the `Desktop` and `LeaseControl` seams, and the units every crate shares (`Stamp`, `Ms`, `Digest32`, `GlobalRect`). Re-exports `RunMode` and `WindowTrust` from docket. No backend lives here | none |
 | `cua-types` | the leaf types the bus bodies carry and the capability crates produce: `Role`, `NodeSelector` (with `NameMatch`, `SelectorStep`, `SlotName`), `InputReceipt`, `InputOrigin`, `TextPath`, `SeatError`, `FrameDigest`. The capability crates re-export them, so every old path works | none |
-| `maskcap` | `Frame`, `PixelBuf`, `MaskReport`, `apply_masks`, `FrameDigest`, `settle`, `pixel_diff`, the `WindowCapture` and `CaptureSession` seams. Feature `wayland`: `StockToplevelCapture`, `QuireMaskedCapture`, `StampClock` | none (`wayland`: wayland-client) |
-| `seat-input` | `InputOp`, `Keymap`, `SeatCaps`, `plan`, `InputReceipt`, `region`, the `AgentSeat` seam. Feature `ei`: `EiSeat` | none (`ei`: reis, tokio, futures-util) |
-| `a11y-tree` | `A11ySnapshot`, `A11yNode`, `prune`, `render`, `diff`, `secret_rects`, selectors, the `A11ySource` seam. Feature `atspi`: `AtspiSource` | none (`atspi`: atspi) |
+| `maskcap` | `Frame`, `PixelBuf`, `MaskReport`, `apply_masks`, `FrameDigest`, `settle`, `pixel_diff`, the `WindowCapture` and `CaptureSession` seams. | none |
+| `seat-input` | `InputOp`, `Keymap`, `SeatCaps`, `plan`, `InputReceipt`, `region`, the `AgentSeat` seam. | none |
+| `a11y-tree` | `A11ySnapshot`, `A11yNode`, `prune`, `render`, `diff`, `secret_rects`, selectors, the `A11ySource` seam. | none |
 | `cua-bus` | what crosses the bus and the log, serde bodies over the vocabulary crates almanac-core, docket-core, porter-core, porter-infer, prov and cua-action (no capability crate is linked; the leaf types come from `cua-types`; `scripts/check-boundary.sh` ONLY pins this list): the `Start` body (`CuaTask`), `RunStateSlug`, `CuaOutcome`, `ModeSupport`, `CuaRecord`, `ActionResult`, `RunBudget`, `ControlRefusal`, `permits`, `report_draft` | none |
 | `cua-run` | the pure run machine (`Run`, `RunTrack`, `RunPhase`, `RunInput`, `RunEffect`), `Observation`, `shortcut_hint` (the desktop's shortcut chords as one line for the model, read from a chordkit `Keymap`; `Exec::with_hints` hands it to the model's session), `classify_effect`, `window_class_of`, `window_sensitivity` (a sensitive window makes the run ask before input even when the router says run), `mode_support`, `choose_mode`, `LeaseBook`, `stalled`, `turn` and `note_of`, `CuaConfig`, `CuaModel`, the seams a run is carried out against (`Seams`, `Clock`, `GateLink`, `RecordSink`, `MessageLink`), and `Exec`, which carries a run's effects out against them (it awaits nothing but seam futures, so it needs no runtime) | none |
 | `cua-dbus` | `org.quire.Cua1` (`Manager`, `Run`) as zbus proxies and skeletons, `introspection`, `CuaError`, bus names and paths | zbus |
@@ -34,16 +34,21 @@ picture), section 6 (copy the recipe).
 | `cua-eval` | the computer-use model eval (section 8): fake `surface`s drawn as pixels, a `Stage` shared by an `EvalSeat`, an `EvalCapture` and an `EvalDesktop`, a reference gate, `ScriptModel` (lines of moves) and `ProviderModel` (a model on a local engine, over stoker's `CuaSession`), `Corpus` (`eval/surfaces`, `eval/tasks`), verdicts, rates with Wilson bounds, the markdown report, and the `cua-eval` binary | the binary: files; `live`: loopback HTTP to an engine the caller started |
 | `cua-eval-cloud` | the eval against a hosted model (section 8): `InferdProvider` (a stoker `Provider` whose turns are inferd chat turns, `Need::Llm` with images on class `screen`), `request` (a stoker turn as an inferd `ChatRequest`), `Watch` (turns, tokens, a spend refusal), `isolation` (what this process can reach), and the `cua-eval-cloud` binary | the bus to inferd (the key stays in accountd) |
 | `cua-host` | the run executor as a library: `Supervisor` (a task per run), `Drivable`, `SupervisorEvent`, `IntentsGate`, `DaemonLinks`, `record_of`, `guard`, `CuadConfig`, `SystemClock`, and the settings read from text: `read`, `Locator` (over the caller's `ReadText`; `cuad` supplies the disk reader), `ReadFailure`, `SettingsFeed`, `SCHEMA`, `Supervisor::{settings, apps, apply_settings, follow}`. No backend, bus or file watch | docket-client and almanac-client without `dbus` |
-| `cuad` | the daemon and its library: `SeatBackend`, `CaptureBackend`, `InferdCuaModel`, `Links` (the three daemon links over one connection), `CuaProvider` (`org.quire.Cua`), `reach_json` and `follow_settings` (`org.quire.IntentReach1` beside the provider: `Reach()` says `{"cua.run.start": "offered"}` while `cua.enabled` is on, else `hidden`, and `ReachChanged` is emitted when the settings watch changes it; intentd lays that over the installed manifest, which declares the action hidden; a local mirror of docket-dbus's interface until the next docket pin), `SystemSeams`, `SystemDesktop`, `SystemA11y`, `WaylandPair`, `serve`, `serve_on` and `serve_on_with` (who is calling is the process behind the connection, named by `cuad-callers.toml` through docket-dbus's `Identity`; never a bus name), `classify`, `desktop_keymap` (the keymap built once at start: chordkit's conventions, plus the person's keycap overrides with the `keycap` feature). The binary serves both bus names; the person's settings: `SettingsWatch` (the directory watch on `cua/settings.toml`), `cua-host`'s names re-exported, `SCHEMA` (`dist/settings/cua.settings.toml`), and `--write-schema` | everything |
+| `maskcap-wayland` | the capture backend of `maskcap`: `StockToplevelCapture`, `QuireMaskedCapture`, `WaylandSession`, `StampClock`, and the `Pump` that drives one wayland connection from async code (with `ObjectKey`, `Rounds`, `SyncTag`) | wayland-client, tokio, rustix |
+| `seat-ei` | the EI client of the agent's seat: `EiSeat`, an `AgentSeat` over reis (the connection lives on a thread of its own) | reis, tokio |
+| `a11y-atspi` | the AT-SPI backend of `a11y-tree`: `AtspiSource`, `AtspiTree`, `read_window` (the walk, over any `AtspiTree`) | zbus, atspi, tokio |
+| `cua-system` | the system adapters: `SystemSeams` (and `SystemSeams::parts`), `Reached` and `WaylandPair`, `SeatBackend` (over `seat-ei`), `CaptureBackend` and `capture_kind` (over `maskcap-wayland`), `SystemDesktop` and `CasementDesktop` (casement's desktop over `Compositor1`), `SystemA11y` (over `a11y-atspi`), `InferdCuaModel`, `frame_fd`, `Links` (the three daemon links over one connection) | the bus, wayland, EIS, AT-SPI |
+| `cuad` | the daemon and its library: `run` (the start-up: `main` passes the arguments and environment in), `CuaProvider` (`org.quire.Cua`), `reach_json` and `follow_settings` (`org.quire.IntentReach1` beside the provider: `Reach()` says `{"cua.run.start": "offered"}` while `cua.enabled` is on, else `hidden`, and `ReachChanged` is emitted when the settings watch changes it; intentd lays that over the installed manifest, which declares the action hidden; a local mirror of docket-dbus's interface until the next docket pin), `serve`, `serve_on` and `serve_on_with` (who is calling is the process behind the connection, named by `cuad-callers.toml` through docket-dbus's `Identity`; never a bus name), `classify`, `desktop_keymap` (the keymap built once at start: chordkit's conventions, plus the person's keycap overrides with the `keycap` feature). The binary serves both bus names; the person's settings: `SettingsWatch` (the directory watch on `cua/settings.toml`), `cua-host`'s names re-exported, `SCHEMA` (`dist/settings/cua.settings.toml`), and `--write-schema` | everything |
 
 Tiers (the LAYERS table of `scripts/check-boundary.sh`; a crate depends on its own tier or a
 lower one, and the script bans source patterns per tier):
 
 - **P (pure):** `cua-desktop`, `cua-types`, `maskcap`, `seat-input`, `a11y-tree`, `cua-bus`,
   `cua-run`. No `std::fs/env/process/net`, clock reads, sleeps, tokio, hyper, reqwest, zbus,
-  rustix or UI words. The `wayland`, `ei` and `atspi` backend modules still break these bans and
-  are listed in the script's KNOWN table with the lane that removes them.
-- **C (client/IO):** `cua-host`, `cua-dbus`, `cua-fake`. May do IO; no UI words.
+  rustix or UI words. Their backends are the C crates `maskcap-wayland`, `seat-ei` and
+  `a11y-atspi`.
+- **C (client/IO):** `cua-host`, `cua-dbus`, `cua-fake`, `cua-system`, `maskcap-wayland`,
+  `seat-ei`, `a11y-atspi`. May do IO; no UI words.
 - **A (app/daemon):** `cuad`, `cua-eval`, `cua-eval-cloud`. Wiring; their libraries read no
   environment variable outside `main.rs`.
 
@@ -53,9 +58,9 @@ is a description (dev-dependencies are outside it):
 
 | Crate | May depend on |
 | --- | --- |
-| `cua-desktop` | `cua-action`, `prov`, `porter-core`; `casement-protocols` with feature `wayland` |
+| `cua-desktop` | `cua-action`, `prov`, `porter-core` |
 | `cua-types` | `cua-desktop`, `porter-core` |
-| `maskcap` | `cua-action`, `cua-desktop`, `cua-types`; `casement-protocols` with feature `wayland` |
+| `maskcap` | `cua-action`, `cua-desktop`, `cua-types` |
 | `seat-input` | `cua-action`, `cua-desktop`, `cua-types`, `porter-core` |
 | `a11y-tree` | `cua-action`, `cua-desktop`, `cua-types`, `prov`, `porter-core` |
 | `cua-bus` | `almanac-core`, `cua-action`, `cua-desktop`, `cua-types`, `docket-core`, `prov`, `porter-core`, `porter-infer` |
@@ -65,7 +70,11 @@ is a description (dev-dependencies are outside it):
 | `cua-eval` | `a11y-tree`, `chordkit`, `cua-action`, `cua-bus`, `cua-desktop`, `cua-fake`, `cua-parse`, `cua-run`, `cua-session`, `cua-vendors`, `docket-core`, `maskcap`, `model-catalog`, `model-http`, `model-openai-compat`, `model-provider`, `porter-core`, `porter-infer`, `prov`, `seat-input`, `vision-prep` |
 | `cua-eval-cloud` | `cua-eval`, `model-catalog`, `model-provider`, `porter-client`, `porter-core`, `porter-infer`, `vision-prep` |
 | `cua-host` | `cua-bus`, `cua-desktop`, `cua-run`, `docket-core`, `docket-client`, `prov`, `porter-core`, `almanac-core`, `almanac-client` |
-| `cuad` | `a11y-tree`, `chordkit`, `keycap-client` (feature `keycap`, on by default), `cua-bus`, `cua-dbus`, `cua-host`, `cua-desktop`, `cua-run`, `maskcap`, `seat-input`, `docket-core`, `docket-client`, `prov`, `porter-core`, `porter-infer`, `porter-client`, `almanac-client` |
+| `maskcap-wayland` | `maskcap`, `cua-action`, `cua-desktop`; `casement-protocols` (client) |
+| `seat-ei` | `seat-input`, `cua-action`, `cua-desktop`, `porter-core` |
+| `a11y-atspi` | `a11y-tree`, `cua-action`, `cua-desktop`, `prov`, `porter-core` |
+| `cua-system` | `a11y-atspi`, `a11y-tree`, `cua-desktop`, `cua-host`, `cua-run`, `maskcap`, `maskcap-wayland`, `seat-ei`, `seat-input`, `desktop-client`, `docket-client`, `almanac-client`, `porter-client`, `porter-core`, `porter-infer` |
+| `cuad` | `chordkit`, `keycap-client` (feature `keycap`, on by default), `cua-bus`, `cua-dbus`, `cua-host`, `cua-desktop`, `cua-run`, `cua-system`, `docket-core`, `docket-client`, `prov`, `porter-core` |
 
 The edges differ from SPEC 1.3 in one way, forced by its own types: `seat-input`, `maskcap` and
 `a11y-tree` take `cua-desktop` as their base (a lease, a stamp, a seat's isolation and who masks
@@ -88,17 +97,21 @@ bindings). `desktop_keymap` treats a source it cannot open as absent, with no er
 bad line in a keymap file that did open is reported.
 
 External boundaries: see `scripts/check-boundary.sh`. `zbus` is behind `cua-dbus` and `cuad`
-only; the pure set never reaches an effect crate; `wayland-client` is behind the `wayland` features (cua-desktop, maskcap), `reis` behind `ei` (and `cua-fake`'s `FakeEis`), `atspi` behind `atspi`.
+only; the pure set never reaches an effect crate; `wayland-client` is behind `maskcap-wayland`, `reis` behind `seat-ei` (and `cua-fake`'s `FakeEis`), `atspi` behind `a11y-atspi`.
 
 ## 2. Modules
 
 | Crate | Modules |
 | --- | --- |
-| `cua-desktop` | `units`, `window`, `lease`, `caps`, `glow`, `event`, `error`, `traits`, `wayland/{pump, state, proto, toplevels, lease, socket}` |
+| `cua-desktop` | `units`, `window`, `lease`, `caps`, `glow`, `event`, `error`, `traits` |
 | `cua-types` | `role`, `selector`, `seat`, `digest` |
-| `maskcap` | `pixels`, `mask`, `digest`, `settle`, `frame`, `capture`, `wayland/{state, shm, session}` |
-| `seat-input` | `op`, `keymap`, `caps`, `plan`, `receipt`, `seat`, `region`, `ei/` (`conn`: the reis connection, `actor`: the thread that owns it) |
-| `a11y-tree` | `model`, `selector`, `ops`, `source`, `atspi/` |
+| `maskcap` | `pixels`, `mask`, `digest`, `settle`, `frame`, `capture` |
+| `seat-input` | `op`, `keymap`, `caps`, `plan`, `receipt`, `seat`, `region` |
+| `a11y-tree` | `model`, `selector`, `ops`, `source` |
+| `maskcap-wayland` | `pump`, `key`, `state`, `lease`, `shm`, `session` |
+| `seat-ei` | `conn` (the reis connection), `actor` (the thread that owns it) |
+| `a11y-atspi` | `bus`, `tree`, `walk`, `map` |
+| `cua-system` | `system`, `backend`, `desktop`, `model`, `frame_fd`, `connect`, `casement/{leases, map, proxy, watch}` |
 | `cua-bus` | `ids`, `budget`, `state`, `action`, `task`, `report`, `record`, `bodies`, `control`, `screen` |
 | `cua-run` | `config`, `observation`, `effect_class`, `window_class`, `mode`, `turn`, `lease_book`, `stall`, `model`, `seams`, `screen/{phrases, hidden, unseen, link, excerpt, reader, track}`, `machine/{phase, input, effect, run, track, step, control, finish, ops}` (`step/screen`: the screen check's rows), `exec/{observe, session}` |
 | `cua-dbus` | `names`, `error`, `manager`, `run`, `introspect` |
@@ -129,7 +142,7 @@ only; the pure set never reaches an effect crate; `wayland-client` is behind the
 | the screen check: the phrase table, hidden text and unseen nodes (`split_unseen` makes the model's tree), the verdict and its reasons | `cua_run::screen` (`PatternCheck`, `ScreenVerdict`, `Reason`); the closed kinds the log keeps are `cua_bus::ScreenKind` |
 | the proposed values | `cua_run::CuaConfig`; the keys are in `cua-host`'s key table and `dist/settings/cua.settings.toml` |
 | the D-Bus interface | `cua-dbus` and `dbus/org.quire.Cua1.xml` |
-| the Wayland protocol | `quire-agent-v1.xml` in `~/casement-protocols` (the one home), used by cua-desktop and maskcap (feature `wayland`); the server side is the fork's, later casement's |
+| the Wayland protocol | `quire-agent-v1.xml` in `~/casement-protocols` (the one home), used by cua-desktop and maskcap-wayland; the server side is the fork's, later casement's |
 | the `cua.run.start` action | `manifests/org.quire.Cua.toml`, served by `cuad::CuaProvider` |
 | what the screen model is told about the task and the earlier attempts | `CuaTask.asked` (the person's latest sentence) and `CuaTask.earlier` (this provider's stored records of the conversation, oldest first), both filled by the router from the `asked` and `earlier` parameters of `cua.run.start` (`Filled::PersonWords`, `Filled::OwnHistory { kinds: "cua.*" }`; the planner never sees or sends them) and read by `cuad::provider::start_of` (an element that is not a record is skipped, bad JSON is none). `cua_run::briefing` builds the session's opening: the task line is `asked` when present, else `goal`; the hints, in order, are "The assistant's plan for this run: <goal>" (only when `asked` is present and differs), then "Earlier attempts at this (check the screen before trusting them):" and the digest lines, then the desktop's shared hints. `cua_run::attempts` is the digest: the last three runs in the task's app (the current run left out), each as `Attempt k:`, a `Tried:` line of verbs with repeats collapsed and a mark when not plainly done ("no visible change", "refused", "failed", "not run"; a stored input is "no visible change" when the `cua.step.seen` after it says so), and the end in the words of the planner's report (`said_of`); at most twelve lines. Never a coordinate, typed text or thought. A stalled run's report uses the same step words (`RunTrack.tried`, `stall_words`). The run's taint is the join of the goal's, `asked`'s and `earlier`'s labels |
 | the event-log record | `cua_bus::CuaRecord`; `cuad::record_of` makes the almanac `EventBody::Area { area: Cua }`, naming the conversation (`CuaTask.conversation`, the thing docket's session log uses) as `Subject` and the run's app as `Source`, so the router reads a conversation's earlier runs by `Entries { about }` |
@@ -141,7 +154,7 @@ only; the pure set never reaches an effect crate; `wayland-client` is behind the
 | --- | --- | --- |
 | `Desktop`, `LeaseControl` | `cua-desktop` | `FakeDesktop` |
 | `WindowCapture`, `CaptureSession` | `maskcap` | `StockToplevelCapture`, `QuireMaskedCapture` (through `CaptureBackend`), `FakeCapture` |
-| `AgentSeat` | `seat-input` | `EiSeat` (through `SeatBackend`), `FakeSeat` |
+| `AgentSeat` | `seat-input` | `seat_ei::EiSeat` (through `SeatBackend`), `FakeSeat` |
 | `A11ySource` | `a11y-tree` | `AtspiSource`, `FakeA11y` |
 | `CuaModel`, `StepSink` | `cua-run` | `InferdCuaModel`, `ScriptedModel` |
 | `GateLink`, `GateCheck` | `cua-run` | `IntentsGate`, `FakePdp` |
@@ -200,11 +213,11 @@ out in `cua_run::Exec` (the supervisor and the harness both use it), and a fake 
 observation, so no effect of a look follows it.
 
 **Add a backend.** A `BackendKind` variant and its row in `BackendCaps::of`; its rows in the
-`mode_support` table test; a `CaptureKind` row in `cuad::capture_kind`; the `Desktop` and
-`LeaseControl` implementation behind a feature of `cua-desktop`, or, for a compositor with a
-bus door of its own, a module of `cuad` (`casement`) with a variant of `SystemDesktop`.
+`mode_support` table test; a `CaptureKind` row in `cua_system::capture_kind`; the `Desktop` and
+`LeaseControl` implementation in a C crate beside `maskcap-wayland`, or, for a compositor with a
+bus door of its own, a module of `cua-system` (`casement`) with a variant of `SystemDesktop`.
 
-**The casement backend** (`BackendKind::Casement`, `cuad::CasementDesktop`) is the interim one.
+**The casement backend** (`BackendKind::Casement`, `cua_system::CasementDesktop`) is the interim one.
 `Reached::find` takes it when `org.quire.Compositor1` has an owner on the session bus (or when
 `BackendChoice::Only(Casement)` forces it, and then fails if the name is absent). cuad asks
 `Connect("agent")` twice: one Wayland connection feeds `desktop-client` (windows, geometry,
@@ -233,7 +246,7 @@ on the proxy and the skeleton; run `cargo test -p cua-dbus`, which prints the ne
 `dbus/org.quire.Cua1.xml` with it in the same commit; (2) a `CuaMember` and its row in
 `cua_bus::permits` (and the wildcard-free list test); (3) the body type in `cua-bus` with a
 round-trip test; (4) its handler in `cuad::bus` (a unit test holds the served interfaces to the
-XML) and, for a signal, its line in `cuad::serve`'s relay.
+XML) and, for a signal, its line in `cuad::relay`.
 
 **Add a record.** A `CuaRecord` variant with `#[serde(rename = "cua.<name>")]`, its row in
 `tests/it/wire.rs` (the slugs are pinned), and its production in the machine. `cuad::record_of`
@@ -282,8 +295,7 @@ action it leads to is gated like any other.
   ```
 
   No crate is excluded: every crate builds and tests without hardware or a live compositor (the
-  `wayland`, `ei` and `atspi` backends compile with their features and are exercised
-  only through fakes; the live checks are the dev scripts).
+  `maskcap-wayland`, `seat-ei` and `a11y-atspi` backends are exercised only through fakes; the live checks are the dev scripts).
 - The `dist/` units carry their sandbox lines (`cuad.service`: Unix sockets only, no network, no
   files, no devices, no capabilities); the D-Bus activation files name the two bus names cuad
   owns (`org.quire.Cua1`, `org.quire.Cua`). `dist/cuad-callers.toml` (installed as
@@ -356,7 +368,7 @@ with chat, vision and, for a tool dialect, tools; data class `screen`; the scree
 picks the model by tier from its own config, fetches the API key from accountd for that one turn and
 meters the reply against `[ai.spend]`; the eval process never has the key (`isolation::look` checks
 its environment and descriptors and the binary refuses to run if a credential is in reach). This is
-one layer above cuad's `InferdCuaModel`, which opens `Need::ComputerUse`: inferd refuses a computer-use
+one layer above cua-system's `InferdCuaModel`, which opens `Need::ComputerUse`: inferd refuses a computer-use
 session on a hosted model today (porter FINDINGS, "inferd hosted"), so the cloud eval cannot use that
 path; what it exercises of the production path is the prompt, the parse, the run machine and the
 broker's routing, consent and spend. A model is a trial entry under `eval/cloud-catalog/` (the

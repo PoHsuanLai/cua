@@ -1,6 +1,4 @@
 mod behaviour;
-mod support;
-mod wayland;
 
 /// Every module file next to this one must be declared above, or its tests never run.
 #[test]

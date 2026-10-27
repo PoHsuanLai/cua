@@ -3,10 +3,23 @@
 version = 4
 
 [[package]]
+name = "a11y-atspi"
+version = "0.1.0"
+dependencies = [
+ "a11y-tree",
+ "atspi",
+ "cua-action",
+ "cua-desktop",
+ "porter-core",
+ "prov",
+ "tokio",
+ "zbus",
+]
+
+[[package]]
 name = "a11y-tree"
 version = "0.1.0"
 dependencies = [
- "atspi",
  "cua-action",
  "cua-desktop",
  "cua-types",
@@ -15,8 +28,6 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
- "tokio",
- "zbus",
 ]
 
 [[package]]
@@ -830,8 +841,6 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
- "tokio",
- "wayland-client",
 ]
 
 [[package]]
@@ -984,6 +993,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "cua-system"
+version = "0.1.0"
+dependencies = [
+ "a11y-atspi",
+ "a11y-tree",
+ "almanac-client",
+ "cua-action",
+ "cua-desktop",
+ "cua-host",
+ "cua-run",
+ "desktop-client",
+ "docket-client",
+ "maskcap",
+ "maskcap-wayland",
+ "porter-client",
+ "porter-core",
+ "porter-infer",
+ "rustix",
+ "seat-ei",
+ "seat-input",
+ "thiserror",
+ "tokio",
+ "wayland-client",
+ "zbus",
+]
+
+[[package]]
 name = "cua-types"
 version = "0.1.0"
 dependencies = [
@@ -1011,7 +1047,6 @@ dependencies = [
 name = "cuad"
 version = "0.1.0"
 dependencies = [
- "a11y-tree",
  "almanac-client",
  "almanac-core",
  "almanac-fake",
@@ -1024,7 +1059,7 @@ dependencies = [
  "cua-fake",
  "cua-host",
  "cua-run",
- "desktop-client",
+ "cua-system",
  "docket-client",
  "docket-core",
  "docket-dbus",
@@ -1034,12 +1069,10 @@ dependencies = [
  "intentd",
  "keycap-client",
  "maskcap",
- "porter-client",
  "porter-core",
  "porter-daemon",
  "porter-infer",
  "prov",
- "rustix",
  "seat-input",
  "serde",
  "serde_json",
@@ -1047,7 +1080,6 @@ dependencies = [
  "thiserror",
  "tokio",
  "toml",
- "wayland-client",
  "zbus",
 ]
 
@@ -2278,14 +2310,24 @@ version = "0.1.0"
 dependencies = [
  "base64 0.22.1",
  "blake3",
- "casement-protocols",
  "cua-action",
  "cua-desktop",
  "cua-types",
- "porter-core",
- "rustix",
  "serde",
  "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "maskcap-wayland"
+version = "0.1.0"
+dependencies = [
+ "casement-protocols",
+ "cua-action",
+ "cua-desktop",
+ "maskcap",
+ "porter-core",
+ "rustix",
  "thiserror",
  "tokio",
  "wayland-client",
@@ -3161,20 +3203,31 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
+name = "seat-ei"
+version = "0.1.0"
+dependencies = [
+ "cua-action",
+ "cua-desktop",
+ "cua-fake",
+ "futures-util",
+ "porter-core",
+ "reis",
+ "seat-input",
+ "tokio",
+]
+
+[[package]]
 name = "seat-input"
 version = "0.1.0"
 dependencies = [
  "cua-action",
  "cua-desktop",
  "cua-types",
- "futures-util",
  "keyboard-types",
  "porter-core",
- "reis",
  "serde",
  "serde_json",
  "thiserror",
- "tokio",
  "xkbcommon",
 ]
 

@@ -1,0 +1,25 @@
+[package]
+name = "seat-ei"
+description = "The EI client of the agent's seat: an AgentSeat over reis, to the compositor's stock GetSenderSocket socket or the fork's lease socket. It does the input that seat-input plans."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+seat-input = { workspace = true }
+cua-action = { workspace = true }
+cua-desktop = { workspace = true }
+porter-core = { workspace = true }
+reis = { workspace = true, features = ["tokio"] }
+tokio = { workspace = true }
+futures-util = { workspace = true }
+
+[dev-dependencies]
+# The in-process EIS server the seat is tested against.
+cua-fake = { workspace = true }
+
+[lints]
+workspace = true

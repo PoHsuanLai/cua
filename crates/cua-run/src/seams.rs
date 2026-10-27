@@ -125,7 +125,7 @@ pub trait MessageLink: Send + Sync {
     ) -> impl Future<Output = Result<Vec<InboundLine>, LinkError>> + Send;
 }
 
-/// Everything a run is carried out against, as types: the real set in cuad (`SystemSeams`), the
+/// Everything a run is carried out against, as types: the real set in cua-system (`SystemSeams`), the
 /// fakes in `cua-fake` (`FakeSeams`). Closed sets of implementations are generic parameters
 /// bundled here, never `dyn`.
 pub trait Seams: Send + Sync + 'static {

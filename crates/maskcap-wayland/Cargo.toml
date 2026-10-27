@@ -1,0 +1,31 @@
+[package]
+name = "maskcap-wayland"
+description = "The capture backend of maskcap over a wayland connection: ext-image-copy-capture (the stock toplevel source and the quire masked source over an agent lease), and the pump that drives a connection from async code."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+maskcap = { workspace = true }
+cua-action = { workspace = true }
+cua-desktop = { workspace = true }
+thiserror = { workspace = true }
+wayland-client = { workspace = true }
+wayland-protocols = { workspace = true }
+casement-protocols = { workspace = true, features = ["client"] }
+rustix = { workspace = true }
+tokio = { workspace = true }
+
+[dev-dependencies]
+porter-core = { workspace = true }
+wayland-server = { workspace = true }
+# The compositor side of quire-agent-v1, for the fake compositor in the tests.
+casement-protocols = { workspace = true, features = ["server"] }
+wayland-protocols = { workspace = true, features = ["server"] }
+rustix = { workspace = true, features = ["event"] }
+
+[lints]
+workspace = true

@@ -1,6 +1,6 @@
 [package]
 name = "cua-desktop"
-description = "The desktop vocabulary every cua crate shares: windows, leases, backend capabilities, glow, units and the Desktop and LeaseControl seams. The `wayland` feature is the connection plumbing a backend shares."
+description = "The desktop vocabulary every cua crate shares: windows, leases, backend capabilities, glow, units and the Desktop and LeaseControl seams."
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -14,17 +14,10 @@ prov = { workspace = true }
 porter-core = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
-wayland-client = { workspace = true, optional = true }
-tokio = { workspace = true, optional = true }
 
 [dev-dependencies]
 serde_json = { workspace = true }
 casement-protocols = { workspace = true, features = ["client"] }
-
-[features]
-# The connection plumbing a compositor backend shares. Linux only; reaches wayland-client and a
-# tokio reactor (it waits on the connection's fd).
-wayland = ["dep:wayland-client", "dep:tokio"]
 
 [lints]
 workspace = true

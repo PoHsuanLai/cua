@@ -14,7 +14,7 @@ files (`a11y-tree` fixtures and golden renders).
 | Where | Count | Closes when |
 | --- | --- | --- |
 
-Per crate: none; total 0. `maskcap::QuireMaskedCapture::open` is built over a lease (`create_lease`, `get_capture_source`, `create_session`, `set_mask_hints` before each frame) and tested against a fake `quire_agent_manager_v1`; casement master does not serve that global yet, so against it `open` answers `BackendUnavailable`. cua-desktop has none: the stock half is built, and the casement half (`Backend::Casement`, `quire_agent_v1` leases, suspend, resume and glow in the compositor, the agent workspace) is P4-Z-cua. There is no `BackendKind` for it yet, so no arm could hold a `todo!()` that is reachable; KWin (`KwinStock`) refuses every lease with `ModeUnsupported` until Spike B. (`EiSeat`, `FakeEis::serve` and `ScriptedModel::from_cassette` are built: see "The f4-cua-seat fill".)
+Per crate: none; total 0. `maskcap_wayland::QuireMaskedCapture::open` is built over a lease (`create_lease`, `get_capture_source`, `create_session`, `set_mask_hints` before each frame) and tested against a fake `quire_agent_manager_v1`; casement master does not serve that global yet, so against it `open` answers `BackendUnavailable`. cua-desktop has none: the stock half is built, and the casement half (`Backend::Casement`, `quire_agent_v1` leases, suspend, resume and glow in the compositor, the agent workspace) is P4-Z-cua. There is no `BackendKind` for it yet, so no arm could hold a `todo!()` that is reachable; KWin (`KwinStock`) refuses every lease with `ModeUnsupported` until Spike B. (`EiSeat`, `FakeEis::serve` and `ScriptedModel::from_cassette` are built: see "The f4-cua-seat fill".)
 
 What is built, not stubbed (all behind the frozen signatures): `BackendCaps::of`, `LeaseRequest::check`,
 glow, revoke, suspend and mode wire codes (pinned against the generated protocol enums under the
@@ -27,7 +27,7 @@ from the w4-cua fill: the a11y-tree functions (`prune`, `render`, `diff`, `secre
 `resolve`), maskcap (`apply_masks`, `digest`, `settle`, `pixel_diff`), `Keymap::parse_xkb`, cua-run
 (`classify_effect`, `stalled`, `LeaseBook`, `turn`, `note_of`, the machine `Run::{start, step,
 wake}`, and `Exec`, which carries a run's effects out against the seams), `run_harness`, and cuad
-(`IntentsGate`, `DaemonLinks`, `Supervisor`, `serve`/`serve_on`, `CuaProvider::perform`, `Links`).
+(`IntentsGate`, `DaemonLinks`, `Supervisor`, `serve`/`serve_on`, `CuaProvider::perform`) and cua-system (`Links`).
 
 ## Spec conflicts and how they were resolved
 
@@ -273,7 +273,7 @@ the machine under it. What was decided:
 
 ## The f4-cua-seat fill (2026-10-06)
 
-- **`EiSeat` is built over reis 0.7** (`seat_input::ei`, tested in `cua-fake/tests/it/ei.rs` against
+- **`EiSeat` is built over reis 0.7** (`seat_ei`, tested in `seat-ei/tests/it/ei.rs` against
   `FakeEis` over socketpairs; no compositor). reis proxies are not `Send` (their callback handlers are
   `Box<dyn FnOnce>`) and `AgentSeat`'s futures must be, so every attached lease gets a thread of its own
   with a current-thread runtime (`ei/actor.rs`); the seat talks to it over a channel and waits on one-shot
@@ -320,15 +320,15 @@ the machine under it. What was decided:
 ## The f4-cua-capture fill (2026-10-06): the stock wayland backends and the daemon's seams
 
 - **S0 done.** `crates/quire-agent-protocol` is deleted and
-  cua-desktop and maskcap depend on `casement-protocols` (optional, feature `client`) by sibling
+  cua-desktop and maskcap-wayland depend on `casement-protocols` (client) by sibling
   path; the glow, revoke, suspend, mode and mask-reason tables are pinned against its generated
   enums. check-boundary rows follow.
-- **One pump per connection (`cua_desktop::Pump`, public, feature `wayland`).** A wayland
+- **One pump per connection (`maskcap_wayland::Pump`, public).** A wayland
   connection has one event queue and one state behind an async mutex; callers take turns
   (`drive(step)`), only the holder reads the socket (non-blocking guard), and a `Notify` wakes the
   others when a turn dispatched something. Two queues on one connection would lose wake-ups.
   So `windows` and `next_event` can wait at once, and several capture sessions share a connection.
-  cuad opens one connection (`WaylandPair`) for capture.
+  cua-system opens one connection (`WaylandPair`) for capture.
 - **Facts the protocols do not give.** `ToplevelInfo.pid` is `Pid(0)` ("unknown"); `app` is the
   app id, folded into `app.<id>` when it is not reverse-DNS; `trust` is from the app id alone
   (`org.quire.Shell*`, `Sill*`, `Desktop*` are `Shell`, other `org.quire.*` `Quire`, the rest
@@ -343,7 +343,7 @@ the machine under it. What was decided:
   pixel diff against the previous raw frame (`FrameWant::AfterDamage` captures until one differs,
   paced by the compositor, so a window that never changes never returns: the caller races it with
   its timer, as `Exec` does); `at` is on the caller's clock (`with_clock`, cuad passes its own).
-- **cuad.** `SystemSeams` is built: `SystemDesktop` (`Absent`: `Backend = none`, empty
+- **cua-system.** `SystemSeams` is built: `SystemDesktop` (`Absent`: `Backend = none`, empty
   `Modes`, no windows, no lease), `CaptureBackend::Unavailable`, `SeatBackend::Ei(EiSeat)`,
   `SystemA11y` (`Unavailable` by default: `cuad.toml` `a11y = "off"`; `"atspi"` selects
   `AtspiSource`, whose `snapshot` is still `todo!()`, so nothing turns it on). The binary reads

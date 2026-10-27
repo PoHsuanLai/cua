@@ -25,9 +25,9 @@ What cua adds or decides differently, each with its reason:
 4. **Pure crates reach no effect.** `cua-desktop`, `maskcap`, `seat-input`, `a11y-tree`,
    `cua-bus` and `cua-run` never reach `tokio`, `zbus`, `wayland-client`, `wayland-backend`,
    `reis`, `atspi`, an HTTP client, a database or the policy engine, whatever their
-   dependencies' features; their backends (`wayland`, `ei`, `atspi`) are features that
-   only `cuad` and `cua-fake` turn on. `scripts/check-boundary.sh` fails the gate if a default
-   tree reaches one.
+   dependencies' features; their backends are the C crates `maskcap-wayland`,
+   `seat-ei` and `a11y-atspi`, which only `cua-system` and `cua-fake` use. `scripts/check-boundary.sh`
+   fails the gate if a pure crate's tree reaches one.
 5. **cua sits above docket and below sill.** It depends on stoker, porter, almanac and docket by
    sibling path; it depends on no sill crate and on nothing of the compositor, and the
    boundary script checks it. The compositor depends on `casement-protocols` alone.

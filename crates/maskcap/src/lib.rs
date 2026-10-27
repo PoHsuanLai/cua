@@ -6,9 +6,7 @@
 //! decision ([`settle`], [`DamageAt`], [`pixel_diff`]) and the two seams ([`WindowCapture`],
 //! [`CaptureSession`]).
 //!
-//! Pure by default. The `wayland` feature is the backend: ext-image-copy-capture over
-//! wayland-client, in `wayland`: the stock toplevel source, and the quire masked source over an
-//! agent lease (`quire_agent_manager_v1`, which the compositor must advertise).
+//! Pure: the backend, ext-image-copy-capture over wayland-client, is `maskcap-wayland`.
 
 mod capture;
 mod digest;
@@ -16,8 +14,6 @@ mod frame;
 mod mask;
 mod pixels;
 mod settle;
-#[cfg(feature = "wayland")]
-mod wayland;
 
 pub use capture::{AFTER_DAMAGE_LIMIT_MS, CaptureError, CaptureSession, FrameWant, WindowCapture};
 pub use digest::{FrameDigest, digest};
@@ -25,5 +21,3 @@ pub use frame::Frame;
 pub use mask::{MaskReason, MaskRegion, MaskReport, WholeMask, apply_masks};
 pub use pixels::{FrameSeq, PixelBuf};
 pub use settle::{DamageAt, DamageSource, Settle, pixel_diff, settle};
-#[cfg(feature = "wayland")]
-pub use wayland::{QuireMaskedCapture, StampClock, StockToplevelCapture, WaylandSession};

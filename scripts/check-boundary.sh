@@ -29,11 +29,15 @@ LAYERS=(
   "maskcap: P"
   "seat-input: P"
   "a11y-tree: P"
+  "a11y-atspi: C"
+  "seat-ei: C"
+  "maskcap-wayland: C"
   "cua-bus: P"
   "cua-run: P"
   "cua-host: C"
   "cua-dbus: C"
   "cua-fake: C"
+  "cua-system: C"
   "cua-eval: A"
   "cua-eval-cloud: A"
   "cuad: A"
@@ -41,23 +45,10 @@ LAYERS=(
 
 # KNOWN: a violation that exists today, with the plan lane (~/rs-wt/agent-layers/PLAN.md) that
 # removes it. "crate: ban: lane". A row whose violation is gone fails, so the list only shrinks.
-# The P crates a11y-tree, cua-desktop, maskcap and seat-input hold their backend in a feature
-# module (`atspi`, `wayland`, `ei`); the backends leave with cua-system (C0.8). cuad and
-# cua-eval-cloud read the environment inside a library module instead of main.rs.
+# cua-eval-cloud reads the environment inside a library module instead of main.rs.
 # `Role::SheetHost` is a docket-core wire name; cua names it only in test code, which the bans
 # skip, so it needs no row.
 KNOWN=(
-  "a11y-tree: tokio: C0.8"
-  "a11y-tree: zbus: C0.8"
-  "cua-desktop: tokio: C0.8"
-  "maskcap: clock: C0.8"
-  "maskcap: rustix: C0.8"
-  "maskcap: tokio: C0.8"
-  "seat-input: clock: C0.8"
-  "seat-input: fs: C0.8"
-  "seat-input: net: C0.8"
-  "seat-input: tokio: C0.8"
-  "cuad: env-var: C0.7"
   "cua-eval-cloud: env-var: C5.3"
 )
 
@@ -85,14 +76,19 @@ BANS=(
 # The pure crates (cua-desktop, maskcap, seat-input, a11y-tree, cua-bus, cua-run) never reach a
 # bus, a runtime, an HTTP client, a wayland connection, an EIS client, an accessibility stack,
 # a database, a file watcher, an embedding runtime, the MCP SDK or the policy engine: their
-# backends (`wayland`, `ei`, `atspi`) are features, and the default tree is what is
-# checked. `toml` is parsed at the edge (cuad), never below it.
+# backends are the C crates maskcap-wayland, seat-ei and a11y-atspi. `toml` is parsed at the
+# edge (cuad), never below it.
 EFFECTS="zbus zvariant tokio reqwest hyper hyper-util rustls pipewire wayland-client wayland-backend wayland-server reis atspi oo7 ort fastembed rusqlite notify rmcp cedar-policy toml"
 RULES=(
   "cua-desktop: $EFFECTS"
   "maskcap: $EFFECTS"
   "seat-input: $EFFECTS"
   "a11y-tree: $EFFECTS"
+  # The backends: each reaches its own stack and nothing else. The AT-SPI backend is the one
+  # with a bus; the wayland and EIS ones have none.
+  "a11y-atspi: reqwest hyper hyper-util rustls pipewire wayland-client wayland-backend wayland-server reis oo7 ort fastembed rusqlite notify rmcp cedar-policy toml"
+  "seat-ei: zbus zvariant reqwest hyper hyper-util rustls pipewire wayland-client wayland-backend wayland-server atspi oo7 ort fastembed rusqlite notify rmcp cedar-policy toml"
+  "maskcap-wayland: zbus zvariant reqwest hyper hyper-util rustls pipewire reis atspi oo7 ort fastembed rusqlite notify rmcp cedar-policy toml"
   # The bus bodies: serde, plus the vocabulary crates named in ONLY below. The capability crates
   # (accessibility, input, capture) are not reachable, so a consumer that reads the bodies
   # (sill, the D-Bus codec) links none of them; the leaf types they share live in cua-types.
@@ -115,6 +111,10 @@ RULES=(
   # turns are inferd chat turns, so a hosted model's key stays in accountd. It reaches no wayland
   # connection, accessibility stack, database or policy engine.
   "cua-eval-cloud: wayland-client wayland-backend wayland-server atspi oo7 ort fastembed rusqlite notify rmcp cedar-policy"
+  # The system adapters reach what the daemon does, minus the daemon's own tree: the bus, a
+  # runtime, wayland, EIS and AT-SPI; never HTTP, an embedding runtime, the MCP SDK or the policy
+  # engine.
+  "cua-system: reqwest hyper hyper-util rustls pipewire ort fastembed rmcp cedar-policy"
   # The daemon reaches the bus, a runtime, wayland, EIS and AT-SPI. It never reaches HTTP,
   # an embedding runtime, the MCP SDK or the policy engine. One decision point lives in the router
   # and cuad asks it through `Intents1.Gate` (SPEC C10): cuad has no edge to `policy-point`

@@ -1,6 +1,6 @@
 [package]
 name = "cuad"
-description = "The computer-use daemon and its library: the backends, the supervisor of runs, the seams over D-Bus (the router's gate, inferd, memoryd), the org.quire.Cua provider and org.quire.Cua1. The binary serves both names on the session bus."
+description = "The computer-use daemon and its library: the supervisor of runs wired to the system seams of cua-system, the org.quire.Cua provider and org.quire.Cua1. The binary serves both names on the session bus."
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -28,10 +28,7 @@ fixture-callers = ["docket-dbus/fixture-callers"]
 
 [dependencies]
 cua-desktop = { workspace = true }
-desktop-client = { workspace = true }
-maskcap = { workspace = true, features = ["wayland"] }
-seat-input = { workspace = true, features = ["ei"] }
-a11y-tree = { workspace = true, features = ["atspi"] }
+cua-system = { workspace = true }
 cua-bus = { workspace = true }
 cua-run = { workspace = true }
 chordkit = { workspace = true }
@@ -44,14 +41,9 @@ docket-dbus = { workspace = true }
 prov = { workspace = true }
 porter-core = { workspace = true }
 porter-daemon = { workspace = true }
-porter-infer = { workspace = true }
-porter-client = { workspace = true, features = ["dbus"] }
-almanac-client = { workspace = true, features = ["dbus"] }
-wayland-client = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 toml = { workspace = true }
-rustix = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["signal"] }
 zbus = { workspace = true }
@@ -63,6 +55,9 @@ docket-dbus = { workspace = true, features = ["fixture-callers"] }
 almanac-core = { workspace = true }
 cua-action = { workspace = true }
 cua-fake = { workspace = true }
+porter-infer = { workspace = true }
+seat-input = { workspace = true }
+maskcap = { workspace = true }
 tokio = { workspace = true, features = ["test-util"] }
 tempfile = { workspace = true }
 serde_json = { workspace = true }

@@ -3,200 +3,21 @@
 //! log through almanac-client against a real memory service (over almanac's fakes). Each caller is
 //! a connection that owns the well-known name its role is configured to have.
 
-use crate::support::bus::PrivateBus;
+use crate::desk::*;
 use almanac_client::{InProcess, Memory};
 use almanac_core::{
     ActorFilter, Caller, Count, SpaceId as MemSpace, TimelineFilter, TimelineQuery, TrustFilter,
 };
-use cua_action::{CuaAction, WindowSpace};
-use cua_action::{RunMode, WindowTrust};
-use cua_bus::{
-    ActionResult, AuthorisedBy, CuaOutcome, CuaRecord, FrameNote, TargetedAction, ThoughtDigest,
-    WindowRef,
-};
-use cua_desktop::Digest32;
-use cua_run::{GateCheck, GateEvent, GateLink, MessageLink, RecordSink};
+use cua_run::GateEvent;
 use cuad::{DaemonLinks, IntentsGate};
 use docket_client::{DbusTransport, Intents};
 use docket_core::{
-    CallRefusal, CallerRole, ConfirmAnswer, ConfirmEnd, CuaAsk, DraftPart, EffectBasis, GateAnswer,
-    GrantAnswer, GrantAsk, GrantScope, InboundPart, InboxAsk, IntentsRequest, MessageDraft,
-    SessionOpen,
+    CallRefusal, ConfirmEnd, DraftPart, GateAnswer, GrantAnswer, GrantAsk, InboundPart, InboxAsk,
+    IntentsRequest, MessageDraft,
 };
-use docket_dbus::callers::{CallerTable, Identity, Role};
-use docket_fake::{ScriptedConfirmer, fake_router};
-use docket_router::Router;
-use intentd::{AcpGate, IntentdConfig, ProcRoot, serve_on_gated};
-use maskcap::FrameDigest;
-use porter_core::AppName;
-use prov::{
-    Address, AgentRef, ConfirmReceipt, Effect, InputProof, Label, MessageKind, MessageText, RunId,
-    SessionId, Source, SpaceId, SpaceScope, UnixSeconds,
-};
-use std::collections::BTreeMap;
+use prov::{Address, AgentRef, Effect, MessageKind, MessageText, RunId, SessionId, SpaceScope};
 use std::sync::Arc;
 use zbus::Connection;
-
-const COMPANION: &str = "org.quire.Companion1";
-const CUAD: &str = "org.quire.Cua1";
-
-fn mail() -> AppName {
-    AppName::parse("org.quire.Mail").unwrap()
-}
-
-fn work() -> SpaceId {
-    SpaceId::parse("work").unwrap()
-}
-
-fn run() -> RunId {
-    RunId::parse("r-1").unwrap()
-}
-
-fn yes() -> ConfirmAnswer {
-    ConfirmAnswer::Allowed {
-        scope: GrantScope::Once,
-        receipt: ConfirmReceipt {
-            id: prov::ConfirmId::parse("c-1").unwrap(),
-            input: InputProof::HardwareSeat,
-            at: UnixSeconds(1),
-            covers: prov::Confidentiality::Secret,
-        },
-        written: None,
-    }
-}
-
-/// A real intentd over the fake router, on a private bus.
-struct Desk {
-    _dir: tempfile::TempDir,
-    bus: PrivateBus,
-    who: Arc<Identity>,
-    _daemon: Connection,
-}
-
-async fn desk(answers: Vec<ConfirmAnswer>) -> Desk {
-    let dir = tempfile::tempdir().expect("scratch");
-    let bus = PrivateBus::start(dir.path());
-    let daemon = bus.connect().await;
-    let mut router: Router<docket_fake::FakeSeams> =
-        fake_router(docket_core::AgentConfig::default()).expect("a router");
-    router.seams.confirmer = ScriptedConfirmer::answering(answers);
-    let mut roles = BTreeMap::new();
-    roles.insert(
-        CallerRole::Companion,
-        vec![AppName::parse(COMPANION).unwrap()],
-    );
-    roles.insert(CallerRole::Cua, vec![AppName::parse(CUAD).unwrap()]);
-    let config = IntentdConfig {
-        roles,
-        reviewers: None,
-        agent: docket_core::AgentConfig::default(),
-    };
-    // Nothing is read from a real `/proc`: the tree is empty and every caller is introduced.
-    let proc_root = dir.path().join("proc");
-    let who = Arc::new(Identity::on_fixture(
-        daemon.clone(),
-        CallerTable::default(),
-        proc_root.clone(),
-    ));
-    serve_on_gated(
-        &daemon,
-        Arc::new(router),
-        Arc::new(config),
-        who.clone(),
-        &ProcRoot::Fake(proc_root),
-        AcpGate::shut(),
-        None,
-    )
-    .await
-    .expect("intentd serves");
-    Desk {
-        _dir: dir,
-        bus,
-        who,
-        _daemon: daemon,
-    }
-}
-
-impl Desk {
-    async fn as_companion(&self) -> Intents<DbusTransport> {
-        let connection = self.bus.connect().await;
-        connection.request_name(COMPANION).await.expect("a name");
-        self.who.introduce_app(&connection, COMPANION, Role::Agent);
-        // The connection is kept alive by the transport.
-        Intents::over(DbusTransport::new(connection))
-    }
-
-    async fn cuad_connection(&self) -> Connection {
-        let connection = self.bus.connect().await;
-        connection.request_name(CUAD).await.expect("a name");
-        self.who.introduce_app(&connection, CUAD, Role::Cua);
-        connection
-    }
-
-    /// What the planner does when it starts a run: opens the run's session, and its own to
-    /// hear back on.
-    async fn open_sessions(&self, planner: &Intents<DbusTransport>) -> SessionId {
-        let hearing = planner
-            .session_open(SessionOpen {
-                space: work(),
-                agent: AgentRef::Companion,
-                parent: None,
-                cwd: None,
-                external: None,
-                helper: None,
-                started_from: None,
-                acts_for: None,
-            })
-            .await
-            .expect("the planner's session");
-        let _ = hearing;
-        planner
-            .session_open(SessionOpen {
-                space: work(),
-                agent: AgentRef::Cua { run: run() },
-                parent: None,
-                cwd: None,
-                external: None,
-                helper: None,
-                started_from: None,
-                acts_for: None,
-            })
-            .await
-            .expect("the run's session")
-            .session
-    }
-}
-
-fn step(effect: Effect) -> CuaAsk {
-    CuaAsk {
-        run: run(),
-        step: 1,
-        app: mail(),
-        trust: WindowTrust::Quire,
-        mode: RunMode::InPlace,
-        space: work(),
-        action: CuaAction::<WindowSpace>::Observe,
-        node: None,
-        effect,
-        basis: EffectBasis::DefaultTable,
-        screen: Label::untrusted(
-            Source::Screen { app: mail() },
-            porter_core::DataClass::Mail,
-            work(),
-        ),
-    }
-}
-
-async fn answered(gate: &IntentsGate<DbusTransport>, ask: CuaAsk) -> GateAnswer {
-    let mut check = gate.check(ask).await.expect("a check");
-    loop {
-        match check.next().await.expect("an event") {
-            GateEvent::Answered(answer) => return answer,
-            // The router is about to ask the person: cuad's input is idle, so say go on.
-            GateEvent::Confirming(_) => check.proceed().await.expect("proceed"),
-        }
-    }
-}
 
 #[tokio::test]
 async fn the_gate_asks_the_person_once_per_app_and_then_runs_reads_and_asks_again_for_sends() {
@@ -382,48 +203,6 @@ async fn reports_go_to_the_requester_and_messages_for_the_run_come_back_through_
     let _ = IntentsRequest::Manifests;
 }
 
-fn record_of_run(run: &RunId) -> Vec<CuaRecord> {
-    let action = TargetedAction {
-        window: WindowRef(1),
-        action: CuaAction::<WindowSpace>::Observe,
-    };
-    vec![
-        CuaRecord::RunStarted {
-            run: run.clone(),
-            session: SessionId::parse("s-2").unwrap(),
-            conversation: SessionId::parse("s-1").unwrap(),
-            goal: prov::Labelled::new("sign in".to_owned(), Label::trusted_user()),
-            app: mail(),
-            space: work(),
-            mode: RunMode::InPlace,
-            backend: cua_desktop::BackendKind::KwinStock,
-            budget: cua_bus::RunBudget::PROPOSED,
-        },
-        CuaRecord::Step {
-            run: run.clone(),
-            n: porter_infer::StepIndex(1),
-            thought: ThoughtDigest(Digest32([1; 32])),
-            action,
-            effect: Effect::Read,
-            basis: EffectBasis::DefaultTable,
-            authorised_by: AuthorisedBy::Policy,
-            result: ActionResult::Done,
-            frame: FrameNote::NotKept {
-                digest: FrameDigest(Digest32([2; 32])),
-                size: cua_action::DeviceSize { w: 10, h: 10 },
-            },
-            input: None,
-        },
-        CuaRecord::Finished {
-            run: run.clone(),
-            outcome: CuaOutcome::Done,
-            steps: porter_core::Count(1),
-            cost: porter_core::MicroUsd(0),
-            report: None,
-        },
-    ]
-}
-
 #[tokio::test]
 async fn records_reach_memory_as_cua_events_of_the_runs_session_and_space() {
     let desk = desk(vec![]).await;
@@ -474,80 +253,4 @@ async fn records_reach_memory_as_cua_events_of_the_runs_session_and_space() {
         matches!(refused, Err(cua_run::LinkError::Protocol(_))),
         "{refused:?}"
     );
-}
-
-#[tokio::test]
-async fn the_daemon_links_are_built_over_one_connection_and_each_reaches_its_neighbour() {
-    let desk = desk(vec![yes()]).await;
-    let planner = desk.as_companion().await;
-    desk.open_sessions(&planner).await;
-    let links = cuad::Links::over(&desk.cuad_connection().await, porter_core::Tier::Balanced);
-    assert_eq!(
-        links
-            .gate
-            .grant(GrantAsk {
-                app: mail(),
-                space: work(),
-                level: docket_core::Level::AlwaysAllow,
-                run: None,
-            })
-            .await,
-        Ok(GrantAnswer::Granted),
-        "the gate reaches intentd"
-    );
-    // The inbox is intentd's too, and nothing waits for the run yet.
-    let waiting = links
-        .events
-        .inbox(InboxAsk {
-            agent: AgentRef::Cua { run: run() },
-            after: None,
-        })
-        .await;
-    assert_eq!(waiting, Ok(vec![]));
-    // memoryd is not on this bus: a writer carries on (the client treats a memory that is not
-    // there as a no-op), so a run does not stop for it.
-    let mut task = cua_fake::scene::task();
-    task.app = mail();
-    task.space = work();
-    links.events.open(&run(), &task).await;
-    let kept = links.events.record(record_of_run(&run()).remove(0)).await;
-    assert_eq!(kept, Ok(()));
-}
-
-#[tokio::test]
-async fn the_run_opens_its_own_session_once_and_a_withdrawn_check_leaves_the_gate_usable() {
-    let desk = desk(vec![yes()]).await;
-    let gate = IntentsGate::over(DbusTransport::new(desk.cuad_connection().await));
-    // A conversation the router does not hold is ignored: the run opens in the start mode.
-    let conversation = SessionId::parse("s-9").unwrap();
-    let session = gate
-        .open_session(&run(), &work(), &conversation)
-        .await
-        .expect("the cua role opens the session of its own run");
-    assert_eq!(
-        gate.open_session(&run(), &work(), &conversation).await,
-        Err(cua_run::LinkError::Refused(
-            docket_core::WireRefusal::Malformed
-        )),
-        "a run has one session"
-    );
-    let _ = session;
-    gate.grant(GrantAsk {
-        app: mail(),
-        space: work(),
-        level: docket_core::Level::AlwaysAllow,
-        run: None,
-    })
-    .await
-    .expect("granted");
-    // A step that sends: the router says it will ask; the run withdraws the check instead
-    // (a pause), and the sheet comes down.
-    let mut asked = gate.check(step(Effect::Outbound)).await.expect("a check");
-    assert!(matches!(
-        asked.next().await,
-        Ok(GateEvent::Confirming(_)) | Ok(GateEvent::Answered(_))
-    ));
-    assert_eq!(asked.close().await, Ok(()));
-    drop(asked);
-    assert_eq!(answered(&gate, step(Effect::Read)).await, GateAnswer::Run);
 }

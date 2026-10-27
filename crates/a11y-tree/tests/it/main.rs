@@ -1,5 +1,3 @@
-#[cfg(feature = "atspi")]
-mod atspi;
 mod behaviour;
 mod fixtures;
 mod render;
