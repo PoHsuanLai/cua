@@ -33,7 +33,7 @@ dependencies = [
 [[package]]
 name = "action-review"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=7724aca663a2e09309439582c5f66e2a739c873c#7724aca663a2e09309439582c5f66e2a739c873c"
+source = "git+https://github.com/PoHsuanLai/docket?rev=82608696009fc7caaceb3afb7a56f9e6c37d7fa0#82608696009fc7caaceb3afb7a56f9e6c37d7fa0"
 dependencies = [
  "docket-core",
  "model-provider",
@@ -73,7 +73,7 @@ dependencies = [
 [[package]]
 name = "almanac-client"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/almanac?rev=fda30d4e2b04f2957644be4120f72be9824d6fd9#fda30d4e2b04f2957644be4120f72be9824d6fd9"
+source = "git+https://github.com/PoHsuanLai/almanac?rev=39121d44877615ae3d956b6939f485f848f9306c#39121d44877615ae3d956b6939f485f848f9306c"
 dependencies = [
  "almanac-core",
  "almanac-dbus",
@@ -84,7 +84,7 @@ dependencies = [
 [[package]]
 name = "almanac-core"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/almanac?rev=fda30d4e2b04f2957644be4120f72be9824d6fd9#fda30d4e2b04f2957644be4120f72be9824d6fd9"
+source = "git+https://github.com/PoHsuanLai/almanac?rev=39121d44877615ae3d956b6939f485f848f9306c#39121d44877615ae3d956b6939f485f848f9306c"
 dependencies = [
  "porter-core",
  "prov",
@@ -96,7 +96,7 @@ dependencies = [
 [[package]]
 name = "almanac-dbus"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/almanac?rev=fda30d4e2b04f2957644be4120f72be9824d6fd9#fda30d4e2b04f2957644be4120f72be9824d6fd9"
+source = "git+https://github.com/PoHsuanLai/almanac?rev=39121d44877615ae3d956b6939f485f848f9306c#39121d44877615ae3d956b6939f485f848f9306c"
 dependencies = [
  "almanac-core",
  "serde",
@@ -108,13 +108,16 @@ dependencies = [
 [[package]]
 name = "almanac-fake"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/almanac?rev=fda30d4e2b04f2957644be4120f72be9824d6fd9#fda30d4e2b04f2957644be4120f72be9824d6fd9"
+source = "git+https://github.com/PoHsuanLai/almanac?rev=39121d44877615ae3d956b6939f485f848f9306c#39121d44877615ae3d956b6939f485f848f9306c"
 dependencies = [
  "almanac-core",
  "almanac-seal",
  "almanac-service",
+ "almanac-store",
+ "chrono",
  "eventlog",
  "memfiles",
+ "memfiles-format",
  "recall",
  "rusqlite",
  "serde_json",
@@ -124,7 +127,7 @@ dependencies = [
 [[package]]
 name = "almanac-seal"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/almanac?rev=fda30d4e2b04f2957644be4120f72be9824d6fd9#fda30d4e2b04f2957644be4120f72be9824d6fd9"
+source = "git+https://github.com/PoHsuanLai/almanac?rev=39121d44877615ae3d956b6939f485f848f9306c#39121d44877615ae3d956b6939f485f848f9306c"
 dependencies = [
  "almanac-core",
  "blake3",
@@ -137,14 +140,15 @@ dependencies = [
 [[package]]
 name = "almanac-service"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/almanac?rev=fda30d4e2b04f2957644be4120f72be9824d6fd9#fda30d4e2b04f2957644be4120f72be9824d6fd9"
+source = "git+https://github.com/PoHsuanLai/almanac?rev=39121d44877615ae3d956b6939f485f848f9306c#39121d44877615ae3d956b6939f485f848f9306c"
 dependencies = [
  "almanac-core",
  "almanac-seal",
+ "almanac-settings",
  "almanac-store",
  "blake3",
- "jiff",
- "memfiles",
+ "chrono",
+ "memfiles-format",
  "serde",
  "serde_json",
  "tar",
@@ -153,9 +157,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "almanac-settings"
+version = "0.1.0"
+source = "git+https://github.com/PoHsuanLai/almanac?rev=39121d44877615ae3d956b6939f485f848f9306c#39121d44877615ae3d956b6939f485f848f9306c"
+dependencies = [
+ "almanac-core",
+ "serde",
+ "thiserror",
+ "toml",
+]
+
+[[package]]
 name = "almanac-store"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/almanac?rev=fda30d4e2b04f2957644be4120f72be9824d6fd9#fda30d4e2b04f2957644be4120f72be9824d6fd9"
+source = "git+https://github.com/PoHsuanLai/almanac?rev=39121d44877615ae3d956b6939f485f848f9306c#39121d44877615ae3d956b6939f485f848f9306c"
 dependencies = [
  "almanac-core",
  "almanac-seal",
@@ -340,6 +355,16 @@ name = "atomic-waker"
 version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1505bd5d3d116872e7271a6d4e16d81d0c8570876c8de68093a09ac269d8aac0"
+
+[[package]]
+name = "atomic-write-file"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ae67d5c03ee972c101a1d8db3ddbf8a9c819ad1ea9d6fd9cd385605547b60edb"
+dependencies = [
+ "nix",
+ "rand",
+]
 
 [[package]]
 name = "atspi"
@@ -649,13 +674,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "chacha20"
+version = "0.10.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "65c35e4b699c7e15ccbe7ee35c005e4fc0a278d22238a2857e6ce2dadeda1b06"
+dependencies = [
+ "cfg-if",
+ "cpufeatures 0.3.1",
+ "rand_core 0.10.1",
+]
+
+[[package]]
 name = "chacha20poly1305"
 version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "10cd79432192d1c0f4e1a0fef9527696cc039165d729fb41b3f4f4f354c2dc35"
 dependencies = [
  "aead",
- "chacha20",
+ "chacha20 0.9.1",
  "cipher",
  "poly1305",
  "zeroize",
@@ -704,7 +740,7 @@ dependencies = [
 [[package]]
 name = "companion-wire"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=7724aca663a2e09309439582c5f66e2a739c873c#7724aca663a2e09309439582c5f66e2a739c873c"
+source = "git+https://github.com/PoHsuanLai/docket?rev=82608696009fc7caaceb3afb7a56f9e6c37d7fa0#82608696009fc7caaceb3afb7a56f9e6c37d7fa0"
 dependencies = [
  "almanac-core",
  "docket-core",
@@ -781,7 +817,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "78c8292055d1c1df0cce5d180393dc8cce0abec0a7102adb6c7b1eef6016d60a"
 dependencies = [
  "generic-array",
- "rand_core",
+ "rand_core 0.6.4",
  "typenum",
 ]
 
@@ -1192,6 +1228,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "displaydoc"
+version = "0.2.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c6232dd377dcc64799954cbd3a9bb882e9cdc1308ccd87b1c098f1fb2eaf82a8"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 3.0.6",
+]
+
+[[package]]
 name = "dlib"
 version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1203,7 +1250,7 @@ dependencies = [
 [[package]]
 name = "docket-checkpoint"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=7724aca663a2e09309439582c5f66e2a739c873c#7724aca663a2e09309439582c5f66e2a739c873c"
+source = "git+https://github.com/PoHsuanLai/docket?rev=82608696009fc7caaceb3afb7a56f9e6c37d7fa0#82608696009fc7caaceb3afb7a56f9e6c37d7fa0"
 dependencies = [
  "docket-core",
  "porter-core",
@@ -1215,7 +1262,7 @@ dependencies = [
 [[package]]
 name = "docket-checkpoint-git"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=7724aca663a2e09309439582c5f66e2a739c873c#7724aca663a2e09309439582c5f66e2a739c873c"
+source = "git+https://github.com/PoHsuanLai/docket?rev=82608696009fc7caaceb3afb7a56f9e6c37d7fa0#82608696009fc7caaceb3afb7a56f9e6c37d7fa0"
 dependencies = [
  "docket-checkpoint",
  "docket-core",
@@ -1229,7 +1276,7 @@ dependencies = [
 [[package]]
 name = "docket-client"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=7724aca663a2e09309439582c5f66e2a739c873c#7724aca663a2e09309439582c5f66e2a739c873c"
+source = "git+https://github.com/PoHsuanLai/docket?rev=82608696009fc7caaceb3afb7a56f9e6c37d7fa0#82608696009fc7caaceb3afb7a56f9e6c37d7fa0"
 dependencies = [
  "docket-core",
  "docket-dbus",
@@ -1245,7 +1292,7 @@ dependencies = [
 [[package]]
 name = "docket-core"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=7724aca663a2e09309439582c5f66e2a739c873c#7724aca663a2e09309439582c5f66e2a739c873c"
+source = "git+https://github.com/PoHsuanLai/docket?rev=82608696009fc7caaceb3afb7a56f9e6c37d7fa0#82608696009fc7caaceb3afb7a56f9e6c37d7fa0"
 dependencies = [
  "almanac-core",
  "bulkhead",
@@ -1257,12 +1304,13 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
+ "url",
 ]
 
 [[package]]
 name = "docket-dbus"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=7724aca663a2e09309439582c5f66e2a739c873c#7724aca663a2e09309439582c5f66e2a739c873c"
+source = "git+https://github.com/PoHsuanLai/docket?rev=82608696009fc7caaceb3afb7a56f9e6c37d7fa0#82608696009fc7caaceb3afb7a56f9e6c37d7fa0"
 dependencies = [
  "docket-core",
  "porter-client",
@@ -1273,14 +1321,13 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
- "tracing",
  "zbus",
 ]
 
 [[package]]
 name = "docket-fake"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=7724aca663a2e09309439582c5f66e2a739c873c#7724aca663a2e09309439582c5f66e2a739c873c"
+source = "git+https://github.com/PoHsuanLai/docket?rev=82608696009fc7caaceb3afb7a56f9e6c37d7fa0#82608696009fc7caaceb3afb7a56f9e6c37d7fa0"
 dependencies = [
  "action-review",
  "almanac-core",
@@ -1300,7 +1347,7 @@ dependencies = [
 [[package]]
 name = "docket-log"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=7724aca663a2e09309439582c5f66e2a739c873c#7724aca663a2e09309439582c5f66e2a739c873c"
+source = "git+https://github.com/PoHsuanLai/docket?rev=82608696009fc7caaceb3afb7a56f9e6c37d7fa0#82608696009fc7caaceb3afb7a56f9e6c37d7fa0"
 dependencies = [
  "tracing",
 ]
@@ -1308,7 +1355,7 @@ dependencies = [
 [[package]]
 name = "docket-memory"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=7724aca663a2e09309439582c5f66e2a739c873c#7724aca663a2e09309439582c5f66e2a739c873c"
+source = "git+https://github.com/PoHsuanLai/docket?rev=82608696009fc7caaceb3afb7a56f9e6c37d7fa0#82608696009fc7caaceb3afb7a56f9e6c37d7fa0"
 dependencies = [
  "almanac-client",
  "almanac-core",
@@ -1323,7 +1370,7 @@ dependencies = [
 [[package]]
 name = "docket-models"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=7724aca663a2e09309439582c5f66e2a739c873c#7724aca663a2e09309439582c5f66e2a739c873c"
+source = "git+https://github.com/PoHsuanLai/docket?rev=82608696009fc7caaceb3afb7a56f9e6c37d7fa0#82608696009fc7caaceb3afb7a56f9e6c37d7fa0"
 dependencies = [
  "action-review",
  "docket-core",
@@ -1338,7 +1385,7 @@ dependencies = [
 [[package]]
 name = "docket-router"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=7724aca663a2e09309439582c5f66e2a739c873c#7724aca663a2e09309439582c5f66e2a739c873c"
+source = "git+https://github.com/PoHsuanLai/docket?rev=82608696009fc7caaceb3afb7a56f9e6c37d7fa0#82608696009fc7caaceb3afb7a56f9e6c37d7fa0"
 dependencies = [
  "action-review",
  "almanac-core",
@@ -1357,12 +1404,13 @@ dependencies = [
  "thiserror",
  "toml",
  "tracing",
+ "url",
 ]
 
 [[package]]
 name = "docket-session"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=7724aca663a2e09309439582c5f66e2a739c873c#7724aca663a2e09309439582c5f66e2a739c873c"
+source = "git+https://github.com/PoHsuanLai/docket?rev=82608696009fc7caaceb3afb7a56f9e6c37d7fa0#82608696009fc7caaceb3afb7a56f9e6c37d7fa0"
 dependencies = [
  "companion-wire",
  "docket-core",
@@ -1376,7 +1424,7 @@ dependencies = [
 [[package]]
 name = "docket-settings"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=7724aca663a2e09309439582c5f66e2a739c873c#7724aca663a2e09309439582c5f66e2a739c873c"
+source = "git+https://github.com/PoHsuanLai/docket?rev=82608696009fc7caaceb3afb7a56f9e6c37d7fa0#82608696009fc7caaceb3afb7a56f9e6c37d7fa0"
 dependencies = [
  "docket-core",
  "porter-core",
@@ -1389,7 +1437,7 @@ dependencies = [
 [[package]]
 name = "docket-skills"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=7724aca663a2e09309439582c5f66e2a739c873c#7724aca663a2e09309439582c5f66e2a739c873c"
+source = "git+https://github.com/PoHsuanLai/docket?rev=82608696009fc7caaceb3afb7a56f9e6c37d7fa0#82608696009fc7caaceb3afb7a56f9e6c37d7fa0"
 dependencies = [
  "docket-core",
  "porter-core",
@@ -1397,6 +1445,18 @@ dependencies = [
  "serde",
  "thiserror",
  "toml",
+]
+
+[[package]]
+name = "docket-store"
+version = "0.1.0"
+source = "git+https://github.com/PoHsuanLai/docket?rev=82608696009fc7caaceb3afb7a56f9e6c37d7fa0#82608696009fc7caaceb3afb7a56f9e6c37d7fa0"
+dependencies = [
+ "atomic-write-file",
+ "docket-core",
+ "futures-util",
+ "prov",
+ "thiserror",
 ]
 
 [[package]]
@@ -1533,7 +1593,7 @@ dependencies = [
 [[package]]
 name = "eventlog"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/almanac?rev=fda30d4e2b04f2957644be4120f72be9824d6fd9#fda30d4e2b04f2957644be4120f72be9824d6fd9"
+source = "git+https://github.com/PoHsuanLai/almanac?rev=39121d44877615ae3d956b6939f485f848f9306c#39121d44877615ae3d956b6939f485f848f9306c"
 dependencies = [
  "almanac-core",
  "almanac-seal",
@@ -1628,6 +1688,15 @@ name = "foldhash"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "77ce24cb58228fbb8aa041425bb1050850ac19177686ea6e0f41a70416f56fdb"
+
+[[package]]
+name = "form_urlencoded"
+version = "1.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cb4cb245038516f5f85277875cdaa4f7d2c9a0fa0468de06ed190163b1581fcf"
+dependencies = [
+ "percent-encoding",
+]
 
 [[package]]
 name = "fsevent-sys"
@@ -1755,6 +1824,7 @@ dependencies = [
  "cfg-if",
  "libc",
  "r-efi 6.0.0",
+ "rand_core 0.10.1",
 ]
 
 [[package]]
@@ -1908,10 +1978,114 @@ dependencies = [
 ]
 
 [[package]]
+name = "icu_collections"
+version = "2.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fe090a42a0d3140fed8c63263ed1fecc02422cb2f4bfe55cd8de2de1b8e105dd"
+dependencies = [
+ "displaydoc",
+ "potential_utf",
+ "utf8_iter",
+ "yoke",
+ "zerofrom",
+ "zerovec",
+]
+
+[[package]]
+name = "icu_locale_core"
+version = "2.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "25d29b57c17c6528d0dc4c2141cfa2d08200465acb537a3909c8b9b8a4a984c0"
+dependencies = [
+ "displaydoc",
+ "litemap",
+ "tinystr",
+ "writeable",
+ "zerovec",
+]
+
+[[package]]
+name = "icu_normalizer"
+version = "2.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "404a3b8c486f205c87fe7f23ab6894d84a4ad76d6e4671ae1981ba7def87c599"
+dependencies = [
+ "icu_collections",
+ "icu_normalizer_data",
+ "icu_properties",
+ "icu_provider",
+ "smallvec",
+ "zerovec",
+]
+
+[[package]]
+name = "icu_normalizer_data"
+version = "2.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "20f0088bfb7441f7a37fa0c9e20cb1e9cba1cac6b9ce8cd2a6dc44294f8e8cbc"
+
+[[package]]
+name = "icu_properties"
+version = "2.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2ea83d991c56158f7cf898bf86436c1dfe7c07ee82fe88951f2695c9f37a379f"
+dependencies = [
+ "displaydoc",
+ "icu_collections",
+ "icu_locale_core",
+ "icu_properties_data",
+ "icu_provider",
+ "zerotrie",
+ "zerovec",
+]
+
+[[package]]
+name = "icu_properties_data"
+version = "2.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b98f29af82d02b163fe50161388350e743bb3107cc8e8c2f7314cb505faddfcf"
+
+[[package]]
+name = "icu_provider"
+version = "2.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "413099315636c588ee8f011190b329b971a09a8fae9d157e01dcae8379468514"
+dependencies = [
+ "displaydoc",
+ "icu_locale_core",
+ "writeable",
+ "yoke",
+ "zerofrom",
+ "zerotrie",
+ "zerovec",
+]
+
+[[package]]
 name = "ident_case"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b9e0384b61958566e926dc50660321d12159025e767c18e043daf26b70104c39"
+
+[[package]]
+name = "idna"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3b0875f23caa03898994f6ddc501886a45c7d3d62d04d2d90788d47be1b1e4de"
+dependencies = [
+ "idna_adapter",
+ "smallvec",
+ "utf8_iter",
+]
+
+[[package]]
+name = "idna_adapter"
+version = "1.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cb68373c0d6620ef8105e855e7745e18b0d00d3bdb07fb532e434244cdb9a714"
+dependencies = [
+ "icu_normalizer",
+ "icu_properties",
+]
 
 [[package]]
 name = "image"
@@ -1983,7 +2157,7 @@ dependencies = [
 [[package]]
 name = "intentd"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=7724aca663a2e09309439582c5f66e2a739c873c#7724aca663a2e09309439582c5f66e2a739c873c"
+source = "git+https://github.com/PoHsuanLai/docket?rev=82608696009fc7caaceb3afb7a56f9e6c37d7fa0#82608696009fc7caaceb3afb7a56f9e6c37d7fa0"
 dependencies = [
  "action-review",
  "almanac-client",
@@ -1999,6 +2173,7 @@ dependencies = [
  "docket-session",
  "docket-settings",
  "docket-skills",
+ "docket-store",
  "futures-util",
  "notify",
  "policy-point",
@@ -2252,6 +2427,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32a66949e030da00e8c7d4434b251670a91556f4144941d37452769c25d58a53"
 
 [[package]]
+name = "litemap"
+version = "0.8.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "47d9d19d1d6efa0109d2f65ff4c85cddd50bd572e5a00127ab10987290bcefae"
+
+[[package]]
 name = "litrs"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2344,12 +2525,21 @@ checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
 [[package]]
 name = "memfiles"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/almanac?rev=fda30d4e2b04f2957644be4120f72be9824d6fd9#fda30d4e2b04f2957644be4120f72be9824d6fd9"
+source = "git+https://github.com/PoHsuanLai/almanac?rev=39121d44877615ae3d956b6939f485f848f9306c#39121d44877615ae3d956b6939f485f848f9306c"
 dependencies = [
  "almanac-core",
  "almanac-seal",
  "almanac-store",
- "jiff",
+]
+
+[[package]]
+name = "memfiles-format"
+version = "0.1.0"
+source = "git+https://github.com/PoHsuanLai/almanac?rev=39121d44877615ae3d956b6939f485f848f9306c#39121d44877615ae3d956b6939f485f848f9306c"
+dependencies = [
+ "almanac-core",
+ "almanac-store",
+ "chrono",
  "serde",
  "serde_json",
  "thiserror",
@@ -2663,8 +2853,8 @@ dependencies = [
 
 [[package]]
 name = "peephole"
-version = "0.1.9"
-source = "git+https://github.com/PoHsuanLai/peephole?tag=v0.1.9#f22e99b447d1ef7f84d81ddce6ceb614088ee0ef"
+version = "0.1.11"
+source = "git+https://github.com/PoHsuanLai/peephole?tag=v0.1.11#06a97c105d833b07a37feb48a16dde49ef4d8bc0"
 dependencies = [
  "nix",
  "peephole-core",
@@ -2674,8 +2864,8 @@ dependencies = [
 
 [[package]]
 name = "peephole-bus"
-version = "0.1.9"
-source = "git+https://github.com/PoHsuanLai/peephole?tag=v0.1.9#f22e99b447d1ef7f84d81ddce6ceb614088ee0ef"
+version = "0.1.11"
+source = "git+https://github.com/PoHsuanLai/peephole?tag=v0.1.11#06a97c105d833b07a37feb48a16dde49ef4d8bc0"
 dependencies = [
  "futures-timer",
  "peephole",
@@ -2687,13 +2877,19 @@ dependencies = [
 
 [[package]]
 name = "peephole-core"
-version = "0.1.9"
-source = "git+https://github.com/PoHsuanLai/peephole?tag=v0.1.9#f22e99b447d1ef7f84d81ddce6ceb614088ee0ef"
+version = "0.1.11"
+source = "git+https://github.com/PoHsuanLai/peephole?tag=v0.1.11#06a97c105d833b07a37feb48a16dde49ef4d8bc0"
 dependencies = [
  "serde",
  "thiserror",
  "toml",
 ]
+
+[[package]]
+name = "percent-encoding"
+version = "2.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9b4f627cb1b25917193a259e49bdad08f671f8d9708acfd5fe0a8c1455d87220"
 
 [[package]]
 name = "petgraph"
@@ -2759,7 +2955,7 @@ dependencies = [
 [[package]]
 name = "policy-point"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=7724aca663a2e09309439582c5f66e2a739c873c#7724aca663a2e09309439582c5f66e2a739c873c"
+source = "git+https://github.com/PoHsuanLai/docket?rev=82608696009fc7caaceb3afb7a56f9e6c37d7fa0#82608696009fc7caaceb3afb7a56f9e6c37d7fa0"
 dependencies = [
  "cedar-policy",
  "docket-core",
@@ -2813,14 +3009,11 @@ dependencies = [
 [[package]]
 name = "porter-client"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/porter?rev=dcc16ada850559c7c8ae213cd7a9b153672e5031#dcc16ada850559c7c8ae213cd7a9b153672e5031"
+source = "git+https://github.com/PoHsuanLai/porter?rev=fc6b55aba646377c296f5ccf0e086b83e3c139ae#fc6b55aba646377c296f5ccf0e086b83e3c139ae"
 dependencies = [
  "porter-core",
  "porter-dbus",
  "porter-infer",
- "porter-provider",
- "porter-secrets",
- "porter-service",
  "rustix",
  "serde",
  "serde_json",
@@ -2833,7 +3026,7 @@ dependencies = [
 [[package]]
 name = "porter-core"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/porter?rev=dcc16ada850559c7c8ae213cd7a9b153672e5031#dcc16ada850559c7c8ae213cd7a9b153672e5031"
+source = "git+https://github.com/PoHsuanLai/porter?rev=fc6b55aba646377c296f5ccf0e086b83e3c139ae#fc6b55aba646377c296f5ccf0e086b83e3c139ae"
 dependencies = [
  "peephole-core",
  "serde",
@@ -2845,7 +3038,7 @@ dependencies = [
 [[package]]
 name = "porter-daemon"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/porter?rev=dcc16ada850559c7c8ae213cd7a9b153672e5031#dcc16ada850559c7c8ae213cd7a9b153672e5031"
+source = "git+https://github.com/PoHsuanLai/porter?rev=fc6b55aba646377c296f5ccf0e086b83e3c139ae#fc6b55aba646377c296f5ccf0e086b83e3c139ae"
 dependencies = [
  "notify",
  "thiserror",
@@ -2854,7 +3047,7 @@ dependencies = [
 [[package]]
 name = "porter-dbus"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/porter?rev=dcc16ada850559c7c8ae213cd7a9b153672e5031#dcc16ada850559c7c8ae213cd7a9b153672e5031"
+source = "git+https://github.com/PoHsuanLai/porter?rev=fc6b55aba646377c296f5ccf0e086b83e3c139ae#fc6b55aba646377c296f5ccf0e086b83e3c139ae"
 dependencies = [
  "peephole",
  "peephole-bus",
@@ -2869,14 +3062,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "porter-fs"
-version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/porter?rev=dcc16ada850559c7c8ae213cd7a9b153672e5031#dcc16ada850559c7c8ae213cd7a9b153672e5031"
-
-[[package]]
 name = "porter-infer"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/porter?rev=dcc16ada850559c7c8ae213cd7a9b153672e5031#dcc16ada850559c7c8ae213cd7a9b153672e5031"
+source = "git+https://github.com/PoHsuanLai/porter?rev=fc6b55aba646377c296f5ccf0e086b83e3c139ae#fc6b55aba646377c296f5ccf0e086b83e3c139ae"
 dependencies = [
  "base64 0.22.1",
  "cua-action",
@@ -2887,37 +3075,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "porter-provider"
-version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/porter?rev=dcc16ada850559c7c8ae213cd7a9b153672e5031#dcc16ada850559c7c8ae213cd7a9b153672e5031"
+name = "potential_utf"
+version = "0.1.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d83eb9bc6d8e5cf568e7a1101d60ee05e81ed50ea106026f3d18deeb046d7661"
 dependencies = [
- "porter-core",
- "serde",
- "thiserror",
- "toml",
-]
-
-[[package]]
-name = "porter-secrets"
-version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/porter?rev=dcc16ada850559c7c8ae213cd7a9b153672e5031#dcc16ada850559c7c8ae213cd7a9b153672e5031"
-dependencies = [
- "porter-core",
- "porter-fs",
- "rustix",
- "serde_json",
- "thiserror",
-]
-
-[[package]]
-name = "porter-service"
-version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/porter?rev=dcc16ada850559c7c8ae213cd7a9b153672e5031#dcc16ada850559c7c8ae213cd7a9b153672e5031"
-dependencies = [
- "porter-core",
- "porter-provider",
- "porter-secrets",
- "thiserror",
+ "zerovec",
 ]
 
 [[package]]
@@ -2964,7 +3127,7 @@ dependencies = [
 [[package]]
 name = "prov"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/prov?rev=bf8d316f45c9856f72abfb9ab214db424a60cbbb#bf8d316f45c9856f72abfb9ab214db424a60cbbb"
+source = "git+https://github.com/PoHsuanLai/prov?rev=44dc456c04bc4d414e03385b17be2cf6ddab0436#44dc456c04bc4d414e03385b17be2cf6ddab0436"
 dependencies = [
  "porter-core",
  "serde",
@@ -3018,6 +3181,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8dcc9c7d52a811697d2151c701e0d08956f92b0e24136cf4cf27b57a6a0d9bf"
 
 [[package]]
+name = "rand"
+version = "0.10.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "65c9fb96cbc91e3478eaae79a69fcd3f1ae4ad052e471fe6732fff548984b4af"
+dependencies = [
+ "chacha20 0.10.2",
+ "getrandom 0.4.3",
+ "rand_core 0.10.1",
+]
+
+[[package]]
 name = "rand_core"
 version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3027,9 +3201,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "rand_core"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "63b8176103e19a2643978565ca18b50549f6101881c443590420e4dc998a3c69"
+
+[[package]]
 name = "recall"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/almanac?rev=fda30d4e2b04f2957644be4120f72be9824d6fd9#fda30d4e2b04f2957644be4120f72be9824d6fd9"
+source = "git+https://github.com/PoHsuanLai/almanac?rev=39121d44877615ae3d956b6939f485f848f9306c#39121d44877615ae3d956b6939f485f848f9306c"
 dependencies = [
  "almanac-store",
  "rusqlite",
@@ -3446,6 +3626,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "stable_deref_trait"
+version = "1.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6ce2be8dc25455e1f91df71bfa12ad37d7af1092ae736f3a6cd0e37bc7810596"
+
+[[package]]
 name = "stacker"
 version = "0.1.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3508,6 +3694,17 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "synstructure"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "901704edd0dfe137f1987838ee4f259e4e063c31371bdb423f7ae38ec6f77f02"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 3.0.6",
 ]
 
 [[package]]
@@ -3591,6 +3788,16 @@ checksum = "7e689342a48d2ea927c87ea50cabf8594854bf940e9310208848d680d668ed85"
 dependencies = [
  "num-conv",
  "time-core",
+]
+
+[[package]]
+name = "tinystr"
+version = "0.8.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "abc840c238154d58f9e86b2792261edfde565a17696e1cda1a449de27979801a"
+dependencies = [
+ "displaydoc",
+ "zerovec",
 ]
 
 [[package]]
@@ -3803,6 +4010,24 @@ dependencies = [
  "crypto-common 0.1.7",
  "subtle",
 ]
+
+[[package]]
+name = "url"
+version = "2.5.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ff67a8a4397373c3ef660812acab3268222035010ab8680ec4215f38ba3d0eed"
+dependencies = [
+ "form_urlencoded",
+ "idna",
+ "percent-encoding",
+ "serde",
+]
+
+[[package]]
+name = "utf8_iter"
+version = "1.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b6c140620e7ffbb22c2dee59cafe6084a59b5ffc27a8859a5f0d494b5d52b6be"
 
 [[package]]
 name = "uuid"
@@ -4173,6 +4398,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1ebf944e87a7c253233ad6766e082e3cd714b5d03812acc24c318f549614536e"
 
 [[package]]
+name = "writeable"
+version = "0.6.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3ad82d2a33cdc9674dc7465672f271e096168fcdbe0f799d9e6db8c5892679dc"
+
+[[package]]
 name = "xattr"
 version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4197,6 +4428,29 @@ name = "xkeysym"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b9cc00251562a284751c9973bace760d86c0276c471b4be569fe6b068ee97a56"
+
+[[package]]
+name = "yoke"
+version = "0.8.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "417ef3fcf6c300b7dbd25c85531a746931c02ad536f3cf4786ed1e88223340b3"
+dependencies = [
+ "stable_deref_trait",
+ "yoke-derive",
+ "zerofrom",
+]
+
+[[package]]
+name = "yoke-derive"
+version = "0.8.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ec8ebde2db3681e8c9980cc27822030e68752690ddfa9473e739aeb4dbde6d71"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 3.0.6",
+ "synstructure",
+]
 
 [[package]]
 name = "zbus"
@@ -4306,10 +4560,64 @@ dependencies = [
 ]
 
 [[package]]
+name = "zerofrom"
+version = "0.1.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0ec05a11813ea801ff6d75110ad09cd0824ddba17dfe17128ea0d5f68e6c5272"
+dependencies = [
+ "zerofrom-derive",
+]
+
+[[package]]
+name = "zerofrom-derive"
+version = "0.1.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f75b4683f6c7f45248d4d64056a24298c6281e0993356d7d1b4a1a962ef10d4a"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 3.0.6",
+ "synstructure",
+]
+
+[[package]]
 name = "zeroize"
 version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e13c156562582aa81c60cb29407084cdb54c4164760106ab78e6c5b0858cf64e"
+
+[[package]]
+name = "zerotrie"
+version = "0.2.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4ea269c3bd32f0a32c321907a2ae912ba6f4649bb0fc764a15627e99a7095a3f"
+dependencies = [
+ "displaydoc",
+ "yoke",
+ "zerofrom",
+]
+
+[[package]]
+name = "zerovec"
+version = "0.11.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f58a2799cfe9a1670c7ea8edbd52ef8edb93cb37a7f83bf31ba9e35d9dae6a40"
+dependencies = [
+ "yoke",
+ "zerofrom",
+ "zerovec-derive",
+]
+
+[[package]]
+name = "zerovec-derive"
+version = "0.11.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c3743ddbf47738d929cd1ae2e199d40d0162979dfe31aef8ae646d2bf00bf97a"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 3.0.6",
+]
 
 [[package]]
 name = "zlib-rs"
