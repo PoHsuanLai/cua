@@ -135,7 +135,7 @@ pub enum Sensitivity {
     Secret,
 }
 
-/// How many nodes a snapshot keeps (setting `cua.tree.max_nodes`, default 400).
+/// How many nodes a snapshot keeps (cuad uses 400).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct NodeBudget(pub u32);

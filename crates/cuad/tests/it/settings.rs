@@ -97,9 +97,9 @@ async fn a_bad_value_in_the_file_leaves_the_running_value_and_is_reported() {
         apps: Apps::Unrestricted,
     };
     let mut watch = SettingsWatch::start(Locator::from_env(&env), base);
-    write_atomically(home.path(), "[cua.wait]\nmax_ms = 1\n");
+    write_atomically(home.path(), "[cua.budget]\nspend_microusd = -1\n");
     let loaded = sup.follow(&mut watch).await.expect("the watch is live");
     assert_eq!(loaded.fallbacks.len(), 1);
-    assert_eq!(loaded.fallbacks[0].key, "cua.wait.max_ms");
-    assert_eq!(sup.settings().wait_max, cua_desktop::Ms(60_000));
+    assert_eq!(loaded.fallbacks[0].key, "cua.budget.spend_microusd");
+    assert_eq!(sup.settings().budget.spend, porter_core::MicroUsd(0));
 }

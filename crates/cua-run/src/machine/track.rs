@@ -65,7 +65,7 @@ pub enum DamageWanted {
 }
 
 /// How long the run has been waiting on end, `wait` after `wait`. An action that is not a wait
-/// starts the count over. While it is within the run's total (`cua.wait.total_ms`) an unchanged
+/// starts the count over. While it is within the run's total (`WAIT_TOTAL`) an unchanged
 /// screen is a slow job and not a stall.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(tag = "kind", content = "v", rename_all = "snake_case")]

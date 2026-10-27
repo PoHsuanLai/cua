@@ -4,10 +4,8 @@
 //! this table to each other.
 
 use super::CuaSettings;
-use a11y_tree::NodeBudget;
-use cua_desktop::Ms;
 use cua_run::{Accessibility, Autopause, DefaultMode, Enabled};
-use porter_core::{Count, MicroUsd};
+use porter_core::MicroUsd;
 use std::ops::RangeInclusive;
 
 /// What a key's value may be and how it lands in the settings.
@@ -53,14 +51,6 @@ fn word(
     }
 }
 
-fn count(v: i64) -> Count {
-    Count(u32::try_from(v).unwrap_or(u32::MAX))
-}
-
-fn ms(v: i64) -> Ms {
-    Ms(u32::try_from(v).unwrap_or(u32::MAX))
-}
-
 const ENABLED: [Enabled; 2] = [Enabled::Off, Enabled::On];
 const MODE: [DefaultMode; 3] = [
     DefaultMode::Auto,
@@ -87,38 +77,8 @@ pub(crate) fn table() -> Vec<Key> {
         word("cua.accessibility", &["on", "off"], |s, i| {
             s.config.accessibility = ACCESSIBILITY[i];
         }),
-        num("cua.budget.steps", 1..=500, |s, v| {
-            s.config.budget.steps = count(v)
-        }),
-        num("cua.budget.active_s", 10..=7_200, |s, v| {
-            s.config.budget.active = ms(v.saturating_mul(1000));
-        }),
-        num("cua.budget.stall_frames", 1..=20, |s, v| {
-            s.config.budget.stall_frames = count(v);
-        }),
-        num("cua.budget.actions_per_min", 1..=600, |s, v| {
-            s.config.budget.actions_per_min = count(v);
-        }),
-        num("cua.budget.model_failures", 0..=10, |s, v| {
-            s.config.budget.model_failures = count(v);
-        }),
         num("cua.budget.spend_microusd", 0..=1_000_000_000, |s, v| {
             s.config.budget.spend = MicroUsd(u64::try_from(v).unwrap_or(u64::MAX));
-        }),
-        num("cua.settle.quiet_ms", 50..=2_000, |s, v| {
-            s.config.settle.quiet = ms(v)
-        }),
-        num("cua.settle.timeout_ms", 500..=30_000, |s, v| {
-            s.config.settle.timeout = ms(v);
-        }),
-        num("cua.wait.max_ms", 500..=60_000, |s, v| {
-            s.config.wait_max = ms(v)
-        }),
-        num("cua.wait.total_ms", 1_000..=600_000, |s, v| {
-            s.config.wait_total = ms(v)
-        }),
-        num("cua.tree.max_nodes", 50..=5_000, |s, v| {
-            s.config.tree_max_nodes = NodeBudget(u32::try_from(v).unwrap_or(u32::MAX));
         }),
     ]
 }

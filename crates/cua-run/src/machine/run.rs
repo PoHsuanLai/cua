@@ -1,7 +1,9 @@
 //! The run itself: its state, and the three functions that drive it.
 
 use crate::chord_scope::KeyWorld;
-use crate::config::{Accessibility, Autopause, CuaConfig, SettleLimits};
+use crate::config::{
+    Accessibility, Autopause, CuaConfig, SETTLE, SettleLimits, TREE_MAX_NODES, WAIT_MAX, WAIT_TOTAL,
+};
 use crate::machine::effect::RunEffect;
 use crate::machine::input::RunInput;
 use crate::machine::phase::{ActionQueue, RunPhase};
@@ -52,7 +54,7 @@ pub struct RunEnv {
 
 /// Ten minutes: the total of a run whose environment did not say.
 fn default_wait_total() -> Ms {
-    Ms(600_000)
+    WAIT_TOTAL
 }
 
 /// The level of a run whose supervisor did not say: ask every time.
@@ -65,13 +67,13 @@ impl RunEnv {
     pub fn new(config: &CuaConfig, caps: BackendCaps) -> RunEnv {
         RunEnv {
             caps,
-            settle: config.settle,
-            wait_max: config.wait_max,
-            wait_total: config.wait_total,
+            settle: SETTLE,
+            wait_max: WAIT_MAX,
+            wait_total: WAIT_TOTAL,
             autopause: config.autopause,
             // Reading the controls turned off is a run with no room for any of them.
             tree_max_nodes: match config.accessibility {
-                Accessibility::On => config.tree_max_nodes,
+                Accessibility::On => TREE_MAX_NODES,
                 Accessibility::Off => NodeBudget(0),
             },
             keys: KeyWorld::default(),

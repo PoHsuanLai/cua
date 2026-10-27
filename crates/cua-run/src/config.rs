@@ -7,7 +7,6 @@
 use a11y_tree::NodeBudget;
 use cua_bus::RunBudget;
 use cua_desktop::Ms;
-use porter_core::Count;
 use serde::{Deserialize, Serialize};
 
 /// `cua.enabled`: computer use is off until the person turns it on, and then still needs the
@@ -72,11 +71,27 @@ pub struct Days(pub u32);
 /// How long to wait for the screen to settle after an action.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct SettleLimits {
-    /// `cua.settle.quiet_ms`: no change for this long means settled (250).
+    /// No change for this long means settled.
     pub quiet: Ms,
-    /// `cua.settle.timeout_ms`: give up after this long (3000).
+    /// Give up after this long.
     pub timeout: Ms,
 }
+
+/// How long to wait for the screen to settle after an action: quiet for 250 ms, at most 3 s.
+pub const SETTLE: SettleLimits = SettleLimits {
+    quiet: Ms(250),
+    timeout: Ms(3000),
+};
+
+/// The longest one `wait` may last: 60 s, the most the action can ask.
+pub const WAIT_MAX: Ms = Ms(60_000);
+
+/// How long a run may keep waiting, `wait` after `wait`, before an unchanged screen counts as
+/// stalled again: ten minutes.
+pub const WAIT_TOTAL: Ms = Ms(600_000);
+
+/// How many tree nodes a snapshot keeps.
+pub const TREE_MAX_NODES: NodeBudget = NodeBudget(400);
 
 /// Every proposed value of computer use in one place.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -87,19 +102,10 @@ pub struct CuaConfig {
     pub default_mode: DefaultMode,
     /// `cua.budget.*`.
     pub budget: RunBudget,
-    /// `cua.settle.*`.
-    pub settle: SettleLimits,
-    /// `cua.wait.max_ms`: the longest one `wait` may last (60000, the most the action can ask).
-    pub wait_max: Ms,
-    /// `cua.wait.total_ms`: how long a run may keep waiting, `wait` after `wait`, before an
-    /// unchanged screen counts as stalled again (600000, ten minutes).
-    pub wait_total: Ms,
     /// `cua.autopause`.
     pub autopause: Autopause,
     /// `cua.accessibility` (on).
     pub accessibility: Accessibility,
-    /// `cua.tree.max_nodes` (400).
-    pub tree_max_nodes: NodeBudget,
     /// `cua.screens.keep`.
     pub keep_screens: KeepScreens,
     /// `cua.screens.keep_days` (7).
@@ -112,15 +118,8 @@ impl Default for CuaConfig {
             enabled: Enabled::Off,
             default_mode: DefaultMode::Auto,
             budget: RunBudget::PROPOSED,
-            settle: SettleLimits {
-                quiet: Ms(250),
-                timeout: Ms(3000),
-            },
-            wait_max: Ms(60_000),
-            wait_total: Ms(600_000),
             autopause: Autopause::On,
             accessibility: Accessibility::On,
-            tree_max_nodes: NodeBudget(400),
             keep_screens: KeepScreens::Off,
             keep_days: Days(7),
         }
@@ -163,19 +162,9 @@ const fn w(key: &'static str, v: &'static str) -> SettingRow {
 pub const SETTING_ROWS: &[SettingRow] = &[
     w("cua.enabled", "off"),
     w("cua.default_mode", "auto"),
-    n("cua.budget.steps", 40),
-    n("cua.budget.active_s", 1800),
-    n("cua.budget.stall_frames", 3),
-    n("cua.budget.actions_per_min", 60),
-    n("cua.budget.model_failures", 2),
     n("cua.budget.spend_microusd", 0),
-    n("cua.settle.quiet_ms", 250),
-    n("cua.settle.timeout_ms", 3000),
-    n("cua.wait.max_ms", 60_000),
-    n("cua.wait.total_ms", 600_000),
     w("cua.autopause", "on"),
     w("cua.accessibility", "on"),
-    n("cua.tree.max_nodes", 400),
     w("cua.screens.keep", "off"),
     n("cua.screens.keep_days", 7),
 ];
@@ -184,7 +173,6 @@ impl CuaConfig {
     /// The value of `key` in this configuration; `None` for a key cuad does not read.
     pub fn value(&self, key: &str) -> Option<SettingValue> {
         let number = |v: u64| i64::try_from(v).ok().map(SettingValue::Number);
-        let count = |c: Count| Some(SettingValue::Number(i64::from(c.0)));
         match key {
             "cua.enabled" => Some(SettingValue::Word(match self.enabled {
                 Enabled::Off => "off",
@@ -195,18 +183,7 @@ impl CuaConfig {
                 DefaultMode::InPlace => "in_place",
                 DefaultMode::AgentWorkspace => "agent_workspace",
             })),
-            "cua.budget.steps" => count(self.budget.steps),
-            "cua.budget.active_s" => {
-                Some(SettingValue::Number(i64::from(self.budget.active.0 / 1000)))
-            }
-            "cua.budget.stall_frames" => count(self.budget.stall_frames),
-            "cua.budget.actions_per_min" => count(self.budget.actions_per_min),
-            "cua.budget.model_failures" => count(self.budget.model_failures),
             "cua.budget.spend_microusd" => number(self.budget.spend.0),
-            "cua.settle.quiet_ms" => Some(SettingValue::Number(i64::from(self.settle.quiet.0))),
-            "cua.settle.timeout_ms" => Some(SettingValue::Number(i64::from(self.settle.timeout.0))),
-            "cua.wait.max_ms" => Some(SettingValue::Number(i64::from(self.wait_max.0))),
-            "cua.wait.total_ms" => Some(SettingValue::Number(i64::from(self.wait_total.0))),
             "cua.autopause" => Some(SettingValue::Word(match self.autopause {
                 Autopause::Off => "off",
                 Autopause::On => "on",
@@ -215,7 +192,6 @@ impl CuaConfig {
                 Accessibility::Off => "off",
                 Accessibility::On => "on",
             })),
-            "cua.tree.max_nodes" => Some(SettingValue::Number(i64::from(self.tree_max_nodes.0))),
             "cua.screens.keep" => Some(SettingValue::Word(match self.keep_screens {
                 KeepScreens::Off => "off",
                 KeepScreens::On => "on",

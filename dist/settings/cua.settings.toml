@@ -4,7 +4,7 @@
 # `enabled = "on"`; cuad reads them live (crates/cuad/src/settings). Every row is hands-off
 # for an agent (no `agent = "settable"`): cua.* is never agent-settable, so the companion can never
 # switch computer use on for itself. The rows design/22 section 5 puts on the Intelligence page are
-# Computer use's four; the others are Advanced. Not here, because nothing reads them yet:
+# Computer use's four; the spending cap is Advanced. Not here, because nothing reads them yet:
 # `cua.screens.keep` and `cua.screens.keep_days` (FINDINGS).
 # The schema carries no live note, so the warning that no model reads images while computer use
 # is on is cuad's `SightNote` property (org.quire.Cua1.Manager), which the shell shows beside
@@ -17,7 +17,7 @@ version = 1
 path = "cua.enabled"
 default = "off"
 label = "Let the assistant use my apps for me"
-help = "Computer use lets the assistant look at an app's window and click and type in it, only in the apps you list below. Off by default; every step is still checked and asks before anything is sent or deleted."
+help = "Lets the assistant look at an app and click and type in it, only in the apps you list. Off by default."
 section = "Computer use"
 exposure = "basic"
 
@@ -38,7 +38,7 @@ on = "On"
 path = "cua.apps"
 default = []
 label = "Apps it may use"
-help = "The apps computer use may work in. An app that is not listed is never touched. Ask asks the first time the assistant uses the app in a conversation, and your answer holds for that conversation; Always never asks, and is not offered for web browsers."
+help = "The apps the assistant may use. Ask checks with you the first time in a conversation; Always never asks."
 section = "Computer use"
 exposure = "basic"
 
@@ -72,7 +72,7 @@ kind = "intelligence"
 path = "cua.default_mode"
 default = "auto"
 label = "Where it works"
-help = "In the agent workspace the assistant works on its own screen, out of your way. In place it works in the window you see. Automatic picks the agent workspace when this computer supports it."
+help = "Where the assistant works: on its own screen, or in the window you see."
 section = "Computer use"
 exposure = "basic"
 
@@ -94,7 +94,7 @@ agent_workspace = "Agent workspace"
 path = "cua.autopause"
 default = "on"
 label = "Pause when I touch the window"
-help = "When it shares your screen, a run pauses as soon as you use the mouse or keyboard, and waits for you to hand it back."
+help = "Pauses the assistant when you use the mouse or keyboard on a shared screen."
 section = "Computer use"
 exposure = "basic"
 
@@ -115,7 +115,7 @@ off = "Off"
 path = "cua.accessibility"
 default = "on"
 label = "Read app controls"
-help = "Lets the assistant read the buttons and fields of the window it is using, so it clicks the right one. Only the window it is working in."
+help = "Lets the assistant read the buttons and fields of the window it is using."
 section = "Computer use"
 exposure = "basic"
 
@@ -133,105 +133,10 @@ on = "On"
 off = "Off"
 
 [[key]]
-path = "cua.budget.steps"
-default = 40
-label = "Steps per run"
-help = "The most steps (look, think, act) one run may take."
-section = "Run limits"
-exposure = "advanced"
-
-[key.kind]
-kind = "bounded"
-
-[key.kind.v]
-min = 1
-max = 500
-unit = "steps"
-
-[key.page]
-kind = "intelligence"
-
-[[key]]
-path = "cua.budget.active_s"
-default = 1800
-label = "Working time per run"
-help = "The most time one run may spend working, waiting for a render or an export included. Time spent waiting for you does not count. No run may pass two hours."
-section = "Run limits"
-exposure = "advanced"
-
-[key.kind]
-kind = "bounded"
-
-[key.kind.v]
-min = 10
-max = 7200
-unit = "s"
-
-[key.page]
-kind = "intelligence"
-
-[[key]]
-path = "cua.budget.stall_frames"
-default = 3
-label = "Stuck screens"
-help = "A run stops when the screen has looked the same this many times in a row."
-section = "Run limits"
-exposure = "advanced"
-
-[key.kind]
-kind = "bounded"
-
-[key.kind.v]
-min = 1
-max = 20
-unit = "frames"
-
-[key.page]
-kind = "intelligence"
-
-[[key]]
-path = "cua.budget.actions_per_min"
-default = 60
-label = "Actions per minute"
-help = "The most clicks and key presses a run may make in a minute."
-section = "Run limits"
-exposure = "advanced"
-
-[key.kind]
-kind = "bounded"
-
-[key.kind.v]
-min = 1
-max = 600
-unit = "actions"
-
-[key.page]
-kind = "intelligence"
-
-[[key]]
-path = "cua.budget.model_failures"
-default = 2
-label = "Model failures"
-help = "How many failed answers from the model a run puts up with before it stops."
-section = "Run limits"
-exposure = "advanced"
-
-[key.kind]
-kind = "bounded"
-
-[key.kind.v]
-min = 0
-max = 10
-unit = "failures"
-
-[key.page]
-kind = "intelligence"
-
-[[key]]
 path = "cua.budget.spend_microusd"
 default = 0
-label = "Spend per run"
-help = "The most a run may spend on paid models, in millionths of a dollar. 0 keeps it on this computer."
+label = "Spending per run"
+help = "The most one run may spend on paid models. 0 keeps it on this computer."
 section = "Run limits"
 exposure = "advanced"
 
@@ -241,102 +146,7 @@ kind = "bounded"
 [key.kind.v]
 min = 0
 max = 1000000000
-unit = "micro-USD"
 
 [key.page]
 kind = "intelligence"
 
-[[key]]
-path = "cua.settle.quiet_ms"
-default = 250
-label = "Quiet before it looks"
-help = "The screen counts as settled after it has not changed for this long."
-section = "Timing"
-exposure = "advanced"
-
-[key.kind]
-kind = "bounded"
-
-[key.kind.v]
-min = 50
-max = 2000
-unit = "ms"
-
-[key.page]
-kind = "intelligence"
-
-[[key]]
-path = "cua.settle.timeout_ms"
-default = 3000
-label = "Longest wait for the screen"
-help = "It looks anyway after waiting this long for the screen to settle."
-section = "Timing"
-exposure = "advanced"
-
-[key.kind]
-kind = "bounded"
-
-[key.kind.v]
-min = 500
-max = 30000
-unit = "ms"
-
-[key.page]
-kind = "intelligence"
-
-[[key]]
-path = "cua.wait.max_ms"
-default = 60000
-label = "Longest single wait"
-help = "The longest the assistant may ask to wait in one go, for an export or a render to finish."
-section = "Timing"
-exposure = "advanced"
-
-[key.kind]
-kind = "bounded"
-
-[key.kind.v]
-min = 500
-max = 60000
-unit = "ms"
-
-[key.page]
-kind = "intelligence"
-
-[[key]]
-path = "cua.wait.total_ms"
-default = 600000
-label = "Longest total wait"
-help = "How long the assistant may keep waiting for a slow job before an unchanged screen counts as stuck."
-section = "Timing"
-exposure = "advanced"
-
-[key.kind]
-kind = "bounded"
-
-[key.kind.v]
-min = 1000
-max = 600000
-unit = "ms"
-
-[key.page]
-kind = "intelligence"
-
-[[key]]
-path = "cua.tree.max_nodes"
-default = 400
-label = "Window detail"
-help = "How many parts of a window's structure (buttons, fields, labels) are sent to the model."
-section = "Window detail"
-exposure = "advanced"
-
-[key.kind]
-kind = "bounded"
-
-[key.kind.v]
-min = 50
-max = 5000
-unit = "nodes"
-
-[key.page]
-kind = "intelligence"

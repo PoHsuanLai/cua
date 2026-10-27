@@ -94,7 +94,6 @@ fn the_schema_has_the_shape_the_settings_app_loads() {
                 );
                 let default = row["default"].as_integer().expect("a number default");
                 assert!((min..=max).contains(&default), "{p}");
-                assert!(!v["unit"].as_str().unwrap_or("").is_empty(), "{p} unit");
             }
             (kind @ ("toggle" | "segmented"), v) => {
                 let words = words(v);
@@ -245,9 +244,7 @@ fn every_schema_key_is_read_by_the_daemon() {
 
 #[test]
 fn each_key_lands_in_the_typed_value_the_design_names() {
-    use a11y_tree::NodeBudget;
-    use cua_desktop::Ms;
-    use porter_core::{Count, MicroUsd};
+    use porter_core::MicroUsd;
     let one = |p: &str, v: toml::Value| read(&doc(p, v), &base()).value.config;
     let int = toml::Value::Integer;
     let word = |w: &str| toml::Value::String(w.to_owned());
@@ -261,30 +258,11 @@ fn each_key_lands_in_the_typed_value_the_design_names() {
         one("cua.accessibility", word("off")).accessibility,
         Accessibility::Off
     );
-    assert_eq!(one("cua.budget.steps", int(7)).budget.steps, Count(7));
-    assert_eq!(
-        one("cua.budget.active_s", int(90)).budget.active,
-        Ms(90_000)
-    );
     assert_eq!(
         one("cua.budget.spend_microusd", int(2_500_000))
             .budget
             .spend,
         MicroUsd(2_500_000)
-    );
-    assert_eq!(one("cua.settle.quiet_ms", int(100)).settle.quiet, Ms(100));
-    assert_eq!(
-        one("cua.settle.timeout_ms", int(900)).settle.timeout,
-        Ms(900)
-    );
-    assert_eq!(one("cua.wait.max_ms", int(1500)).wait_max, Ms(1500));
-    assert_eq!(
-        one("cua.wait.total_ms", int(120_000)).wait_total,
-        Ms(120_000)
-    );
-    assert_eq!(
-        one("cua.tree.max_nodes", int(80)).tree_max_nodes,
-        NodeBudget(80)
     );
 }
 
@@ -307,18 +285,23 @@ fn a_bad_value_falls_back_for_that_key_alone() {
         };
         for value in bad {
             // A second, good key in the same file still applies.
-            let other = if p == "cua.wait.max_ms" {
-                "cua.settle.quiet_ms"
+            let other = if p == "cua.budget.spend_microusd" {
+                "cua.enabled"
             } else {
-                "cua.wait.max_ms"
+                "cua.budget.spend_microusd"
             };
-            let text = merged(&[(p, value.clone()), (other, toml::Value::Integer(700))]);
+            let good = if other == "cua.enabled" {
+                toml::Value::String("on".into())
+            } else {
+                toml::Value::Integer(700)
+            };
+            let text = merged(&[(p, value.clone()), (other, good)]);
             let loaded = read(&text, &base());
             let mut want = base();
-            if other == "cua.wait.max_ms" {
-                want.config.wait_max = cua_desktop::Ms(700);
+            if other == "cua.enabled" {
+                want.config.enabled = Enabled::On;
             } else {
-                want.config.settle.quiet = cua_desktop::Ms(700);
+                want.config.budget.spend = porter_core::MicroUsd(700);
             }
             assert_eq!(loaded.value, want, "{p} = {value}");
             assert_eq!(loaded.fallbacks.len(), 1, "{p} = {value}");
@@ -330,14 +313,17 @@ fn a_bad_value_falls_back_for_that_key_alone() {
 #[test]
 fn a_fallback_is_the_base_value_not_the_default() {
     let mut start = base();
-    start.config.budget.steps = porter_core::Count(11);
-    let loaded = read("[cua.budget]\nsteps = 0\n", &start);
+    start.config.budget.spend = porter_core::MicroUsd(11);
+    let loaded = read("[cua.budget]\nspend_microusd = -1\n", &start);
     assert_eq!(loaded.value, start);
     assert_eq!(
         loaded.fallbacks,
         vec![Fallback {
-            key: "cua.budget.steps".into(),
-            why: Why::OutOfRange { min: 1, max: 500 },
+            key: "cua.budget.spend_microusd".into(),
+            why: Why::OutOfRange {
+                min: 0,
+                max: 1_000_000_000,
+            },
         }]
     );
 }
@@ -476,8 +462,11 @@ fn the_locator_reads_the_first_file_of_the_configuration_directories() {
     let home = tempfile::tempdir().unwrap();
     let etc = tempfile::tempdir().unwrap();
     for (dir, text) in [
-        (&home, "[cua.wait]\nmax_ms = 900\n"),
-        (&etc, "[cua.wait]\nmax_ms = 1900\n[cua.budget]\nsteps = 3\n"),
+        (&home, "[cua.budget]\nspend_microusd = 900\n"),
+        (
+            &etc,
+            "[cua.budget]\nspend_microusd = 1900\n[cua]\nenabled = \"on\"\n",
+        ),
     ] {
         std::fs::create_dir_all(dir.path().join("cua")).unwrap();
         std::fs::write(dir.path().join(SETTINGS_FILE), text).unwrap();
@@ -490,9 +479,9 @@ fn the_locator_reads_the_first_file_of_the_configuration_directories() {
     let locator = Locator::from_env(&env);
     assert_eq!(locator.watch_dir(), Some(home.path().join("cua")));
     let value = locator.read(&base()).value;
-    assert_eq!(value.config.wait_max, cua_desktop::Ms(900));
+    assert_eq!(value.config.budget.spend, porter_core::MicroUsd(900));
     // The first file wins whole: the later directory's other keys are not merged in.
-    assert_eq!(value.config.budget.steps, porter_core::Count(40));
+    assert_eq!(value.config.enabled, Enabled::Off);
     let none = Locator::from_env(&|_: &str| None::<String>);
     assert_eq!(none.read(&base()), Loaded::of(base()));
     // A settings file that is there and cannot be read (a directory stands in for one) is
@@ -505,7 +494,10 @@ fn the_locator_reads_the_first_file_of_the_configuration_directories() {
         _ => None,
     };
     let loaded = Locator::from_env(&env).read(&base());
-    assert_eq!(loaded.value.config.wait_max, cua_desktop::Ms(1900));
+    assert_eq!(
+        loaded.value.config.budget.spend,
+        porter_core::MicroUsd(1900)
+    );
     assert_eq!(loaded.fallbacks.len(), 1);
     assert!(matches!(loaded.fallbacks[0].why, Why::Unreadable(_)));
     assert!(loaded.fallbacks[0].key.ends_with(SETTINGS_FILE));

@@ -203,16 +203,16 @@ the machine under it. What was decided:
   look. A look is `Snapshot`, `FetchContext` (first look and after a hand-back), then `Capture`,
   which is always last: the capture is what builds the observation. The model's batch is a queue:
   pointer and keyboard actions go to the router one at a time (a target outside the window or an
-  unknown node is refused locally and never asked), `wait` pauses for `min(asked, cua.wait.max_ms)`,
+  unknown node is refused locally and never asked), `wait` pauses for `min(asked, WAIT_MAX)`,
   `zoom` and `observe` look again and drop the rest (the crop hint is not used), `ask` waits for
   the person (one `QuestionId` per step, a `Progress` report to the requester), `finish` ends the
   run (`Failed` and `Infeasible` both end `Failed(Infeasible)`; a success check on the tree must pass
   first). Empty replies count as model failures and look again at the next step; transient and
-  parse failures look again at the same step; over `cua.budget.model_failures` ends `Failed(Model)`.
-- **Long waits.** A `wait` lasts `min(asked, cua.wait.max_ms)` (default 60 s, which is also the
+  parse failures look again at the same step; over the budget's `model_failures` ends `Failed(Model)`.
+- **Long waits.** A `wait` lasts `min(asked, WAIT_MAX)` (default 60 s, which is also the
   most stoker's `WaitMs` can ask), or ends sooner once the window has changed and been quiet for
-  `cua.settle.quiet_ms`. While the run has waited, `wait` after `wait`, for no more than
-  `cua.wait.total_ms` (default ten minutes) an unchanged screen is a slow job, not a stall; any
+  `SETTLE.quiet`. While the run has waited, `wait` after `wait`, for no more than
+  `WAIT_TOTAL` (default ten minutes) an unchanged screen is a slow job, not a stall; any
   input action starts that count over. The active budget defaults to 1800 s and never passes
   `RunBudget::ACTIVE_CEILING` (two hours). Cancel, pause and the kill chord work in a wait as in
   any `Settling` phase. Ask for stoker: a `Wait` that names its own bound beyond 60 s, so one
@@ -366,9 +366,9 @@ section 9.2). cua's covers the `cua.*` keys of section 3.29 that cuad reads, and
 1. **`dist/settings/cua.settings.toml` has 14 rows**, none `agent = "settable"` (`cua.*` is never
    agent-settable). **On the Intelligence page** (section 5, Computer use): `cua.enabled` (toggle),
    `cua.apps` (a rows key: `app` text with the desktop-entry id pattern, `allow` ask, session or always),
-   `cua.default_mode` (segmented), `cua.autopause` (toggle). **Advanced:** `cua.budget.{steps,active_s,
-   stall_frames,actions_per_min,model_failures,spend_microusd}`, `cua.settle.{quiet_ms,timeout_ms}`,
-   `cua.wait.max_ms`, `cua.tree.max_nodes`. Ranges are design/22's.
+   `cua.default_mode` (segmented), `cua.autopause` (toggle). **Advanced:** `cua.budget.spend_microusd`
+   (the other budget, settle, wait and tree limits became constants in `cua-run/src/config.rs` and
+   `RunBudget::PROPOSED`, 2026-10-27).
 2. **Left out: `cua.screens.keep` and `cua.screens.keep_days`** (schema row not shipped, nothing reads
    them). `CuaConfig` carries both, but no code stores a step's thumbnail in the Space's encrypted store,
    so a row would do nothing. Closes when cuad keeps thumbnails (almanac store) and reads them: add the two
@@ -376,8 +376,7 @@ section 9.2). cua's covers the `cua.*` keys of section 3.29 that cuad reads, and
 3. **The reader is `cuad::settings`** (`read(text, base)`, `Locator`). The file is
    `$XDG_CONFIG_HOME/cua/settings.toml` (then `$XDG_CONFIG_DIRS`; the first file that reads wins whole). A value
    of the wrong type, out of range or not a word of its key falls back **to the base value of that key**
-   (cuad.toml's `settings` table, itself the shipped defaults) and is logged (`cuad: settings: cua.wait.
-   max_ms: outside 500..=60000; using the previous value`). A file that is not TOML keeps every base value; a
+   (cuad.toml's `settings` table, itself the shipped defaults) and is logged (`cuad: settings: cua.budget.spend_microusd: outside 0..=1000000000; using the previous value`). A file that is not TOML keeps every base value; a
    key the file stops setting is its base again. Unknown keys are listed and ignored.
 4. **cuad follows the file live** (`settings/watch.rs`: a `notify` watch on `$XDG_CONFIG_HOME/cua`, 30 ms
    debounce, the whole file read again, `Supervisor::follow` applies it). `Supervisor::settings()` is read
