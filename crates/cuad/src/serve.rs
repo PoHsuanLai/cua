@@ -66,6 +66,8 @@ impl SummonTarget for NoSummon {
         SummonAnswer::Declined
     }
 }
+
+/// cuad on a connection: its objects are up and its names are owned while this lives.
 #[derive(Debug)]
 pub struct Serving {
     tasks: Vec<JoinHandle<()>>,

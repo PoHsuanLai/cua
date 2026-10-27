@@ -1,6 +1,8 @@
 //! A scripted inferd for the model tests: a transport whose sessions answer from a list of
 //! batches of events, and the log of what they were sent.
 
+use std::io::Read;
+
 use cua_action::{
     Button, ClickCount, Coord, CuaAction, DeviceSize, PixelFormat, Point, Scale120, Size, Target,
     WindowSpace,

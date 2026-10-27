@@ -205,8 +205,6 @@ pub(crate) async fn relay<S: Drivable>(
     }
 }
 
-/// cuad on a connection: its objects are up and its names are owned while this lives.
-
 #[cfg(test)]
 mod tests {
     use super::*;
