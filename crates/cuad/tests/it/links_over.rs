@@ -1,7 +1,7 @@
 //! The daemon links over one connection, and the run opening its own session.
 
 use crate::desk::*;
-use cua_run::GateEvent;
+use cua_run::{GateCheck, GateEvent, GateLink, MessageLink, RecordSink};
 use cuad::IntentsGate;
 use docket_client::DbusTransport;
 use docket_core::{GateAnswer, GrantAnswer, GrantAsk, InboxAsk};

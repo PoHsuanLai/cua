@@ -8,7 +8,7 @@ use cua_bus::{
     WindowRef,
 };
 use cua_desktop::Digest32;
-use cua_run::GateEvent;
+use cua_run::{GateCheck, GateEvent, GateLink};
 use cuad::IntentsGate;
 use docket_client::{DbusTransport, Intents};
 use docket_core::{
