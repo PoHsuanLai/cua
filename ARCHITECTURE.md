@@ -28,7 +28,7 @@ picture), section 6 (copy the recipe).
 | `seat-input` | `InputOp`, `Keymap`, `SeatCaps`, `plan`, `InputReceipt`, `region`, the `AgentSeat` seam. Feature `ei`: `EiSeat` | none (`ei`: reis, tokio, futures-util) |
 | `a11y-tree` | `A11ySnapshot`, `A11yNode`, `prune`, `render`, `diff`, `secret_rects`, selectors, the `A11ySource` seam. Feature `atspi`: `AtspiSource` | none (`atspi`: atspi) |
 | `cua-bus` | what crosses the bus and the log, serde only (no capability crate is linked; the leaf types come from `cua-types`): the `Start` body (`CuaTask`), `RunStateSlug`, `CuaOutcome`, `ModeSupport`, `CuaRecord`, `ActionResult`, `RunBudget`, `ControlRefusal`, `permits`, `report_draft` | none |
-| `cua-run` | the pure run machine (`Run`, `RunTrack`, `RunPhase`, `RunInput`, `RunEffect`), `Observation`, `shortcut_hint` (the desktop's shortcut chords as one line for the model, read from a chordkit `Keymap`; `Exec::with_hints` hands it to the model's session), `classify_effect`, `window_class_of`, `window_sensitivity` (a sensitive window makes the run ask before input even when the router says run), `mode_support`, `choose_mode`, `LeaseBook`, `stalled`, `turn` and `note_of`, `CuaConfig` and `SETTING_ROWS`, `CuaModel`, the seams a run is carried out against (`Seams`, `Clock`, `GateLink`, `RecordSink`, `MessageLink`), and `Exec`, which carries a run's effects out against them (it awaits nothing but seam futures, so it needs no runtime) | none |
+| `cua-run` | the pure run machine (`Run`, `RunTrack`, `RunPhase`, `RunInput`, `RunEffect`), `Observation`, `shortcut_hint` (the desktop's shortcut chords as one line for the model, read from a chordkit `Keymap`; `Exec::with_hints` hands it to the model's session), `classify_effect`, `window_class_of`, `window_sensitivity` (a sensitive window makes the run ask before input even when the router says run), `mode_support`, `choose_mode`, `LeaseBook`, `stalled`, `turn` and `note_of`, `CuaConfig`, `CuaModel`, the seams a run is carried out against (`Seams`, `Clock`, `GateLink`, `RecordSink`, `MessageLink`), and `Exec`, which carries a run's effects out against them (it awaits nothing but seam futures, so it needs no runtime) | none |
 | `cua-dbus` | `org.quire.Cua1` (`Manager`, `Run`) as zbus proxies and skeletons, `introspection`, `CuaError`, bus names and paths | zbus |
 | `cua-fake` | test only: `FakeSeat`, `FakeEis`, `FakeCapture`, `FakeDesktop`, `FakeA11y`, `ScriptedModel`, `FakePdp`, `MemoryEvents`, `FixedClock`, `FakeSeams`, `run_harness`, and `scene` (a window, frames, a world, a task) | none (`FakeEis`: reis, tokio) |
 | `cua-eval` | the computer-use model eval (section 8): fake `surface`s drawn as pixels, a `Stage` shared by an `EvalSeat`, an `EvalCapture` and an `EvalDesktop`, a reference gate, `ScriptModel` (lines of moves) and `ProviderModel` (a model on a local engine, over stoker's `CuaSession`), `Corpus` (`eval/surfaces`, `eval/tasks`), verdicts, rates with Wilson bounds, the markdown report, and the `cua-eval` binary | the binary: files; `live`: loopback HTTP to an engine the caller started |
@@ -115,7 +115,7 @@ only; the pure set never reaches an effect crate; `wayland-client` is behind the
 | run states and slugs, outcomes, `ModeSupport`/`ModeGap`, the log records, `RunBudget`, control refusals and who may call which member | `cua-bus` |
 | the machine, the phase table, effects, `mode_support`, `classify_effect` | `cua-run` |
 | the screen check: the phrase table, hidden text and unseen nodes (`split_unseen` makes the model's tree), the verdict and its reasons | `cua_run::screen` (`PatternCheck`, `ScreenVerdict`, `Reason`); the closed kinds the log keeps are `cua_bus::ScreenKind` |
-| the proposed values | `cua_run::CuaConfig` and `SETTING_ROWS`; the keys are sill's |
+| the proposed values | `cua_run::CuaConfig`; the keys are in `cua-host`'s key table and `dist/settings/cua.settings.toml` |
 | the D-Bus interface | `cua-dbus` and `dbus/org.quire.Cua1.xml` |
 | the Wayland protocol | `quire-agent-v1.xml` in `~/casement-protocols` (the one home), used by cua-desktop and maskcap (feature `wayland`); the server side is the fork's, later casement's |
 | the `cua.run.start` action | `manifests/org.quire.Cua.toml`, served by `cuad::CuaProvider` |
@@ -234,8 +234,8 @@ text, `Opening` for a role marker), with a row in `tests/it/screen.rs` that find
 could be ordinary text, a row that must stay clear. A new style is a `Family` and a group. A new
 kind of finding is a `Reason`, its `cua_bus::ScreenKind` and a row in the bus's wire test.
 
-**Add a setting.** A field of `CuaConfig` with its default, a row in `SETTING_ROWS` and an arm of
-`CuaConfig::value`; the test that pins the rows to the defaults fails until all three agree. The
+**Add a setting.** A field of `CuaConfig` with its default, a row in `cua-host`'s key table and the schema row in
+`dist/settings/cua.settings.toml`; the test that holds the schema to the defaults fails until they agree. The
 design/22 row and the sill key are the other repos' agents'.
 
 **Add a message-borne behaviour.** Don't: a message is input. If a run must react to one, the

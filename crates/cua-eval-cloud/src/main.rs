@@ -17,6 +17,7 @@ use cua_eval::live::{Plan, Thinking};
 use cua_eval::report::{Report, render};
 use cua_eval::run::RunRecord;
 use cua_eval_cloud::entry::price_of;
+use cua_eval_cloud::error::{ArgError, RunError};
 use cua_eval_cloud::isolation;
 use cua_eval_cloud::provider::InferdProvider;
 use cua_eval_cloud::request::SamplingFrom;
@@ -47,16 +48,20 @@ struct Args {
     ledger: Option<PathBuf>,
 }
 
-fn tier_of(word: &str) -> Result<Tier, String> {
+fn tier_of(word: &str) -> Result<Tier, ArgError> {
     match word {
         "fast" => Ok(Tier::Fast),
         "balanced" => Ok(Tier::Balanced),
         "best" => Ok(Tier::Best),
-        other => Err(format!("--tier takes fast, balanced or best, not {other}")),
+        other => Err(ArgError::NotAllowed {
+            flag: "--tier",
+            allowed: "fast, balanced or best",
+            given: other.to_owned(),
+        }),
     }
 }
 
-fn parse(mut argv: impl Iterator<Item = String>) -> Result<Args, String> {
+fn parse(mut argv: impl Iterator<Item = String>) -> Result<Args, ArgError> {
     let mut args = Args {
         dir: PathBuf::from("eval"),
         entry: PathBuf::new(),
@@ -70,7 +75,10 @@ fn parse(mut argv: impl Iterator<Item = String>) -> Result<Args, String> {
         ledger: None,
     };
     while let Some(flag) = argv.next() {
-        let mut value = || argv.next().ok_or_else(|| format!("{flag} needs a value"));
+        let mut value = || {
+            argv.next()
+                .ok_or_else(|| ArgError::NeedsValue(flag.clone()))
+        };
         match flag.as_str() {
             "--dir" => args.dir = PathBuf::from(value()?),
             "--entry" => args.entry = PathBuf::from(value()?),
@@ -78,15 +86,27 @@ fn parse(mut argv: impl Iterator<Item = String>) -> Result<Args, String> {
             "--task" => args.only.push(value()?),
             "--tier" => args.tier = tier_of(&value()?)?,
             "--ledger" => args.ledger = Some(PathBuf::from(value()?)),
-            "--repeat" => args.repeat = value()?.parse().map_err(|_| "--repeat is a number")?,
+            "--repeat" => {
+                args.repeat = value()?
+                    .parse()
+                    .map_err(|_| ArgError::NotANumber("--repeat"))?
+            }
             "--max-steps" => {
-                args.max_steps = value()?.parse().map_err(|_| "--max-steps is a number")?
+                args.max_steps = value()?
+                    .parse()
+                    .map_err(|_| ArgError::NotANumber("--max-steps"))?
             }
             "--thinking" => {
                 args.thinking = match value()?.as_str() {
                     "on" => Thinking::On,
                     "off" => Thinking::Off,
-                    other => return Err(format!("--thinking takes on or off, not {other}")),
+                    other => {
+                        return Err(ArgError::NotAllowed {
+                            flag: "--thinking",
+                            allowed: "on or off",
+                            given: other.to_owned(),
+                        });
+                    }
                 }
             }
             "--sampling" => {
@@ -94,15 +114,19 @@ fn parse(mut argv: impl Iterator<Item = String>) -> Result<Args, String> {
                     "entry" => SamplingFrom::Entry,
                     "provider" => SamplingFrom::Provider,
                     other => {
-                        return Err(format!("--sampling takes entry or provider, not {other}"));
+                        return Err(ArgError::NotAllowed {
+                            flag: "--sampling",
+                            allowed: "entry or provider",
+                            given: other.to_owned(),
+                        });
                     }
                 }
             }
-            other => return Err(format!("unknown flag {other}")),
+            other => return Err(ArgError::UnknownFlag(other.to_owned())),
         }
     }
     if args.entry.as_os_str().is_empty() || args.label.is_empty() {
-        return Err("--entry and --label are required".to_owned());
+        return Err(ArgError::Required);
     }
     Ok(args)
 }
@@ -124,11 +148,10 @@ fn dollars(micro: u64) -> String {
     format!("${}.{:04}", micro / 1_000_000, (micro % 1_000_000) / 100)
 }
 
-fn served() -> Result<ServedBy, String> {
-    let id = |e: &dyn std::fmt::Display| e.to_string();
+fn served() -> Result<ServedBy, RunError> {
     Ok(ServedBy {
-        account: porter_core::AccountId::parse("openrouter").map_err(|e| id(&e))?,
-        model: porter_core::ModelId::parse("hosted").map_err(|e| id(&e))?,
+        account: porter_core::AccountId::parse("openrouter")?,
+        model: porter_core::ModelId::parse("hosted")?,
         locality: porter_core::Locality::Cloud { region: None },
     })
 }
@@ -145,9 +168,13 @@ fn write_out(
     corpus: &Corpus,
     engine: &str,
     records: &[RunRecord],
-) -> Result<(), String> {
+) -> Result<(), RunError> {
     let reports = args.dir.join("reports");
-    std::fs::create_dir_all(&reports).map_err(|e| e.to_string())?;
+    let io = |path: &std::path::Path| {
+        let path = path.to_owned();
+        move |source: std::io::Error| RunError::Io { path, source }
+    };
+    std::fs::create_dir_all(&reports).map_err(io(&reports))?;
     let report = Report {
         label: &args.label,
         engine,
@@ -156,16 +183,16 @@ fn write_out(
         checks: &[],
     };
     let path = reports.join(format!("{}.md", args.label));
-    std::fs::write(&path, render(&report)).map_err(|e| e.to_string())?;
+    std::fs::write(&path, render(&report)).map_err(io(&path))?;
     println!("wrote {}", path.display());
-    let take = toml::to_string(&Cassette::of(records)).map_err(|e| e.to_string())?;
+    let take = toml::to_string(&Cassette::of(records))?;
     let path = reports.join(format!("{}.cassette.toml", args.label));
-    std::fs::write(&path, take).map_err(|e| e.to_string())?;
+    std::fs::write(&path, take).map_err(io(&path))?;
     println!("wrote {}", path.display());
     Ok(())
 }
 
-async fn warm(transport: &DbusTransport, tier: Tier) -> Result<(), String> {
+async fn warm(transport: &DbusTransport, tier: Tier) -> Result<(), RunError> {
     let need = Need::Llm(LlmNeed::new(
         BTreeSet::from([LlmFeature::Chat, LlmFeature::Vision, LlmFeature::Tools]),
         Tokens(16_000),
@@ -174,27 +201,28 @@ async fn warm(transport: &DbusTransport, tier: Tier) -> Result<(), String> {
     let ready = transport
         .prepare(&need, DataClass::Screen, tier, &options)
         .await
-        .map_err(|e| format!("inferd will not serve a {tier:?} chat with images: {e}"))?;
+        .map_err(|source| RunError::Prepare { tier, source })?;
     println!(
         "cua-eval-cloud: inferd answers Prepare for the {tier:?} chat with {ready:?} (a hosted model has nothing to load)"
     );
     Ok(())
 }
 
-async fn run(args: Args) -> Result<(), String> {
+async fn run(args: Args) -> Result<(), RunError> {
     let seen = isolation::look();
     println!("{}", seen.line());
     if !seen.clean() {
-        return Err("this process can reach a credential; refusing to run".to_owned());
+        return Err(RunError::CredentialReachable);
     }
-    let corpus = Corpus::load(&args.dir).map_err(|e| e.to_string())?;
-    let text = std::fs::read_to_string(&args.entry).map_err(|e| e.to_string())?;
-    let entry = parse_entry(&text).map_err(|e| e.to_string())?;
-    let price = price_of(&entry).ok_or("the entry has no OpenRouter reach")?;
-    let plan = Plan::of(&text, &entry.id.0, args.thinking).map_err(|e| e.to_string())?;
-    let connection = zbus::Connection::session()
-        .await
-        .map_err(|e| format!("the bus: {e}"))?;
+    let corpus = Corpus::load(&args.dir)?;
+    let text = std::fs::read_to_string(&args.entry).map_err(|source| RunError::Io {
+        path: args.entry.clone(),
+        source,
+    })?;
+    let entry = parse_entry(&text)?;
+    let price = price_of(&entry).ok_or(RunError::NoPrice)?;
+    let plan = Plan::of(&text, &entry.id.0, args.thinking)?;
+    let connection = zbus::Connection::session().await?;
     let transport = DbusTransport::over(connection.clone());
     warm(&transport, args.tier).await?;
     let watch = Arc::new(Watch::default());
@@ -220,8 +248,7 @@ async fn run(args: Args) -> Result<(), String> {
         }
         (steps_of(so_far) >= budget).then(|| format!("the step budget of {budget} was used"))
     })
-    .await
-    .map_err(|e| e.to_string())?;
+    .await?;
     let totals: Totals = watch.totals();
     let estimate = price.of(totals);
     let ledger = args

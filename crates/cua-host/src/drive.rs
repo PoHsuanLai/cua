@@ -222,7 +222,7 @@ impl Machine {
 
     /// The person or the desktop interrupts. An input that moves the run (its phase changes, or
     /// it answers with effects) drops what was about to start, and the machine answers it. An
-    /// input the machine has nothing to say to (a window moved, a sheet shown) changes nothing:
+    /// input the machine has nothing to say to (a window moved, a question shown) changes nothing:
     /// the effect in hand and the ones queued go on, or the run would wait for an answer to a
     /// question nobody is asking any more.
     fn interrupt<S: Seams>(&mut self, shared: &Shared<S>, input: RunInput, at: Stamp) -> Moved {

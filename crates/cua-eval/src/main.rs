@@ -14,7 +14,10 @@
 //! Exit status: 0 when every script met its expectation (or the live run finished), 1 when one
 //! did not, 2 when the run could not be set up.
 
+mod cli_error;
+
 use chordkit::Platform;
+use cli_error::{ArgError, PlayError};
 use cua_eval::corpus::Corpus;
 use cua_eval::eval::{Cassette, run_cassette, run_live, run_scripted};
 use cua_eval::live::{Plan, Thinking};
@@ -54,7 +57,7 @@ struct Args {
     platform: Platform,
 }
 
-fn parse(mut argv: impl Iterator<Item = String>) -> Result<Args, String> {
+fn parse(mut argv: impl Iterator<Item = String>) -> Result<Args, ArgError> {
     let mut args = Args {
         dir: PathBuf::from("eval"),
         engine: Engine::Scripted,
@@ -71,28 +74,41 @@ fn parse(mut argv: impl Iterator<Item = String>) -> Result<Args, String> {
         platform: Corpus::PLATFORM,
     };
     while let Some(flag) = argv.next() {
-        let mut value = || argv.next().ok_or_else(|| format!("{flag} needs a value"));
+        let mut value = || {
+            argv.next()
+                .ok_or_else(|| ArgError::NeedsValue(flag.clone()))
+        };
         match flag.as_str() {
             "--dir" => args.dir = PathBuf::from(value()?),
             "--label" => args.label = value()?,
             "--task" => args.only.push(value()?),
-            "--platform" => args.platform = value()?.parse().map_err(|e| format!("{e}"))?,
+            "--platform" => args.platform = value()?.parse()?,
             "--screens" => args.screens = Some(PathBuf::from(value()?)),
             "--entry" => args.entry = Some(PathBuf::from(value()?)),
             "--cassette" => args.cassette = Some(PathBuf::from(value()?)),
             "--api-key-file" => args.api_key_file = Some(PathBuf::from(value()?)),
             "--model" => args.model = value()?,
-            "--port" => args.port = value()?.parse().map_err(|_| "--port is a number")?,
-            "--repeat" => args.repeat = value()?.parse().map_err(|_| "--repeat is a number")?,
+            "--port" => {
+                args.port = value()?
+                    .parse()
+                    .map_err(|_| ArgError::NotANumber("--port"))?
+            }
+            "--repeat" => {
+                args.repeat = value()?
+                    .parse()
+                    .map_err(|_| ArgError::NotANumber("--repeat"))?
+            }
             "--engine" => {
                 args.engine = match value()?.as_str() {
                     "scripted" => Engine::Scripted,
                     "cassette" => Engine::Cassette,
                     "local" => Engine::Local,
                     other => {
-                        return Err(format!(
-                            "--engine takes scripted, cassette or local, not {other}"
-                        ));
+                        return Err(ArgError::NotAllowed {
+                            flag: "--engine",
+                            allowed: "scripted, cassette or local",
+                            given: other.to_owned(),
+                        });
                     }
                 }
             }
@@ -100,10 +116,16 @@ fn parse(mut argv: impl Iterator<Item = String>) -> Result<Args, String> {
                 args.thinking = match value()?.as_str() {
                     "on" => Thinking::On,
                     "off" => Thinking::Off,
-                    other => return Err(format!("--thinking takes on or off, not {other}")),
+                    other => {
+                        return Err(ArgError::NotAllowed {
+                            flag: "--thinking",
+                            allowed: "on or off",
+                            given: other.to_owned(),
+                        });
+                    }
                 }
             }
-            other => return Err(format!("unknown flag {other}")),
+            other => return Err(ArgError::UnknownFlag(other.to_owned())),
         }
     }
     Ok(args)
@@ -133,13 +155,10 @@ struct Played {
     checks: Vec<Check>,
 }
 
-async fn play(args: &Args, corpus: &Corpus) -> Result<Played, String> {
-    let fail = |e: &dyn std::fmt::Display| e.to_string();
+async fn play(args: &Args, corpus: &Corpus) -> Result<Played, PlayError> {
     match args.engine {
         Engine::Scripted => {
-            let (runs, checks) = run_scripted(corpus, &args.only)
-                .await
-                .map_err(|e| fail(&e))?;
+            let (runs, checks) = run_scripted(corpus, &args.only).await?;
             Ok(Played {
                 engine: "scripts (no model; each script is a cassette of a made-up run)".to_owned(),
                 runs,
@@ -147,12 +166,13 @@ async fn play(args: &Args, corpus: &Corpus) -> Result<Played, String> {
             })
         }
         Engine::Cassette => {
-            let path = args.cassette.as_ref().ok_or("--cassette needs a file")?;
-            let text = std::fs::read_to_string(path).map_err(|e| fail(&e))?;
-            let cassette: Cassette = toml::from_str(&text).map_err(|e| fail(&e))?;
-            let (runs, checks) = run_cassette(corpus, &cassette, &args.only)
-                .await
-                .map_err(|e| fail(&e))?;
+            let path = args
+                .cassette
+                .as_ref()
+                .ok_or(PlayError::Missing("--cassette needs a file"))?;
+            let text = std::fs::read_to_string(path).map_err(PlayError::io(path))?;
+            let cassette: Cassette = toml::from_str(&text)?;
+            let (runs, checks) = run_cassette(corpus, &cassette, &args.only).await?;
             Ok(Played {
                 engine: "a cassette of an earlier run, played back".to_owned(),
                 runs,
@@ -160,16 +180,15 @@ async fn play(args: &Args, corpus: &Corpus) -> Result<Played, String> {
             })
         }
         Engine::Local => {
-            let entry = args
-                .entry
-                .as_ref()
-                .ok_or("--engine local needs --entry <catalogue entry>")?;
-            let text = std::fs::read_to_string(entry).map_err(|e| fail(&e))?;
-            let plan = Plan::of(&text, &args.model, args.thinking).map_err(|e| fail(&e))?;
+            let entry = args.entry.as_ref().ok_or(PlayError::Missing(
+                "--engine local needs --entry <catalogue entry>",
+            ))?;
+            let text = std::fs::read_to_string(entry).map_err(PlayError::io(entry))?;
+            let plan = Plan::of(&text, &args.model, args.thinking)?;
             let auth = match &args.api_key_file {
                 None => AuthHeader::None,
                 Some(path) => {
-                    let key = std::fs::read_to_string(path).map_err(|e| fail(&e))?;
+                    let key = std::fs::read_to_string(path).map_err(PlayError::io(path))?;
                     AuthHeader::Bearer(Secret(key.trim().to_owned()))
                 }
             };
@@ -177,9 +196,7 @@ async fn play(args: &Args, corpus: &Corpus) -> Result<Played, String> {
                 OpenAiCodec::new(Flavor::Vllm).provider(HttpClient::new(endpoint(args.port, auth))),
             );
             let player = format!("local:{}", args.model);
-            let runs = run_live(corpus, provider, &plan, &player, args.repeat, &args.only)
-                .await
-                .map_err(|e| fail(&e))?;
+            let runs = run_live(corpus, provider, &plan, &player, args.repeat, &args.only).await?;
             Ok(Played {
                 engine: format!(
                     "{} on a local engine (loopback port {}), thinking {:?}, {} run(s) per task",
@@ -192,9 +209,9 @@ async fn play(args: &Args, corpus: &Corpus) -> Result<Played, String> {
     }
 }
 
-fn write_out(args: &Args, played: &Played, corpus: &Corpus) -> Result<(), String> {
+fn write_out(args: &Args, played: &Played, corpus: &Corpus) -> Result<(), PlayError> {
     let reports = args.dir.join("reports");
-    std::fs::create_dir_all(&reports).map_err(|e| e.to_string())?;
+    std::fs::create_dir_all(&reports).map_err(PlayError::io(&reports))?;
     let report = Report {
         label: &args.label,
         engine: &played.engine,
@@ -203,12 +220,12 @@ fn write_out(args: &Args, played: &Played, corpus: &Corpus) -> Result<(), String
         checks: &played.checks,
     };
     let path = reports.join(format!("{}.md", args.label));
-    std::fs::write(&path, render(&report)).map_err(|e| e.to_string())?;
+    std::fs::write(&path, render(&report)).map_err(PlayError::io(&path))?;
     println!("wrote {}", path.display());
     if args.engine == Engine::Local {
-        let take = toml::to_string(&Cassette::of(&played.runs)).map_err(|e| e.to_string())?;
+        let take = toml::to_string(&Cassette::of(&played.runs))?;
         let path = reports.join(format!("{}.cassette.toml", args.label));
-        std::fs::write(&path, take).map_err(|e| e.to_string())?;
+        std::fs::write(&path, take).map_err(PlayError::io(&path))?;
         println!("wrote {}", path.display());
     }
     Ok(())

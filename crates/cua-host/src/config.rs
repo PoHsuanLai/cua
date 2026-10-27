@@ -1,4 +1,4 @@
-//! cuad's configuration: the settings sill's Intelligence page owns, plus which backend. Parsed
+//! cuad's configuration: the computer-use settings the person chooses, plus which backend. Parsed
 //! once, at the edge. Who may call is not here: it is the process behind a connection, named by
 //! `cuad-callers.toml`.
 

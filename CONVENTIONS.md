@@ -51,8 +51,8 @@ What cua adds or decides differently, each with its reason:
    in (`Seams`); only `cuad` reads the system clock, the environment, a socket or the bus.
    Tests never touch the real system: no real seat, no real capture, no real D-Bus.
 10. **Proposed values are `CuaConfig`.** Every number the specs mark "proposed" is a field of
-    `cua_run::CuaConfig` with its default and a row in `SETTING_ROWS`; a test pins the two
-    together. The settings keys themselves belong to sill's Intelligence page.
+    `cua_run::CuaConfig` with its default, and a key in `cua-host`'s table with a schema row; a test
+    holds the schema to the defaults. The settings keys themselves belong to the person's settings.
 11. **No `bool` in a field, a parameter or a message,** also in test doubles: a two-state enum
     says what it means (`Emulation::{Running, Stopped}`, `Press::{Down, Up}`).
 12. **Typed points.** A point carries its coordinate space (`Point<WindowSpace>`); a bare pixel

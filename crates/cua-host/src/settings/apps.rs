@@ -4,7 +4,7 @@ use docket_core::Level;
 use porter_core::AppName;
 
 /// How computer use is allowed for one app (design/22 section 3.29, QUESTIONS S9). It is the
-/// default the person set up: the start sheet of a conversation's first run in the app answers
+/// default the person set up: the start question of a conversation's first run in the app answers
 /// for that conversation (the router keeps it), and the mode switch changes the rest in use.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum AppAllow {

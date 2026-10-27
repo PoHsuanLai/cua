@@ -21,7 +21,7 @@ use std::time::Duration;
 const QUICK: Duration = Duration::from_secs(30);
 /// The router's gate.
 const GATE: Duration = Duration::from_secs(60);
-/// The person's answer to the per-app consent: a sheet waits for a person, who may be away
+/// The person's answer to the per-app consent: a question waits for a person, who may be away
 /// from the screen for a while, but not for ever.
 const CONSENT: Duration = Duration::from_secs(300);
 /// The model: a step with a large frame on a loaded engine takes a while.

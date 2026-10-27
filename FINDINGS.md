@@ -19,7 +19,7 @@ Per crate: none; total 0. `maskcap::QuireMaskedCapture::open` is built over a le
 What is built, not stubbed (all behind the frozen signatures): `BackendCaps::of`, `LeaseRequest::check`,
 glow, revoke, suspend and mode wire codes (pinned against the generated protocol enums under the
 `wayland` feature), `SeatCaps::for_isolation` (S10: stock offers no Unicode text path), `RegionMap`,
-`MaskReason::code`, `mode_support` and `choose_mode`, `CuaConfig` with `SETTING_ROWS`, `RunPhase`
+`MaskReason::code`, `mode_support` and `choose_mode`, `CuaConfig`, `RunPhase`
 facts, the `ModeSupport` and `Modes`/`Backend` wire strings, `CuaOutcome::status`, `permits`,
 `report_draft`, `ControlRefusal` names, `cuad::guard`, `cuad::classify`, `manifest_for`,
 `record_of`, `capture_kind`, `CuadConfig::from_toml`, and the fakes other than the stubs above; and,

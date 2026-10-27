@@ -35,7 +35,7 @@ enum GrantWait {
     /// Answers at once, from the queue.
     #[default]
     Answers,
-    /// The person has not answered the sheet: the call never returns.
+    /// The person has not answered the question: the call never returns.
     Never,
 }
 
@@ -76,7 +76,7 @@ impl FakePdp {
         GateEvent::Confirming(id)
     }
 
-    /// A gate whose consent sheet nobody answers: `Gate.Grant` never returns.
+    /// A gate whose consent question nobody answers: `Gate.Grant` never returns.
     pub fn grant_unanswered() -> Self {
         Self {
             grant_wait: GrantWait::Never,

@@ -81,7 +81,7 @@ pub enum AuthorisedBy {
 pub enum ConfirmBy {
     /// Hardware input on the compositor's own surface (the fork).
     PhysicalInput,
-    /// The shell's sheet, after cuad stopped its input (stock).
+    /// The shell's question, after cuad stopped its input (stock).
     ShellPrompt,
 }
 

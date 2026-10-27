@@ -36,7 +36,7 @@ pub fn capture_kind(kind: BackendKind) -> CaptureKind {
 pub enum CaptureBackend {
     /// Stock toplevel capture.
     StockToplevel(StockToplevelCapture),
-    /// The fork's masked source.
+    /// The compositor's masked source.
     QuireMasked(QuireMaskedCapture),
     /// No compositor to capture from: every `open` is refused.
     Unavailable,

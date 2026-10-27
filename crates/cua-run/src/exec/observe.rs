@@ -120,8 +120,8 @@ impl<S: Seams> Exec<'_, S> {
     }
 
     /// The window and its fit for an action aimed at `aimed` that sends what `takes` says. A
-    /// window that is only not focused is read again for a moment: right after a confirmation sheet the focus is on its way back
-    /// (the sheet that took the person's answer is closing), so the action waits for it instead
+    /// window that is only not focused is read again for a moment: right after a confirmation the focus is on its way back
+    /// (the confirmation that took the person's answer is closing), so the action waits for it instead
     /// of being refused. It waits on the run's clock: a harness clock that never fires waits as
     /// long as it likes (an impatient one reads again at once).
     pub(super) async fn settled(

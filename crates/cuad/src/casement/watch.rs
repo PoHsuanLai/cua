@@ -78,7 +78,7 @@ impl Shared {
 }
 
 /// The error and what caused it, on one line.
-fn chain(error: &WireError) -> String {
+pub(super) fn chain(error: &WireError) -> String {
     let mut text = error.to_string();
     let mut cause = error.source();
     while let Some(inner) = cause {
@@ -90,12 +90,12 @@ fn chain(error: &WireError) -> String {
 
 /// Binds the client on the handed connection and tells `ready` how that went, then runs until
 /// the connection ends or nobody listens: dispatch, publish, send.
-pub(super) fn run(fd: OwnedFd, shared: &Shared, ready: oneshot::Sender<Result<(), String>>) {
+pub(super) fn run(fd: OwnedFd, shared: &Shared, ready: oneshot::Sender<Result<(), WireError>>) {
     let route = WaylandRoute::Handed(fd);
     let mut client = match DesktopClient::connect(route, DesktopConfig::default()) {
         Ok(client) => client,
         Err(error) => {
-            let _ = ready.send(Err(chain(&error)));
+            let _ = ready.send(Err(error));
             return;
         }
     };

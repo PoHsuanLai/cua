@@ -1,6 +1,6 @@
 [package]
 name = "cua-run"
-description = "The pure run machine of a computer-use run: observations, the phase table, inputs and effects, effect classification, mode support, the lease book, stall detection, config and the seams cuad plugs in."
+description = "The pure run machine of a computer-use run: observations, the phase table, inputs and effects, effect classification, mode support, the lease book, stall detection, the configuration and the seams cuad plugs in."
 version.workspace = true
 edition.workspace = true
 license.workspace = true

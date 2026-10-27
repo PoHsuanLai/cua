@@ -227,7 +227,7 @@ impl<S: Seams> Exec<'_, S> {
         if why == Suspend::Paused
             && let Some(mut check) = self.check.take()
         {
-            // A paused run withdraws its question: the sheet comes down.
+            // A paused run withdraws its question: the question is withdrawn.
             let _ = check.close().await;
         }
         let _ = self.seam.seat.emulation(lease, Emulation::Stopped).await;

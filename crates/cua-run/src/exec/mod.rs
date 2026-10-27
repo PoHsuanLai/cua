@@ -223,7 +223,7 @@ impl<'a, S: Seams> Exec<'a, S> {
         }
         match effect {
             RunEffect::Grant { app, space, level } => {
-                // The start sheet covers this run only, not every screen run in the Space.
+                // The start question covers this run only, not every screen run in the Space.
                 let ask = GrantAsk {
                     app,
                     space,

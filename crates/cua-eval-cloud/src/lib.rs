@@ -9,6 +9,7 @@
 //! asked of inferd as `Need::Llm` on data class `Screen` ([`provider::InferdProvider`]).
 
 pub mod entry;
+pub mod error;
 pub mod isolation;
 pub mod provider;
 pub mod request;

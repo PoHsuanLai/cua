@@ -2,9 +2,10 @@
 //! the watched `Gate.Check` (docket-client's `Intents::gate_check_watched`).
 //!
 //! A step's check says `Confirming(id)` when the router is about to ask the person: cuad stops
-//! its own input (the run machine suspends the lease), calls `proceed`, and the sheet is drawn.
-//! The verdict is the last event. A paused run takes its check back with `close`, and the sheet
-//! comes down. A transport that cannot watch gives the verdict alone and the rest does nothing.
+//! its own input (the run machine suspends the lease), calls `proceed`, and the router
+//! asks the person.
+//! The verdict is the last event. A paused run takes its check back with `close`, and the question
+//! is withdrawn. A transport that cannot watch gives the verdict alone and the rest does nothing.
 
 use cua_run::{GateCheck, GateEvent, GateLink, LinkError};
 use docket_client::{
@@ -63,8 +64,8 @@ fn link_error(error: ClientError) -> LinkError {
     }
 }
 
-/// One watched `Gate.Check` in flight. A check dropped before its verdict is withdrawn (its
-/// sheet comes down), so a run that lets go of it never leaves the person a stale question.
+/// One watched `Gate.Check` in flight. A check dropped before its verdict is withdrawn, so a run
+/// that lets go of it never leaves the person a stale question.
 pub struct IntentsCheck {
     watch: GateWatch,
     steer: GateSteer,

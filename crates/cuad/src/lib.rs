@@ -8,19 +8,19 @@
 //! Backends are closed sets: [`SeatBackend`] (`Ei`), [`CaptureBackend`] (`StockToplevel`,
 //! `QuireMasked`), and [`cua_desktop::BackendKind`] (`KwinStock`, `Casement`).
 //! On a stock compositor masking is cuad's (`MaskReport::applied_by = Cuad`) and the consent
-//! guard is cuad stopping its own input; the fork moves both into the compositor.
+//! guard is cuad stopping its own input; casement P4 moves both into the compositor.
 //!
 //! A run's progress and result go to the requester as `prov::Message` reports through the
 //! router. A message that arrives carries no authority.
 //!
-//! The behaviour that is built: the tables ([`guard`], [`classify`],
-//! [`manifest_for`], [`record_of`], [`capture_kind`], [`CuadConfig::from_toml`]), the supervisor
-//! ([`Supervisor`]: a task per run over [`cua_run::Exec`], with the person's controls, the
-//! desktop's events and the clock racing whatever the run waits on), the links ([`IntentsGate`],
-//! [`DaemonLinks`], [`InferdCuaModel`], [`Links`]) and the bus ([`serve`], [`serve_on`]). The
-//! backends behind [`SeatBackend`] and [`CaptureBackend`] are filled by their own crates, and the
-//! binary builds [`SystemSeams`] from them: with no compositor it still starts and reports the
-//! backend as unavailable (`Backend = none`).
+//! What it holds: the tables ([`guard`], [`classify`], [`manifest_for`], [`record_of`],
+//! [`capture_kind`], [`CuadConfig::from_toml`]), the supervisor ([`Supervisor`]: a task per run
+//! over [`cua_run::Exec`], with the person's controls, the desktop's events and the clock racing
+//! whatever the run waits on), the links ([`IntentsGate`], [`DaemonLinks`], [`InferdCuaModel`],
+//! [`Links`]) and the bus ([`serve`], [`serve_on`]). The adapters behind [`SeatBackend`] and
+//! [`CaptureBackend`] (input over EIS, window capture, the casement desktop) are in this crate
+//! too, and the binary builds [`SystemSeams`] from them. With no compositor it still starts and
+//! reports the backend as unavailable (`Backend = none`).
 
 mod backend;
 mod bus;
