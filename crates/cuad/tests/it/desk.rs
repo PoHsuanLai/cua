@@ -16,7 +16,8 @@ use docket_dbus::callers::{CallerTable, Identity, Role};
 use docket_fake::{ScriptedConfirmer, fake_router};
 use docket_gate_wire::{CuaAsk, EffectBasis, GateAnswer};
 use docket_router::Router;
-use docket_wire::{CallerRole, SessionOpen};
+use docket_vocab::CallerRole;
+use docket_wire::SessionOpen;
 use intentd::{AcpGate, IntentdConfig, ProcRoot, serve_on_gated};
 use maskcap::FrameDigest;
 use porter_core::AppName;
@@ -94,7 +95,7 @@ pub(crate) async fn desk(answers: Vec<ConfirmAnswer>) -> Desk {
         Arc::new(router),
         Arc::new(config),
         who.clone(),
-        &ProcRoot::Fake(proc_root),
+        &ProcRoot::Honoured(proc_root),
         AcpGate::shut(),
         None,
     )
