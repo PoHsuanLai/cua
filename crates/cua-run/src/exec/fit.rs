@@ -147,7 +147,8 @@ mod tests {
     use cua_desktop::{
         GlobalCoord, GlobalRect, Pid, ToplevelIdent, WindowTitle, WorkspaceRef, WorkspaceShown,
     };
-    use porter_core::{AppName, Px};
+    use porter_core::AppName;
+    use porter_ids::Px;
     use std::collections::BTreeSet;
 
     fn window(state: &[ToplevelState]) -> ToplevelInfo {

@@ -127,7 +127,8 @@ mod tests {
     use super::*;
     use crate::units::{GlobalCoord, GlobalRect, Pid};
     use crate::window::{WindowTitle, WorkspaceRef, WorkspaceShown};
-    use porter_core::{AppName, Px};
+    use porter_core::AppName;
+    use porter_ids::Px;
     use std::collections::BTreeSet;
 
     fn info(ident: &str, trust: WindowTrust) -> ToplevelInfo {

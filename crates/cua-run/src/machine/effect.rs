@@ -9,7 +9,8 @@ use cua_bus::{
     ActionOutcome, AskBody, CuaOutcome, CuaRecord, QuestionId, RunStateSlug, TargetedAction,
 };
 use cua_desktop::{GlowState, LeaseId, LeaseRequest, Ms, Suspend};
-use docket_core::{CuaAsk, MessageDraft};
+use docket_core::MessageDraft;
+use docket_gate_wire::CuaAsk;
 use maskcap::FrameWant;
 use porter_infer::{CuaStepRequest, StepIndex};
 use prov::SpaceId;
@@ -60,7 +61,7 @@ pub enum RunEffect {
         /// The Space.
         space: SpaceId,
         /// The consent level the person set for the app.
-        level: docket_core::Level,
+        level: docket_permissions_core::Level,
     },
     /// Ask the desktop for the window.
     AcquireLease(LeaseRequest),

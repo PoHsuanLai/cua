@@ -2,7 +2,7 @@
 
 use cua_desktop::Stamp;
 use cua_run::Clock;
-use porter_core::UnixSeconds;
+use porter_ids::UnixSeconds;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
 /// The system's clock, with its origin at construction. Copies share the origin: capture

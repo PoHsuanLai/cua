@@ -6,12 +6,11 @@ use crate::rules::Rules;
 use a11y_tree::A11ySource;
 use cua_bus::{CuaRecord, CuaTask};
 use cua_desktop::{Desktop, LeaseControl, Stamp};
-use docket_core::{
-    CuaAsk, Delivery, GateAnswer, GrantAnswer, GrantAsk, InboundLine, InboxAsk, MessageDraft,
-    WireRefusal,
-};
+use docket_core::{Delivery, InboundLine, InboxAsk, MessageDraft};
+use docket_gate_wire::{CuaAsk, GateAnswer};
+use docket_wire::{GrantAnswer, GrantAsk, WireRefusal};
 use maskcap::WindowCapture;
-use porter_core::UnixSeconds;
+use porter_ids::UnixSeconds;
 use prov::{ConfirmId, RunId, SessionId, SpaceId};
 use seat_input::AgentSeat;
 use serde::{Deserialize, Serialize};

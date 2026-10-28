@@ -17,18 +17,23 @@ name = "cua-eval-cloud"
 path = "src/main.rs"
 
 [dependencies]
+porter-match = { workspace = true }
+porter-capability = { workspace = true }
+porter-ids = { workspace = true }
 cua-eval = { workspace = true }
 model-catalog = { workspace = true }
 model-provider = { workspace = true }
 porter-client = { workspace = true, features = ["dbus"] }
 porter-core = { workspace = true }
 porter-infer = { workspace = true }
-serde_json = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
 toml = { workspace = true }
 vision-prep = { workspace = true }
 zbus = { workspace = true }
+
+[dev-dependencies]
+rust_decimal = { workspace = true }
 
 [lints]
 workspace = true

@@ -15,7 +15,7 @@ use crate::stall::Repeats;
 use a11y_tree::NodeBudget;
 use cua_bus::{BudgetUse, CuaTask, RunStateSlug};
 use cua_desktop::{BackendCaps, LeaseId, Ms, Stamp};
-use docket_core::Level;
+use docket_permissions_core::Level;
 use porter_infer::ServedBy;
 use prov::{Label, RunId};
 use serde::{Deserialize, Serialize};

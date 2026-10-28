@@ -1,7 +1,7 @@
 //! What the seat reports: how text got in, whose seat, the receipt, and why delivery failed.
 
 use cua_desktop::{LeaseId, Stamp};
-use porter_core::Count;
+use porter_ids::Count;
 use serde::{Deserialize, Serialize};
 
 /// How text reaches the focused field.

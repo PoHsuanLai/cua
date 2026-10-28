@@ -13,7 +13,7 @@ use cua_action::{ActionClass, CuaAction};
 use cua_bus::{ActionOutcome, ActionResult, CuaOutcome, FailReason, RunBudgetKind};
 use cua_desktop::Stamp;
 use maskcap::FrameWant;
-use porter_core::Count;
+use porter_ids::Count;
 use porter_infer::{CuaStepReply, StepIndex};
 
 pub(super) fn model_event(run: &mut Run, fx: &mut Vec<RunEffect>, event: crate::model::StepEvent) {
@@ -92,8 +92,9 @@ pub(super) fn model_replied(
     let RunPhase::Thinking(n) = run.phase else {
         return;
     };
-    run.used.spend = porter_core::MicroUsd(run.used.spend.0.saturating_add(reply.cost.0));
-    if over_budget(run, RunBudgetKind::Spend) {
+    run.used.spend = run.used.spend.counting(reply.charge);
+    let local_only = run.task.budget.spend.amount.is_zero();
+    if over_budget(run, RunBudgetKind::Spend) || (reply.cloud && local_only) {
         finish_plain(run, fx, CuaOutcome::BudgetOut(RunBudgetKind::Spend));
         return;
     }

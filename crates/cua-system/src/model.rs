@@ -5,16 +5,19 @@ use cua_run::{
     CuaModel, CuaModelError, FrameAttachment, ModelReach, ModelSight, StepEvent, StepSink,
     ThoughtText,
 };
+use porter_capability::CuaEnv;
+use porter_capability::Tier;
 use porter_client::{OpenOptions, Transport, TransportError};
-use porter_core::capability::CuaEnv;
-use porter_core::need::CuaNeed;
-use porter_core::{DataClass, Need, Tier, Tokens};
+use porter_core::DataClass;
+use porter_ids::Tokens;
 use porter_infer::{
     AttachIndex, ClientFrame, CuaBegin, CuaStepFailure, CuaStepReply, CuaStepRequest, Declined,
     DeclinedBecause, FrameLayout, ImageSource, InferEvent, InferRefusal, InferReply, InferRequest,
     InferSession, NO_MODEL_SEES_SCREEN, PlaceRow, PlaceState, Readiness, ServedBy, SessionError,
     Sight, TokenUsage, cannot_see_screen,
 };
+use porter_match::CuaNeed;
+use porter_match::Need;
 use std::collections::BTreeSet;
 
 /// A [`CuaModel`] over one inferd session (`Need::ComputerUse`, class `Screen`): `CuaBegin`
@@ -101,6 +104,7 @@ fn zero() -> TokenUsage {
         input: Tokens(0),
         output: Tokens(0),
         cached: Tokens(0),
+        charge: None,
     }
 }
 

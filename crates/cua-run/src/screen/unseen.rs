@@ -13,7 +13,7 @@
 
 use a11y_tree::{A11yNode, A11ySnapshot, NodeState, Parent, Truncation, secret_rects_of};
 use cua_action::{NodeId, Rect, Size, WindowSpace};
-use porter_core::Count;
+use porter_ids::Count;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 

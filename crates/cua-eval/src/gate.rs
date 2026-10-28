@@ -7,9 +7,9 @@
 
 use cua_action::{ActionClass, WindowClass};
 use cua_run::{GateCheck, GateEvent, GateLink, LinkError};
-use docket_core::{
-    CallRefusal, ConfirmEnd, CuaAsk, EffectBasis, GateAnswer, GrantAnswer, GrantAsk,
-};
+use docket_core::{CallRefusal, ConfirmEnd};
+use docket_gate_wire::{CuaAsk, EffectBasis, GateAnswer};
+use docket_wire::{GrantAnswer, GrantAsk};
 use porter_core::AppName;
 use prov::{ConfirmId, Effect, RunId, SessionId, SpaceId};
 use std::collections::VecDeque;

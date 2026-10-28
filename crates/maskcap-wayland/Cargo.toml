@@ -20,6 +20,7 @@ rustix = { workspace = true }
 tokio = { workspace = true }
 
 [dev-dependencies]
+porter-ids = { workspace = true }
 porter-core = { workspace = true }
 wayland-server = { workspace = true }
 # The compositor side of quire-agent-v1, for the fake compositor in the tests.

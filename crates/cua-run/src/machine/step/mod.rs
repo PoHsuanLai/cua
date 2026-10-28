@@ -30,7 +30,7 @@ use cua_bus::{
     BlockedOn, CuaOutcome, CuaRecord, FailReason, ModeSupport, RunBudgetKind, TaskTarget,
 };
 use cua_desktop::{Stamp, ToplevelIdent};
-use docket_core::GrantAnswer;
+use docket_wire::GrantAnswer;
 use maskcap::{FrameWant, Settle};
 use porter_infer::StepIndex;
 use prov::RunId;
@@ -60,7 +60,7 @@ pub(crate) fn start(id: RunId, task: CuaTask, env: RunEnv, at: Stamp) -> (Run, V
         task,
         env,
         phase: RunPhase::Granting,
-        used: cua_bus::BudgetUse::NONE,
+        used: cua_bus::BudgetUse::none(),
         taint,
         frames: Repeats::default(),
         pending: crate::machine::phase::ActionQueue::default(),
@@ -231,7 +231,10 @@ fn over_budget(run: &Run, kind: RunBudgetKind) -> bool {
     match kind {
         RunBudgetKind::Steps => run.used.steps > run.task.budget.steps,
         RunBudgetKind::Active => run.used.active >= run.task.budget.active,
-        RunBudgetKind::Spend => run.used.spend > run.task.budget.spend,
+        RunBudgetKind::Spend => {
+            let (spent, cap) = (run.used.spend.reported, run.task.budget.spend);
+            spent.currency == cap.currency && spent.amount > cap.amount
+        }
         RunBudgetKind::Stall | RunBudgetKind::Rate => false,
     }
 }

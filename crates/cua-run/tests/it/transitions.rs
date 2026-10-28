@@ -14,10 +14,15 @@ use cua_desktop::{BackendKind, GlowState, LeaseId, Stamp, Suspend, ToplevelIdent
 use cua_run::{
     CheckResult, CuaModelError, CuaSignal, RunEffect, RunInput, RunPhase, SettleWatch, StepEvent,
 };
-use docket_core::{BreakerTrip, CallRefusal, ConfirmEnd, DenyCode, GateAnswer, GrantAnswer};
+use docket_core::{CallRefusal, ConfirmEnd};
+use docket_gate_wire::GateAnswer;
+use docket_permissions_core::{BreakerTrip, DenyCode};
+use docket_wire::GrantAnswer;
 use maskcap::{CaptureError, DamageAt, DamageSource, FrameWant, Settle};
+use model_provider::Money;
 use porter_infer::StepIndex;
 use prov::{ConfirmId, Labelled, MessageKind, ReportStatus, SpaceScope};
+use rust_decimal::Decimal;
 use seat_input::{InputOrigin, InputReceipt, SeatError};
 
 const STOCK: BackendKind = BackendKind::KwinStock;
@@ -29,7 +34,7 @@ fn model_says() -> SuccessCheck {
 fn receipt(at: u64) -> InputReceipt {
     InputReceipt {
         lease: LeaseId(1),
-        ops: porter_core::Count(3),
+        ops: porter_ids::Count(3),
         text_path: None,
         origin: InputOrigin::SharedSeatViaEi,
         at: Stamp(at),
@@ -172,8 +177,8 @@ fn an_observation_goes_to_the_model_and_the_run_notes_what_it_read() {
         _ => None,
     });
     assert_eq!(call.expect("a model call").step, StepIndex(1));
-    assert_eq!(d.run.used.steps, porter_core::Count(1));
-    assert_eq!(d.run.frames.count(), porter_core::Count(1));
+    assert_eq!(d.run.used.steps, porter_ids::Count(1));
+    assert_eq!(d.run.frames.count(), porter_ids::Count(1));
     assert_eq!(
         d.run.taint.integrity,
         prov::Integrity::Untrusted,
@@ -198,7 +203,7 @@ fn equal_frames_in_a_row_end_the_run_as_a_stall() {
 #[test]
 fn the_step_budget_ends_the_run_when_the_step_past_it_is_observed() {
     let mut t = task(model_says());
-    t.budget.steps = porter_core::Count(1);
+    t.budget.steps = porter_ids::Count(1);
     let mut d = Drive::leased(STOCK, t);
     d.feed(RunInput::Observed(Box::new(observation(1, tree(vec![])))));
     assert_eq!(*d.phase(), RunPhase::Thinking(StepIndex(1)));
@@ -270,7 +275,7 @@ fn a_click_is_authorised_with_the_facts_the_router_needs() {
     assert_eq!(ask.app, app());
     assert_eq!(ask.trust, cua_action::WindowTrust::Native);
     assert_eq!(ask.effect, prov::Effect::UndoableWrite);
-    assert_eq!(ask.basis, docket_core::EffectBasis::DefaultTable);
+    assert_eq!(ask.basis, docket_gate_wire::EffectBasis::DefaultTable);
     assert_eq!(ask.screen.integrity, prov::Integrity::Untrusted);
     let node = ask.node.expect("the smallest node under the point");
     assert_eq!(node.role, "button");
@@ -704,7 +709,7 @@ fn an_empty_reply_and_a_vendor_hint_count_as_failures_and_look_again_at_the_next
     let mut d = Drive::thinking(STOCK, task(model_says()), tree(vec![]));
     d.feed(RunInput::ModelReplied(reply(vec![])));
     assert_eq!(*d.phase(), RunPhase::Observing(StepIndex(2)));
-    assert_eq!(d.run.used.model_failures, porter_core::Count(1));
+    assert_eq!(d.run.used.model_failures, porter_ids::Count(1));
     let mut hinted = Drive::thinking(STOCK, task(model_says()), tree(vec![]));
     let mut r = reply(vec![click_at(1, 1)]);
     r.reply.safety = vec![porter_infer::SafetyHint::Blocked("no".into())];
@@ -719,10 +724,10 @@ fn an_empty_reply_and_a_vendor_hint_count_as_failures_and_look_again_at_the_next
 #[test]
 fn spend_over_the_budget_ends_the_run_after_the_reply() {
     let mut t = task(model_says());
-    t.budget.spend = porter_core::MicroUsd(100);
+    t.budget.spend = Money::usd(Decimal::new(100, 6));
     let mut d = Drive::thinking(STOCK, t, tree(vec![]));
     let mut r = reply(vec![click_at(1, 1)]);
-    r.cost = porter_core::MicroUsd(101);
+    r.charge = Some(Money::usd(Decimal::new(101, 6)));
     d.feed(RunInput::ModelReplied(r));
     assert_eq!(
         finished_with(&d),
@@ -733,6 +738,28 @@ fn spend_over_the_budget_ends_the_run_after_the_reply() {
     assert!(
         matches!(ok.phase(), RunPhase::Authorising(_)),
         "a local model costs nothing"
+    );
+}
+
+#[test]
+fn a_zero_spend_cap_stops_on_a_cloud_reply_only() {
+    let mut cloud = Drive::thinking(STOCK, task(model_says()), tree(vec![]));
+    let mut r = reply(vec![click_at(1, 1)]);
+    r.cloud = true;
+    cloud.feed(RunInput::ModelReplied(r));
+    assert_eq!(
+        finished_with(&cloud),
+        Some(CuaOutcome::BudgetOut(RunBudgetKind::Spend))
+    );
+    let mut paid = task(model_says());
+    paid.budget.spend = Money::usd(Decimal::ONE);
+    let mut allowed = Drive::thinking(STOCK, paid, tree(vec![]));
+    let mut r = reply(vec![click_at(1, 1)]);
+    r.cloud = true;
+    allowed.feed(RunInput::ModelReplied(r));
+    assert!(
+        matches!(allowed.phase(), RunPhase::Authorising(_)),
+        "an unpriced cloud reply never meets a cap above zero"
     );
 }
 
@@ -846,7 +873,7 @@ fn a_confirmation_that_is_declined_is_told_to_the_model_as_declined() {
 #[test]
 fn the_rate_limit_ends_the_run_before_the_action_that_would_pass_it() {
     let mut t = task(model_says());
-    t.budget.actions_per_min = porter_core::Count(2);
+    t.budget.actions_per_min = porter_ids::Count(2);
     let mut d = Drive::thinking(STOCK, t, tree(vec![]));
     d.feed(RunInput::ModelReplied(reply(vec![click_at(1, 1)])));
     for i in 0..2_u8 {
@@ -895,15 +922,15 @@ fn a_window_that_moved_under_the_aim_is_not_injected_into_and_the_run_looks_agai
 fn the_bus_is_told_how_many_equal_frames_came_in_a_row() {
     let mut d = Drive::leased(STOCK, task(model_says()));
     d.feed(RunInput::Observed(Box::new(observation(5, tree(vec![])))));
-    assert_eq!(d.run.used.stalled, porter_core::Count(1));
+    assert_eq!(d.run.used.stalled, porter_ids::Count(1));
     d.feed(RunInput::ModelFailed(CuaModelError::Transient));
     d.feed(RunInput::Observed(Box::new(observation(5, tree(vec![])))));
-    assert_eq!(d.run.used.stalled, porter_core::Count(2));
+    assert_eq!(d.run.used.stalled, porter_ids::Count(2));
     d.feed(RunInput::ModelFailed(CuaModelError::Transient));
     d.feed(RunInput::Observed(Box::new(observation(6, tree(vec![])))));
     assert_eq!(
         d.run.used.stalled,
-        porter_core::Count(1),
+        porter_ids::Count(1),
         "a new frame starts again"
     );
 }

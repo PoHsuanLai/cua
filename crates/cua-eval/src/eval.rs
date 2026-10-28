@@ -9,7 +9,8 @@ use crate::script::ScriptModel;
 use crate::task::{Engines, Served, TaskDef};
 use crate::verdict::Verdict;
 use model_provider::Provider;
-use porter_core::{AccountId, ModelId};
+use porter_capability::ModelId;
+use porter_core::AccountId;
 use porter_infer::ServedBy;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -71,7 +72,7 @@ fn served_by(served: Served) -> Result<Option<ServedBy>, SetupError> {
             Ok(Some(ServedBy {
                 account: AccountId::parse("acct-1").map_err(|e| id(&e))?,
                 model: ModelId::parse("model-1").map_err(|e| id(&e))?,
-                locality: porter_core::Locality::Cloud { region: None },
+                locality: porter_capability::Locality::Cloud { region: None },
             }))
         }
     }
@@ -151,7 +152,7 @@ pub async fn run_live<P: Provider + 'static>(
     let served = ServedBy {
         account: AccountId::parse("acct-local").map_err(|e| SetupError::Id(e.to_string()))?,
         model: ModelId::parse("model-local").map_err(|e| SetupError::Id(e.to_string()))?,
-        locality: porter_core::Locality::OnDevice,
+        locality: porter_capability::Locality::OnDevice,
     };
     let lot = Lot {
         player,

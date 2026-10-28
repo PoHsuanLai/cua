@@ -1,7 +1,7 @@
 //! Whether the screen has stopped changing.
 
 use maskcap::FrameDigest;
-use porter_core::Count;
+use porter_ids::Count;
 use serde::{Deserialize, Serialize};
 
 /// Whether the frames are still changing.

@@ -14,7 +14,8 @@ use cua_run::{
     AcquirePhase, CuaConfig, CuaSignal, FORCED_YES, Progress, Run, RunEnv, RunPhase, Step,
 };
 use maskcap::{Frame, FrameSeq, MaskReport, PixelBuf, WholeMask};
-use porter_core::{AppName, Px, UnixSeconds};
+use porter_core::AppName;
+use porter_ids::{Px, UnixSeconds};
 use porter_infer::CuaStepReply;
 use prov::{
     Address, AgentRef, Confidentiality, Integrity, Label, Labelled, MessageKind, ReportStatus,

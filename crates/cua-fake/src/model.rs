@@ -5,7 +5,7 @@ use cua_parse::{InSpace, ParseLimits, Parsed, parse_text, parse_tool_calls};
 use cua_run::{CuaModel, CuaModelError, FrameAttachment, ModelReach, ModelSight, StepSink};
 use model_provider::{ProviderError, SafetySignal, ToolCall, TurnEvent};
 use model_replay::{Cassette, Interaction};
-use porter_core::Tokens;
+use porter_ids::Tokens;
 use porter_infer::{
     CuaBegin, CuaStepReply, CuaStepRequest, DropReason, DroppedAction, SafetyHint, ServedBy,
     TokenUsage,
@@ -124,6 +124,7 @@ impl CuaModel for ScriptedModel {
             input: Tokens(0),
             output: Tokens(0),
             cached: Tokens(0),
+            charge: None,
         }
     }
 

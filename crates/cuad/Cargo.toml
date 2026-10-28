@@ -27,6 +27,10 @@ keycap = ["dep:keycap-client"]
 fixture-callers = ["docket-dbus/fixture-callers"]
 
 [dependencies]
+docket-wire = { workspace = true }
+docket-manifest = { workspace = true }
+docket-vocab = { workspace = true }
+porter-ids = { workspace = true }
 cua-desktop = { workspace = true }
 cua-system = { workspace = true }
 cua-bus = { workspace = true }
@@ -51,12 +55,17 @@ zbus = { workspace = true }
 futures-util = { workspace = true }
 
 [dev-dependencies]
+docket-gate-wire = { workspace = true }
+docket-permissions-core = { workspace = true }
+porter-capability = { workspace = true }
 # The tests present their processes as a fixture tree, which porter reads only in a test build.
 docket-dbus = { workspace = true, features = ["fixture-callers"] }
 almanac-core = { workspace = true }
 cua-action = { workspace = true }
 cua-fake = { workspace = true }
 porter-infer = { workspace = true }
+model-provider = { workspace = true }
+rust_decimal = { workspace = true }
 seat-input = { workspace = true }
 maskcap = { workspace = true }
 tokio = { workspace = true, features = ["test-util"] }

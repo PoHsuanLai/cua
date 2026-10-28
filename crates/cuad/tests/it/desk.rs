@@ -11,12 +11,12 @@ use cua_desktop::Digest32;
 use cua_run::{GateCheck, GateEvent, GateLink};
 use cuad::IntentsGate;
 use docket_client::{DbusTransport, Intents};
-use docket_core::{
-    CallerRole, ConfirmAnswer, CuaAsk, EffectBasis, GateAnswer, GrantScope, SessionOpen,
-};
+use docket_core::{ConfirmAnswer, GrantScope};
 use docket_dbus::callers::{CallerTable, Identity, Role};
 use docket_fake::{ScriptedConfirmer, fake_router};
+use docket_gate_wire::{CuaAsk, EffectBasis, GateAnswer};
 use docket_router::Router;
+use docket_wire::{CallerRole, SessionOpen};
 use intentd::{AcpGate, IntentdConfig, ProcRoot, serve_on_gated};
 use maskcap::FrameDigest;
 use porter_core::AppName;
@@ -224,8 +224,8 @@ pub(crate) fn record_of_run(run: &RunId) -> Vec<CuaRecord> {
         CuaRecord::Finished {
             run: run.clone(),
             outcome: CuaOutcome::Done,
-            steps: porter_core::Count(1),
-            cost: porter_core::MicroUsd(0),
+            steps: porter_ids::Count(1),
+            charges: porter_infer::ChargeTotal::default(),
             report: None,
         },
     ]

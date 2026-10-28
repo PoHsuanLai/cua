@@ -21,7 +21,8 @@ use cua_run::{
     RunEnv, RunInput, RunPhase, TreeObs, Visibility, WindowInfo,
 };
 use maskcap::{Frame, FrameSeq, MaskReport, PixelBuf, WholeMask};
-use porter_core::{AppName, Count, DataClass, MicroUsd, Px, Tokens};
+use porter_core::{AppName, DataClass};
+use porter_ids::{Count, Px, Tokens};
 use porter_infer::{CuaStepReply, StepIndex, TokenUsage};
 use prov::{
     Address, AgentRef, Confidentiality, Integrity, Label, Labelled, RunId, SessionId, Source,
@@ -243,8 +244,10 @@ pub fn reply(actions: Vec<CuaAction<WindowSpace>>) -> Box<ModelReply> {
             input: Tokens(0),
             output: Tokens(0),
             cached: Tokens(0),
+            charge: None,
         },
-        cost: MicroUsd(0),
+        charge: None,
+        cloud: false,
     })
 }
 
@@ -283,7 +286,7 @@ impl Drive {
     /// Brings a started run to `Observing(1)` through the consent and the lease.
     pub fn leased(kind: BackendKind, task: CuaTask) -> Drive {
         let mut d = Drive::start(kind, task);
-        d.feed(RunInput::Granted(docket_core::GrantAnswer::Granted));
+        d.feed(RunInput::Granted(docket_wire::GrantAnswer::Granted));
         d.feed(RunInput::Leased(grant(kind)));
         d
     }

@@ -16,9 +16,10 @@ use cua_run::{
     ContextObs, CursorObs, Focus, LeaseBook, Observation, Repeats, Stall, TreeObs, Visibility,
     WindowInfo, classify_effect, turn,
 };
-use docket_core::EffectBasis;
+use docket_gate_wire::EffectBasis;
 use maskcap::{Frame, FrameDigest, FrameSeq, MaskReport, PixelBuf, WholeMask};
-use porter_core::{AppName, Count, DataClass};
+use porter_core::{AppName, DataClass};
+use porter_ids::Count;
 use porter_infer::{MaskedRegions, StepIndex, TreeText};
 use prov::{
     ActionName, Confidentiality, Effect, Integrity, Label, Labelled, RunId, Source, SpaceId,
@@ -120,7 +121,7 @@ fn effects_that_talk_to_a_neighbour_have_a_deadline_and_the_ones_that_wait_on_th
     let consent = RunEffect::Grant {
         app: AppName::parse("org.gnome.Calculator").expect("an app"),
         space: SpaceId::parse("desktop").expect("a space"),
-        level: docket_core::Level::AlwaysAsk,
+        level: docket_permissions_core::Level::AlwaysAsk,
     };
     // The consent waits on a person, so its wait is long, but it ends: a run never stays in
     // `Granting` for ever.

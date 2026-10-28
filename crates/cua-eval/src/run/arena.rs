@@ -13,10 +13,13 @@ use cua_action::RunMode;
 use cua_bus::{CuaTask, ReportRoute, RunBudget, RunOrigin, SuccessCheck, TaskTarget};
 use cua_desktop::{Stamp, ToplevelIdent};
 use cua_fake::FixedClock;
-use porter_core::{AppName, Count, MicroUsd, UnixSeconds};
+use model_provider::Money;
+use porter_core::AppName;
+use porter_ids::{Count, UnixSeconds};
 use prov::{
     Address, AgentRef, Confidentiality, Integrity, Label, Labelled, SessionId, Source, SpaceId,
 };
+use rust_decimal::Decimal;
 use std::collections::BTreeSet;
 use std::sync::Arc;
 use std::sync::atomic::AtomicU32;
@@ -106,7 +109,11 @@ impl Arena {
         let app = AppName::parse(&self.stage.window().app).map_err(|e| id(&e))?;
         let budget = RunBudget {
             steps: Count(self.task.steps),
-            spend: MicroUsd(self.task.spend_microusd),
+            // Millionths of a US dollar in the task file; 0 is local models only.
+            spend: Money::usd(Decimal::from_i128_with_scale(
+                i128::from(self.task.spend_microusd),
+                6,
+            )),
             ..RunBudget::PROPOSED
         };
         Ok(CuaTask {

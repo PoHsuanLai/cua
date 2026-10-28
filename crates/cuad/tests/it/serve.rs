@@ -316,8 +316,8 @@ async fn start_and_stop_are_refused_to_the_wrong_callers_with_their_error_names(
     );
 }
 
-fn invocation(args: &[(&str, docket_core::Value)], actor: prov::Actor) -> docket_core::Invocation {
-    use docket_core::{Args, CallId, Origin, ParamName, TargetValue};
+fn invocation(args: &[(&str, docket_vocab::Value)], actor: prov::Actor) -> docket_core::Invocation {
+    use docket_vocab::{Args, CallId, Origin, ParamName, TargetValue};
     let words = |value| prov::Labelled::new(value, prov::Label::trusted_user());
     docket_core::Invocation {
         call: CallId(1),
@@ -363,13 +363,13 @@ async fn perform(
 async fn the_router_starts_a_run_through_the_provider_and_gets_its_id() {
     let fx = fixture(vec![reply(ask())]).await;
     let router = named(&fx, Who::Router).await;
-    let window = docket_core::Value::Entity(prov::EntityId {
+    let window = docket_vocab::Value::Entity(prov::EntityId {
         app: porter_core::AppName::parse("org.quire.Cua").unwrap(),
         kind: prov::EntityKind::parse("desktop.window").unwrap(),
         key: prov::EntityKey::parse("w1").unwrap(),
     });
-    let goal = docket_core::Value::Text("sign in".to_owned());
-    let mode = docket_core::Value::Choice(docket_core::ChoiceId::parse("auto").unwrap());
+    let goal = docket_vocab::Value::Text("sign in".to_owned());
+    let mode = docket_vocab::Value::Choice(docket_vocab::ChoiceId::parse("auto").unwrap());
 
     let outcome = perform(
         &router,
@@ -386,7 +386,7 @@ async fn the_router_starts_a_run_through_the_provider_and_gets_its_id() {
     .expect("a reply")
     .expect("a run started");
     let value = outcome.value.expect("a value").value;
-    assert_eq!(value, docket_core::Value::Text("r-1".to_owned()));
+    assert_eq!(value, docket_vocab::Value::Text("r-1".to_owned()));
     // `auto` on stock is the person's own seat.
     let view = fx.supervisor.view(&"r-1".parse_run()).expect("a live run");
     assert_eq!(view.task.mode, cua_action::RunMode::InPlace);
@@ -601,15 +601,18 @@ async fn start_with(
     fx: &Fixture,
     app: Option<&str>,
 ) -> Result<docket_core::Outcome, docket_core::AppRefusal> {
-    start_with_value(fx, app.map(|app| docket_core::Value::Text(app.to_owned()))).await
+    start_with_value(fx, app.map(|app| docket_vocab::Value::Text(app.to_owned()))).await
 }
 
 async fn start_with_value(
     fx: &Fixture,
-    app: Option<docket_core::Value>,
+    app: Option<docket_vocab::Value>,
 ) -> Result<docket_core::Outcome, docket_core::AppRefusal> {
     let router = named(fx, Who::Router).await;
-    let mut args = vec![("goal", docket_core::Value::Text("draw the lamp".to_owned()))];
+    let mut args = vec![(
+        "goal",
+        docket_vocab::Value::Text("draw the lamp".to_owned()),
+    )];
     args.extend(app.map(|app| ("app", app)));
     perform(&router, &invocation(&args, planner_actor()))
         .await
@@ -619,11 +622,11 @@ async fn start_with_value(
 async fn suggest_apps(fx: &Fixture, typed: &str, param: &str) -> Vec<String> {
     let router = named(fx, Who::Router).await;
     let ask = docket_core::SuggestAsk {
-        action: docket_core::ActionRef {
+        action: docket_vocab::ActionRef {
             app: porter_core::AppName::parse("org.quire.Cua").unwrap(),
             name: prov::ActionName::parse("cua.run.start").unwrap(),
         },
-        param: docket_core::ParamName::parse(param).unwrap(),
+        param: docket_vocab::ParamName::parse(param).unwrap(),
         typed: typed.to_owned(),
     };
     let reply = router
@@ -637,7 +640,7 @@ async fn suggest_apps(fx: &Fixture, typed: &str, param: &str) -> Vec<String> {
         .await
         .expect("a reply");
     let json: String = reply.body().deserialize().unwrap();
-    let options: Vec<docket_core::EntityRef> = serde_json::from_str(&json).unwrap();
+    let options: Vec<docket_vocab::EntityRef> = serde_json::from_str(&json).unwrap();
     options
         .iter()
         .map(|o| o.id.key.as_str().to_owned())
@@ -660,8 +663,8 @@ async fn the_open_apps_are_offered_as_choices_for_app_and_for_nothing_else() {
 async fn the_app_parameter_reads_as_text_or_an_entity() {
     let draw = "org.example.Draw";
     let forms = [
-        docket_core::Value::Text(draw.to_owned()),
-        docket_core::Value::Entity(prov::EntityId {
+        docket_vocab::Value::Text(draw.to_owned()),
+        docket_vocab::Value::Entity(prov::EntityId {
             app: porter_core::AppName::parse("org.quire.Cua").unwrap(),
             kind: prov::EntityKind::parse("desktop.app").unwrap(),
             key: prov::EntityKey::parse(draw).unwrap(),

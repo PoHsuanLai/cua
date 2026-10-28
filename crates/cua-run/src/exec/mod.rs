@@ -7,7 +7,6 @@
 //! is how they wait (the supervisor races an effect against the person's controls and the
 //! clock, the harness has none of either).
 
-mod cost;
 mod deadline;
 mod fit;
 mod front;
@@ -25,10 +24,11 @@ use crate::seams::{
 };
 use cua_bus::{CuaRecord, CuaTask, ReportDelivery};
 pub use deadline::{Deadline, deadline_of};
-use docket_core::{Delivery, GrantAsk, SendRefusal, WireRefusal};
+use docket_core::{Delivery, SendRefusal};
+use docket_wire::{GrantAsk, WireRefusal};
 use maskcap::DamageAt;
 pub use phase::{Progress, Step, StepNote};
-use porter_core::Count;
+use porter_ids::Count;
 use prov::{MessageId, RunId};
 use session::Held;
 
@@ -258,7 +258,7 @@ impl<'a, S: Seams> Exec<'a, S> {
         }
     }
 
-    async fn check(&mut self, ask: docket_core::CuaAsk, out: &mut impl Outlet) {
+    async fn check(&mut self, ask: docket_gate_wire::CuaAsk, out: &mut impl Outlet) {
         match self.seam.gate.check(ask).await {
             Ok(check) => {
                 self.check = Some(check);

@@ -20,7 +20,8 @@ use cua_bus::{
     CuaRecord, FailReason, LocalRefusal, QuestionId, Refusal, SuccessCheck, TargetedAction,
 };
 use cua_desktop::{ConsentGuard, Ms, Stamp, Suspend};
-use docket_core::{CallRefusal, GateAnswer};
+use docket_core::CallRefusal;
+use docket_gate_wire::GateAnswer;
 use maskcap::{FrameWant, Settle};
 use porter_infer::StepIndex;
 use prov::{Label, Labelled};

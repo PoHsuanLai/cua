@@ -16,7 +16,8 @@ use maskcap::{
     CaptureError, CaptureSession, DamageAt, DamageSource, Frame, FrameSeq, FrameWant, MaskRegion,
     MaskReport, WholeMask, WindowCapture,
 };
-use porter_core::{AppName, Count, DataClass, Px, UnixSeconds};
+use porter_core::{AppName, DataClass};
+use porter_ids::{Count, Px, UnixSeconds};
 use prov::{Label, Source, SpaceId};
 use seat_input::{
     AgentSeat, Emulation, InputOp, InputOrigin, InputReceipt, Keymap, SeatCaps, SeatError,

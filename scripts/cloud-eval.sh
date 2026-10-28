@@ -124,8 +124,7 @@ inner() {
   # The eval: no key variable, no key file; placed as the intentd unit.
   ( place "$BASHPID" intentd
     exec env -i "${world_env[@]}" DBUS_SESSION_BUS_ADDRESS="$addr" \
-      "$EVALBIN" --entry "$ENTRY" --label "$LABEL" --tier "$TIER" \
-      --ledger "$WORLD/.local/state/quire/inferd/spend.json" "$@" )
+      "$EVALBIN" --entry "$ENTRY" --label "$LABEL" --tier "$TIER" "$@" )
 }
 {
   echo '#!/usr/bin/env bash'

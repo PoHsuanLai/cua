@@ -6,7 +6,7 @@ use crate::rules::CommitRules;
 use a11y_tree::{A11yNode, TypedHint};
 use cua_action::WindowClass;
 use cua_action::{ActionClass, CuaAction, WindowSpace};
-use docket_core::EffectBasis;
+use docket_gate_wire::EffectBasis;
 use keyboard_types::Key;
 use prov::Effect;
 

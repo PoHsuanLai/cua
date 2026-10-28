@@ -9,6 +9,9 @@ repository.workspace = true
 publish.workspace = true
 
 [dependencies]
+docket-gate-wire = { workspace = true }
+docket-vocab = { workspace = true }
+porter-ids = { workspace = true }
 cua-action = { workspace = true }
 cua-desktop = { workspace = true }
 cua-types = { workspace = true }
@@ -17,8 +20,14 @@ almanac-core = { workspace = true }
 prov = { workspace = true }
 porter-core = { workspace = true }
 porter-infer = { workspace = true }
+model-provider = { workspace = true }
+rust_decimal = { workspace = true }
+iso_currency = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 
 [lints]
 workspace = true
+
+[dev-dependencies]
+porter-capability = { workspace = true }

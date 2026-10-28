@@ -1,7 +1,11 @@
 //! The limits of one run, and how much of them it has used.
 
 use cua_desktop::Ms;
-use porter_core::{Count, MicroUsd};
+use iso_currency::Currency;
+use model_provider::Money;
+use porter_ids::Count;
+use porter_infer::ChargeTotal;
+use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
 /// What stopped a run that ran out of something.
@@ -22,7 +26,7 @@ pub enum RunBudgetKind {
 
 /// The limits of one run. There is no per-run denial count: the router's breaker counts
 /// denials across the session.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RunBudget {
     /// Steps (observe, think, act).
     pub steps: Count,
@@ -34,8 +38,9 @@ pub struct RunBudget {
     pub actions_per_min: Count,
     /// Failed model calls before the run fails.
     pub model_failures: Count,
-    /// Money; zero means local models only.
-    pub spend: MicroUsd,
+    /// Money the providers may report for the run; zero means local models only (a reply from
+    /// a provider's servers stops the run).
+    pub spend: Money,
 }
 
 impl RunBudget {
@@ -51,12 +56,25 @@ impl RunBudget {
         stall_frames: Count(3),
         actions_per_min: Count(60),
         model_failures: Count(2),
-        spend: MicroUsd(0),
+        spend: Money {
+            amount: Decimal::ZERO,
+            currency: Currency::USD,
+        },
     };
 }
 
 fn lesser<T: PartialOrd + Copy>(a: T, b: T) -> T {
     if a < b { a } else { b }
+}
+
+/// The smaller of two caps. Caps in different currencies cannot be compared, so `cap` (the
+/// person's own) wins.
+fn lesser_money(asked: Money, cap: Money) -> Money {
+    if asked.currency == cap.currency && asked.amount < cap.amount {
+        asked
+    } else {
+        cap
+    }
 }
 
 impl RunBudget {
@@ -76,13 +94,13 @@ impl RunBudget {
             stall_frames,
             actions_per_min: lesser(self.actions_per_min, cap.actions_per_min),
             model_failures: lesser(self.model_failures, cap.model_failures),
-            spend: lesser(self.spend, cap.spend),
+            spend: lesser_money(self.spend, cap.spend),
         }
     }
 }
 
 /// What a run has used so far (the `Budget` property's `used`).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BudgetUse {
     /// Steps taken.
     pub steps: Count,
@@ -94,20 +112,22 @@ pub struct BudgetUse {
     pub actions_last_minute: Count,
     /// Failed model calls.
     pub model_failures: Count,
-    /// Money spent.
-    pub spend: MicroUsd,
+    /// The charges the providers reported, and the replies that reported none.
+    pub spend: ChargeTotal,
 }
 
 impl BudgetUse {
     /// Nothing used yet.
-    pub const NONE: BudgetUse = BudgetUse {
-        steps: Count(0),
-        active: Ms(0),
-        stalled: Count(0),
-        actions_last_minute: Count(0),
-        model_failures: Count(0),
-        spend: MicroUsd(0),
-    };
+    pub fn none() -> BudgetUse {
+        BudgetUse {
+            steps: Count(0),
+            active: Ms(0),
+            stalled: Count(0),
+            actions_last_minute: Count(0),
+            model_failures: Count(0),
+            spend: ChargeTotal::default(),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -119,7 +139,7 @@ mod tests {
         let json = serde_json::to_string(&RunBudget::PROPOSED).unwrap();
         assert_eq!(
             json,
-            r#"{"steps":40,"active":1800000,"stall_frames":3,"actions_per_min":60,"model_failures":2,"spend":0}"#
+            r#"{"steps":40,"active":1800000,"stall_frames":3,"actions_per_min":60,"model_failures":2,"spend":{"amount":"0","currency":"USD"}}"#
         );
         assert_eq!(
             serde_json::from_str::<RunBudget>(&json).unwrap(),
@@ -135,7 +155,7 @@ mod tests {
             stall_frames: Count(0),
             actions_per_min: Count(u32::MAX),
             model_failures: Count(9),
-            spend: MicroUsd(u64::MAX),
+            spend: Money::usd(Decimal::MAX),
         };
         assert_eq!(greedy.capped_by(RunBudget::PROPOSED), RunBudget::PROPOSED);
         let modest = RunBudget {
@@ -166,10 +186,10 @@ mod tests {
         for (kind, slug) in kinds {
             assert_eq!(serde_json::to_string(&kind).unwrap(), format!("\"{slug}\""));
         }
-        let json = serde_json::to_string(&BudgetUse::NONE).unwrap();
+        let json = serde_json::to_string(&BudgetUse::none()).unwrap();
         assert_eq!(
             serde_json::from_str::<BudgetUse>(&json).unwrap(),
-            BudgetUse::NONE
+            BudgetUse::none()
         );
     }
 }

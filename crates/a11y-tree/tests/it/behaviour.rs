@@ -17,7 +17,7 @@ fn prune_keeps_actionable_visible_first_within_budget() {
     assert_eq!(
         pruned.truncated,
         Truncation::Pruned {
-            dropped: porter_core::Count(dropped)
+            dropped: porter_ids::Count(dropped)
         }
     );
     assert!(

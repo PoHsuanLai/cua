@@ -3,8 +3,10 @@
 //! as the caller chooses, and nothing here names a model: inferd routes by the tier.
 
 use model_provider as sp;
+use porter_capability::Tier;
+use porter_core::DataClass;
 use porter_core::consent::Usage;
-use porter_core::{Count, DataClass, Permille, Tier, Tokens};
+use porter_ids::{Count, Permille, Tokens};
 use porter_infer as pi;
 use vision_prep::MediaType;
 

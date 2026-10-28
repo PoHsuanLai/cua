@@ -2,7 +2,7 @@
 
 use cua_desktop::Stamp;
 use cua_run::Clock;
-use porter_core::UnixSeconds;
+use porter_ids::UnixSeconds;
 use std::sync::atomic::{AtomicBool, AtomicI64, AtomicU64, Ordering};
 
 /// A clock set by hand; it never moves on its own.

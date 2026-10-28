@@ -3,7 +3,7 @@
 use cua_action::{NodeId, Rect, WindowSpace};
 use cua_desktop::Stamp;
 pub use cua_types::Role;
-use porter_core::Count;
+use porter_ids::Count;
 use prov::{ActionName, Labelled};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;

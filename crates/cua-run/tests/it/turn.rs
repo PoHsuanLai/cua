@@ -13,7 +13,8 @@ use cua_run::{
     ContextObs, CursorObs, Effect, Focus, Observation, TreeAbsence, TreeObs, Visibility,
     WindowInfo, note_of, turn, turn_after,
 };
-use docket_core::{CallRefusal, DenyCode, InboundLine, InboundPart, Reveal};
+use docket_core::{CallRefusal, InboundLine, InboundPart, Reveal};
+use docket_permissions_core::DenyCode;
 use maskcap::{Frame, FrameSeq, MaskReason, MaskReport, PixelBuf, WholeMask};
 use porter_core::{AppName, DataClass};
 use porter_infer::{MaskedRegions, NoteFrom, PrevResult, StepIndex, StepNote};
@@ -265,7 +266,7 @@ fn notes_come_oldest_first_then_the_answers_to_the_models_own_questions() {
 
 #[test]
 fn a_message_becomes_a_note_from_its_sender_and_handles_say_nothing() {
-    let handle = InboundPart::Text(Reveal::Handle(docket_core::Handle(3)));
+    let handle = InboundPart::Text(Reveal::Handle(docket_vocab::Handle(3)));
     let table = [
         (
             line(AgentRef::User, vec![text("stop after this page")]),

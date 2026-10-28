@@ -9,6 +9,9 @@ repository.workspace = true
 publish.workspace = true
 
 [dependencies]
+docket-gate-wire = { workspace = true }
+docket-wire = { workspace = true }
+porter-ids = { workspace = true }
 cua-action = { workspace = true }
 cua-desktop = { workspace = true }
 maskcap = { workspace = true }
@@ -32,3 +35,7 @@ thiserror = { workspace = true }
 
 [lints]
 workspace = true
+
+[dev-dependencies]
+docket-permissions-core = { workspace = true }
+porter-capability = { workspace = true }

@@ -5,10 +5,11 @@ use cua_desktop::{
     ToplevelState, WindowTitle, WindowTrust, WorkspaceRef, WorkspaceShown,
 };
 use desktop_client::geometry::Rect;
-use desktop_client::quire::{QuireEvent, QuireWindow, SpacePlace, WindowChange, WindowEvent};
+use desktop_client::quire::{QuireWindow, SpacePlace, WindowChange, WindowEvent};
 use desktop_client::toplevel::{Toplevel, ToplevelEvent, ToplevelFlag};
 use desktop_client::{DesktopEvent as Raised, DesktopState, Protocol, ToplevelKey};
-use porter_core::{AppName, Px};
+use porter_core::AppName;
+use porter_ids::Px;
 use std::collections::BTreeMap;
 
 /// The identifier of every announced toplevel that has one, by the client's key. The key of a
@@ -164,10 +165,10 @@ pub(super) fn events(raised: &[Raised], before: &Idents, now: &Idents) -> Vec<De
             Raised::Toplevel(ToplevelEvent::Closed(key)) => {
                 before.get(key).cloned().map(DesktopEvent::WindowClosed)
             }
-            Raised::Quire(QuireEvent::Window(WindowEvent::Changed {
+            Raised::Window(WindowEvent::Changed {
                 key,
                 change: WindowChange::Geometry(g),
-            })) => now
+            }) => now
                 .get(key)
                 .map(|ident| DesktopEvent::GeometryChanged(ident.clone(), rect(g.rect))),
             _ => None,
@@ -214,7 +215,7 @@ mod tests {
     }
 
     fn quire(event: WindowEvent) -> Raised {
-        Raised::Quire(QuireEvent::Window(event))
+        Raised::Window(event)
     }
 
     fn placed(n: u64, place: SpacePlace, rect: Rect) -> Vec<Raised> {
@@ -305,12 +306,12 @@ mod tests {
         let space = |n: u64, id: &str| {
             let key = SpaceKey::new(n);
             vec![
-                Raised::Quire(QuireEvent::Space(SpaceEvent::Opened(key))),
-                Raised::Quire(QuireEvent::Space(SpaceEvent::Changed {
+                Raised::Space(SpaceEvent::Opened(key)),
+                Raised::Space(SpaceEvent::Changed {
                     key,
                     change: SpaceChange::Id(SpaceId::new(id)),
-                })),
-                Raised::Quire(QuireEvent::Space(SpaceEvent::Done(key))),
+                }),
+                Raised::Space(SpaceEvent::Done(key)),
             ]
         };
         let workspace = |n: u64, id: &str, flags: BTreeSet<WorkspaceFlag>| {

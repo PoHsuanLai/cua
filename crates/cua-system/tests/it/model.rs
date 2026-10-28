@@ -6,12 +6,14 @@ use crate::scripted::*;
 use cua_action::{DeviceSize, PixelFormat};
 use cua_run::{CuaModel, CuaModelError, ModelReach, StepEvent};
 use cua_system::InferdCuaModel;
-use porter_core::capability::CuaEnv;
-use porter_core::{DataClass, Need, Tier};
+use porter_capability::CuaEnv;
+use porter_capability::Tier;
+use porter_core::DataClass;
 use porter_infer::{
     AttachIndex, ClientFrame, CuaStepReply, FrameLayout, ImageSource, InferEvent, InferRefusal,
     InferReply, InferRequest, ModelError, Readiness,
 };
+use porter_match::Need;
 use rustix::fs::SealFlags;
 use std::collections::BTreeSet;
 

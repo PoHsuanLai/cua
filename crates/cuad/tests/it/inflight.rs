@@ -32,9 +32,10 @@ impl CuaModel for Mute {
 
     fn usage(&self) -> TokenUsage {
         TokenUsage {
-            input: porter_core::Tokens(0),
-            output: porter_core::Tokens(0),
-            cached: porter_core::Tokens(0),
+            input: porter_ids::Tokens(0),
+            output: porter_ids::Tokens(0),
+            cached: porter_ids::Tokens(0),
+            charge: None,
         }
     }
 

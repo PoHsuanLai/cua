@@ -10,7 +10,8 @@ use a11y_tree::{
 };
 use cua_action::{Coord, Point, Rect, Size};
 use cua_desktop::{Pid, WindowTitle};
-use porter_core::{AppName, Count};
+use porter_core::AppName;
+use porter_ids::Count;
 use prov::{Integrity, SpaceId};
 use std::collections::HashMap;
 

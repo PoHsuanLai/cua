@@ -10,7 +10,8 @@ use crate::state::CuaOutcome;
 use cua_action::{Extracted, Summary};
 use cua_desktop::Ms;
 use docket_core::{Delivery, DraftPart, MessageDraft, SendRefusal};
-use porter_core::{Count, MicroUsd};
+use porter_ids::Count;
+use porter_infer::ChargeTotal;
 use prov::{MAX_PARTS, MAX_TEXT_BYTES, MessageKind, MessageText, ReportStatus};
 use serde::{Deserialize, Serialize};
 
@@ -35,8 +36,8 @@ pub struct RunEnd {
     pub steps: Count,
     /// Active time used.
     pub active: Ms,
-    /// Money spent.
-    pub cost: MicroUsd,
+    /// The charges the providers reported, and the replies that reported none.
+    pub charges: ChargeTotal,
     /// The report to the requester.
     pub report: ReportDelivery,
 }
@@ -206,13 +207,13 @@ mod tests {
             outcome: CuaOutcome::Done,
             steps: Count(9),
             active: Ms(41_000),
-            cost: MicroUsd(0),
+            charges: ChargeTotal::default(),
             report: ReportDelivery::Refused(SendRefusal::Halted),
         };
         let json = serde_json::to_string(&end).unwrap();
         assert_eq!(
             json,
-            r#"{"outcome":{"kind":"done"},"steps":9,"active":41000,"cost":0,"report":{"kind":"refused","v":{"kind":"halted"}}}"#
+            r#"{"outcome":{"kind":"done"},"steps":9,"active":41000,"charges":{"reported":{"amount":"0","currency":"USD"},"unpriced":0},"report":{"kind":"refused","v":{"kind":"halted"}}}"#
         );
         assert_eq!(serde_json::from_str::<RunEnd>(&json).unwrap(), end);
     }

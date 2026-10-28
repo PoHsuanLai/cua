@@ -14,7 +14,8 @@ use maskcap::{
     WindowCapture,
 };
 use maskcap_wayland::{QuireMaskedCapture, StampClock, StockToplevelCapture};
-use porter_core::{AppName, Px};
+use porter_core::AppName;
+use porter_ids::Px;
 use std::collections::BTreeSet;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};

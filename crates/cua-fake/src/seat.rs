@@ -1,7 +1,7 @@
 //! A seat that records what it is asked to do.
 
 use cua_desktop::{EiSocket, GlobalRect, LeaseGrant, LeaseId, SeatIsolation, Stamp};
-use porter_core::Count;
+use porter_ids::Count;
 use seat_input::{
     AgentSeat, Emulation, InputOp, InputOrigin, InputReceipt, Keymap, SeatCaps, SeatError,
 };

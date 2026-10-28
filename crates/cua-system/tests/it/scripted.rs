@@ -9,17 +9,19 @@ use cua_action::{
 };
 use cua_run::{FrameAttachment, StepEvent, StepSink};
 use maskcap::PixelBuf;
+use porter_capability::CuaEnv;
+use porter_capability::{Locality, ModelId, Tier};
 use porter_client::{Transport, TransportError};
-use porter_core::capability::CuaEnv;
-use porter_core::{
-    AccountId, AccountsReply, AccountsRequest, DataClass, Locality, ModelId, Need, Tier, Tokens,
-};
+use porter_core::{AccountId, DataClass};
+use porter_ids::Tokens;
 use porter_infer::{
     AttachIndex, ClientFrame, CuaBegin, CuaStepReply, CuaStepRequest, FrameImage, FrameLayout,
     ImageSource, InferEvent, InferReply, InferSession, MaskedRegions, NoteFrom, OpenOptions,
     PlaceRow, Readiness, ServedBy, SessionError, StepIndex, StepNote, TokenUsage, TreeText,
     WindowGeometry,
 };
+use porter_match::Need;
+use porter_wire::{AccountsReply, AccountsRequest};
 use rustix::fs::{SealFlags, fcntl_get_seals};
 use std::collections::{BTreeSet, VecDeque};
 use std::os::fd::OwnedFd;
@@ -235,6 +237,7 @@ pub(crate) fn usage(n: u32) -> TokenUsage {
         input: Tokens(n),
         output: Tokens(1),
         cached: Tokens(0),
+        charge: None,
     }
 }
 

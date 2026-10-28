@@ -4,7 +4,7 @@ use crate::model::{A11yNode, A11ySnapshot, NodeBudget, NodeState, Parent, Trunca
 use crate::render::is_secret;
 use crate::selector::{NameMatch, NodeSelector, Resolution, SelectorStep};
 use cua_action::{NodeId, Rect, WindowSpace};
-use porter_core::Count;
+use porter_ids::Count;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 

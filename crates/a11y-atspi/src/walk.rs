@@ -9,7 +9,8 @@ use a11y_tree::{
 };
 use cua_action::{Coord, NodeId, Point, Rect, Size, WindowSpace};
 use cua_desktop::{Pid, Stamp};
-use porter_core::{Count, DataClass};
+use porter_core::DataClass;
+use porter_ids::Count;
 use prov::{Label, Labelled, Source};
 use std::collections::VecDeque;
 

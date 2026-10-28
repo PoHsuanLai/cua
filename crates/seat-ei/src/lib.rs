@@ -9,7 +9,7 @@ mod conn;
 
 use actor::{Cmd, Link};
 use cua_desktop::{EiSocket, GlobalRect, LeaseGrant, LeaseId, SeatIsolation};
-use porter_core::Count;
+use porter_ids::Count;
 use seat_input::InputOp;
 use seat_input::Keymap;
 use seat_input::SeatCaps;

@@ -4,11 +4,12 @@ use cua_bus::{ControlRefusal, CuaRecord};
 use cua_desktop::ToplevelIdent;
 use cua_run::{DefaultMode, Switch};
 use docket_core::{
-    AgentReach, AppRefusal, EntityRef, FailText, Follow, Hit, Invocation, Manifest, ManifestError,
-    Outcome, ParamName, Preview, SuggestAsk, UndoFault, UndoToken, Undoable, ValidManifest, Value,
-    validate,
+    AppRefusal, FailText, Follow, Hit, Invocation, Outcome, Preview, SuggestAsk, UndoFault,
+    Undoable,
 };
+use docket_manifest::{AgentReach, Manifest, ManifestError, ValidManifest, validate};
 use docket_provider::IntentProvider;
+use docket_vocab::{EntityRef, ParamName, UndoToken, Value};
 use porter_core::AppName;
 use prov::{
     Actor, AgentRef, EntityId, EntityKey, EntityKind, Label, Labelled, RunId, SessionId, SpaceId,
@@ -347,7 +348,7 @@ impl IntentProvider for CuaProvider {
 mod tests {
     use super::*;
     use crate::reasons::words_of;
-    use docket_core::{ArgSink, Lasting};
+    use docket_manifest::{ArgSink, Lasting};
     use prov::Effect;
 
     #[test]

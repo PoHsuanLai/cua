@@ -4,7 +4,7 @@
 
 use cua_desktop::BackendKind;
 use cua_run::CuaConfig;
-use porter_core::Tier;
+use porter_capability::Tier;
 use serde::{Deserialize, Serialize};
 
 /// Which backend cuad uses.

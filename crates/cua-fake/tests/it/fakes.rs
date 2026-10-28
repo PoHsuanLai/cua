@@ -14,14 +14,14 @@ use cua_run::{
     CuaModel, CuaModelError, FrameAttachment, GateCheck, GateEvent, GateLink, MessageLink,
     RecordSink, StepSink,
 };
-use docket_core::{
-    CallRefusal, ConfirmEnd, CuaAsk, DraftPart, EffectBasis, GateAnswer, GrantAnswer, GrantAsk,
-    InboxAsk, MessageDraft,
-};
+use docket_core::{CallRefusal, ConfirmEnd, DraftPart, InboxAsk, MessageDraft};
+use docket_gate_wire::{CuaAsk, EffectBasis, GateAnswer};
+use docket_wire::{GrantAnswer, GrantAsk};
 use maskcap::{
     CaptureError, CaptureSession, Frame, FrameSeq, MaskReport, PixelBuf, WholeMask, WindowCapture,
 };
-use porter_core::{AppName, DataClass, Px};
+use porter_core::{AppName, DataClass};
+use porter_ids::Px;
 use porter_infer::{CuaBegin, CuaStepReply, StepIndex};
 use prov::{
     Address, AgentRef, Confidentiality, Effect, Integrity, Label, MessageKind, MessageText, RunId,
@@ -119,7 +119,7 @@ fn the_fake_gate_answers_from_its_table_and_remembers_what_it_was_asked() {
     let grant = GrantAsk {
         app: app(),
         space: space(),
-        level: docket_core::Level::AlwaysAllow,
+        level: docket_permissions_core::Level::AlwaysAllow,
         run: None,
     };
     assert_eq!(
@@ -329,7 +329,7 @@ fn the_scripted_model_plays_its_script_then_fails_fatally_and_remembers_the_goal
     let mut model = ScriptedModel::new(vec![Ok(reply.clone()), Err(CuaModelError::Transient)]);
     let begin = CuaBegin::new(
         "download the invoice".into(),
-        porter_core::capability::CuaEnv::Desktop,
+        porter_capability::CuaEnv::Desktop,
     );
     ready(model.begin(begin.clone())).unwrap();
     assert_eq!(model.begun(), &[begin]);

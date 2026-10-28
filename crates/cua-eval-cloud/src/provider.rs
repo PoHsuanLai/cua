@@ -10,15 +10,18 @@ use crate::request::{RequestFault, SamplingFrom, chat};
 use crate::watch::Watch;
 use model_provider as sp;
 use model_provider::{Provider, ProviderError, TurnEvent, TurnSink};
+use porter_capability::LlmFeature;
+use porter_capability::Tier;
 use porter_client::{OpenOptions, Transport, TransportError};
-use porter_core::capability::LlmFeature;
+use porter_core::DataClass;
 use porter_core::consent::Usage;
-use porter_core::need::LlmNeed;
-use porter_core::{DataClass, Need, Tier, Tokens};
+use porter_ids::Tokens;
 use porter_infer::{
     ClientFrame, InferEvent, InferRefusal, InferReply, InferRequest, InferSession, ModelError,
     StopReason,
 };
+use porter_match::LlmNeed;
+use porter_match::Need;
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
@@ -189,6 +192,7 @@ impl<T> InferdProvider<T> {
                 self.watch.answered(
                     u64::from(chat.usage.input.0),
                     u64::from(chat.usage.output.0),
+                    chat.usage.charge,
                 );
                 Ok(sp::TurnEnd {
                     stop: stop_of(chat.stop),
@@ -197,6 +201,7 @@ impl<T> InferdProvider<T> {
                         output: sp::Tokens(chat.usage.output.0),
                         cached: sp::Tokens(chat.usage.cached.0),
                         images: sp::ImageCount(0),
+                        charge: chat.usage.charge,
                     },
                     served: sp::ModelName(chat.served.model.to_string()),
                     first_token: None,

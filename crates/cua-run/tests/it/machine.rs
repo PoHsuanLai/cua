@@ -15,7 +15,7 @@ use cua_run::{
     ActionQueue, CuaConfig, CuaSignal, Repeats, Run, RunEffect, RunEnv, RunInput, RunPhase,
     RunTrack,
 };
-use docket_core::GrantAnswer;
+use docket_wire::GrantAnswer;
 use porter_core::{AppName, DataClass};
 use porter_infer::StepIndex;
 use prov::{
@@ -95,7 +95,7 @@ fn in_phase(phase: RunPhase, kind: BackendKind) -> Run {
         task: task(window(), RunMode::InPlace),
         env: env(kind),
         phase,
-        used: BudgetUse::NONE,
+        used: BudgetUse::none(),
         taint: screen_label(),
         frames: Repeats::default(),
         pending: ActionQueue::default(),
@@ -161,14 +161,14 @@ fn a_started_run_asks_for_the_consent_first() {
         vec![RunEffect::Grant {
             app: app(),
             space: space(),
-            level: docket_core::Level::AlwaysAsk,
+            level: docket_permissions_core::Level::AlwaysAsk,
         }]
     );
 }
 
 #[test]
 fn the_grant_asks_at_the_level_the_environment_carries() {
-    let level = docket_core::Level::AlwaysAllow;
+    let level = docket_permissions_core::Level::AlwaysAllow;
     let (_, effects) = Run::start(
         run_id(),
         task(window(), RunMode::InPlace),

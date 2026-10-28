@@ -11,7 +11,8 @@ use cua_run::{GateCheck, GateEvent, GateLink, LinkError};
 use docket_client::{
     ClientError, GateEvent as Heard, GateSteer, GateWatch, Intents, Transport, TransportError,
 };
-use docket_core::{CuaAsk, GrantAnswer, GrantAsk, IntentsReply, IntentsRequest, SessionOpen};
+use docket_gate_wire::CuaAsk;
+use docket_wire::{GrantAnswer, GrantAsk, IntentsReply, IntentsRequest, SessionOpen};
 use prov::{AgentRef, RunId, SessionId, SpaceId};
 use std::sync::Arc;
 
@@ -184,9 +185,9 @@ mod tests {
     use super::*;
     use cua_action::{CuaAction, RunMode, WindowSpace, WindowTrust};
     use docket_client::{Boxed, Events, Said, Steering, Watched};
-    use docket_core::{
-        CallProgress, CallRefusal, ConfirmEnd, EffectBasis, GateAnswer, WireRefusal,
-    };
+    use docket_core::{CallProgress, CallRefusal, ConfirmEnd};
+    use docket_gate_wire::{EffectBasis, GateAnswer};
+    use docket_wire::WireRefusal;
     use prov::ConfirmId;
     use prov::{Effect, Label, RunId, SpaceId};
     use std::collections::VecDeque;
@@ -222,7 +223,7 @@ mod tests {
         GrantAsk {
             app: porter_core::AppName::parse("org.quire.Mail").unwrap(),
             space: SpaceId::parse("work").unwrap(),
-            level: docket_core::Level::AlwaysAllow,
+            level: docket_permissions_core::Level::AlwaysAllow,
             run: None,
         }
     }
@@ -442,10 +443,10 @@ mod tests {
     async fn the_runs_session_is_opened_for_its_run_and_space() {
         let transport = watching(vec![]);
         *transport.opened.lock().expect("lock") =
-            Some(IntentsReply::SessionOpened(docket_core::SessionOpened {
+            Some(IntentsReply::SessionOpened(docket_wire::SessionOpened {
                 session: SessionId::parse("s-7").unwrap(),
                 task: prov::TaskId::parse("t-7").unwrap(),
-                mode: docket_core::Mode::Auto,
+                mode: docket_permissions_core::Mode::Auto,
             }));
         let gate = IntentsGate::over(transport);
         let run = RunId::parse("r-1").unwrap();

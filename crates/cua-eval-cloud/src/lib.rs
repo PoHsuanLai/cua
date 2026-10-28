@@ -8,7 +8,8 @@
 //! reads the reply, and the one model turn in between is a chat turn with the screenshot inline,
 //! asked of inferd as `Need::Llm` on data class `Screen` ([`provider::InferdProvider`]).
 
-pub mod entry;
+#[cfg(test)]
+mod entry;
 pub mod error;
 pub mod isolation;
 pub mod provider;

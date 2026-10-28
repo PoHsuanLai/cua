@@ -17,7 +17,7 @@ use cua_bus::{
 };
 use cua_desktop::{Ms, Stamp};
 use maskcap::{DamageAt, FrameWant, Settle, settle};
-use porter_core::Count;
+use porter_ids::Count;
 use porter_infer::StepIndex;
 use seat_input::{InputReceipt, SeatError};
 

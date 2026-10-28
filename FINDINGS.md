@@ -223,7 +223,7 @@ the machine under it. What was decided:
   `Paused` ends `Blocked(PolicyDenials)`; `Halted` pauses the run; a router that cannot be asked
   blocks the run (fail closed). Active time is counted between inputs in active phases only (a
   message moves no clock); the rate limit is strict (`actions_per_min` of 0 allows none); spend is
-  over when it is strictly greater (a local model costs nothing).
+  over when the reported charges are strictly greater (a local model reports none).
 - **Reports go before the record of the end**, so `CuaRecord::Finished.report` can name the message
   that carried them (`Exec` fills it). A report for `Progress` is sent only when the run waits for
   the person: a question, a pause.
@@ -266,9 +266,8 @@ the machine under it. What was decided:
   `cuad/tests/it/{supervisor,inflight}.rs` run the supervisor over the fakes with paused time.
 - **Not done:** `CuaProvider` offers no `dry_run`, search or suggest; procedures
   (`ProcedureUse::{Hint, Replay}`) are carried and not used; `data_in` is not sent to the model;
-  inferd reports no price with the token usage, so a reply from a provider's servers counts one
-  micro-dollar (`exec/cost.rs`): a spend cap of zero ("local models only") stops a run on a cloud
-  model, and a larger cap is not yet measured in money.
+  money is only what the provider reports (Round B, below): a spend cap of zero ("local models
+  only") stops a run on a cloud reply, and a larger cap meets only reported charges.
 
 
 ## The f4-cua-seat fill (2026-10-06)
@@ -708,3 +707,27 @@ authorise step), `Verb` (serialised in the run track: F18),
 alias for twenty bounds), `Reason`/`Cause` (F8) and the a11y-tree/maskcap option-shaped enums
 (F10; they re-record goldens), the keys table of cua-eval (F22), and F3 (waits for the porter
 re-pin).
+
+## Round B: spend is what the provider reports (2026-10-28)
+
+Dollars come only from the reply: `TokenUsage.charge` (a `Money` the provider reported) and
+nothing else. No price table, no estimate, no per-reply stand-in; `exec/cost.rs` and its
+one-micro-dollar charge for a cloud reply are gone.
+
+- `RunBudget.spend` is a `Money` (proposed: zero US dollars); `BudgetUse.spend`, `RunEnd.charges`
+  and `CuaRecord::Finished.charges` are a `porter_infer::ChargeTotal` (the reported sum plus the
+  count of replies that reported none). The stored settings key stays `cua.budget.spend_microusd`
+  (and `spend_microusd` in task files): millionths of a US dollar, read as `Money`.
+- The check is unchanged in order and strictness: after each reply is added, the run stops when
+  the reported sum is strictly greater than the cap (same currency only). A reply that reported
+  nothing never adds to the sum.
+- **A zero spend cap still means local models only**, now stated as a rule instead of faked with a
+  charge: a reply served from the cloud (`ModelReply.cloud`, from the `ServedBy` locality) stops the
+  run with `BudgetOut(Spend)` when the cap is zero, whatever the reply reported. A cap above zero
+  never stops on an unpriced reply.
+- `cua-eval-cloud` reports the charge the provider reported, summed from the turn usage ("not
+  reported" when no turn carried one). `Price`, `price_of`, `RunError::NoPrice` and the
+  `--ledger` read of inferd's old `micro_usd` ledger rows are removed.
+- `BudgetUse::NONE` is `BudgetUse::none()` (`ChargeTotal::default()` is not const). The JSON of
+  `RunBudget`, `BudgetUse`, `RunEnd` and `Finished` changes shape (`spend` and `charges` are
+  objects); sill reads `RunEnd` and `BudgetBody` at the same pin.

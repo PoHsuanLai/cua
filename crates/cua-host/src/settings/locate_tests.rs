@@ -50,7 +50,10 @@ fn the_locator_reads_the_first_file_of_the_configuration_directories() {
     let locator = locator_for("/home", "/etc");
     assert_eq!(locator.watch_dir(), Some(PathBuf::from("/home/cua")));
     let value = locator.read(&files, &base()).value;
-    assert_eq!(value.config.budget.spend, porter_core::MicroUsd(900));
+    assert_eq!(
+        value.config.budget.spend,
+        model_provider::Money::usd(rust_decimal::Decimal::new(900, 6))
+    );
     // The first file wins whole: the later directory's other keys are not merged in.
     assert_eq!(value.config.enabled, Switch::Off);
     let none = Locator::from_env(&|_: &str| None::<String>);
@@ -67,7 +70,7 @@ fn the_locator_reads_the_first_file_of_the_configuration_directories() {
     let loaded = locator_for("/blocked", "/etc").read(&files, &base());
     assert_eq!(
         loaded.value.config.budget.spend,
-        porter_core::MicroUsd(1900)
+        model_provider::Money::usd(rust_decimal::Decimal::new(1900, 6))
     );
     assert_eq!(loaded.fallbacks.len(), 1);
     assert!(matches!(loaded.fallbacks[0].why, Why::Unreadable(_)));

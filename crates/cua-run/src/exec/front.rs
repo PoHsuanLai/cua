@@ -40,7 +40,8 @@ mod tests {
         GlobalCoord, GlobalRect, Pid, ToplevelState, WindowTitle, WindowTrust, WorkspaceRef,
         WorkspaceShown,
     };
-    use porter_core::{AppName, Px};
+    use porter_core::AppName;
+    use porter_ids::Px;
     use std::collections::BTreeSet;
 
     fn window(ident: &str, app: &str, parent: Option<&str>) -> ToplevelInfo {

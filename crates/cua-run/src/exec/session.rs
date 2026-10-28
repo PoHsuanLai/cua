@@ -1,6 +1,5 @@
 //! The lease and what hangs on it: the seat, the capture session, the model's session, input.
 
-use super::cost::reply_cost;
 use super::fit::{Fit, takes};
 use super::phase::{Bound, PHASE_LIMIT, bounded};
 use super::{Exec, Outlet, Progress, Step, StepNote};
@@ -14,6 +13,7 @@ use cua_desktop::{
 };
 use cua_desktop::{ToplevelIdent, ToplevelInfo};
 use maskcap::{CaptureError, WindowCapture};
+use porter_capability::Locality;
 use porter_infer::{CuaBegin, CuaStepRequest};
 use seat_input::{AgentSeat, Emulation, InputOp, PlannedAction, SeatError, plan};
 
@@ -310,7 +310,7 @@ impl<S: Seams> Exec<'_, S> {
         if !self.model_open {
             let begin = CuaBegin::new(
                 crate::briefing::task_line(&self.task),
-                porter_core::capability::CuaEnv::Desktop,
+                porter_capability::CuaEnv::Desktop,
             )
             .with_hints(self.hints.clone());
             if let Err(error) = model.begin(begin).await {
@@ -326,11 +326,18 @@ impl<S: Seams> Exec<'_, S> {
             out.input(RunInput::Routed(served));
         }
         out.input(match reply {
-            Ok(reply) => RunInput::ModelReplied(Box::new(ModelReply {
-                reply,
-                usage: model.usage(),
-                cost: reply_cost(model.served().as_ref()),
-            })),
+            Ok(reply) => {
+                let usage = model.usage();
+                let cloud = model
+                    .served()
+                    .is_some_and(|s| matches!(s.locality, Locality::Cloud { .. }));
+                RunInput::ModelReplied(Box::new(ModelReply {
+                    reply,
+                    usage,
+                    charge: usage.charge,
+                    cloud,
+                }))
+            }
             Err(error) => failed_input(&*model, error),
         });
     }

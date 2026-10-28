@@ -8,9 +8,11 @@ use crate::screen::ScreenRead;
 use crate::seams::LinkError;
 use cua_bus::QuestionId;
 use cua_desktop::{DesktopError, DesktopEvent, LeaseGrant};
-use docket_core::{GateAnswer, GrantAnswer, InboundLine};
+use docket_core::InboundLine;
+use docket_gate_wire::GateAnswer;
+use docket_wire::GrantAnswer;
 use maskcap::{CaptureError, DamageAt};
-use porter_core::MicroUsd;
+use model_provider::Money;
 use porter_infer::{CuaStepReply, ServedBy, TokenUsage};
 use prov::{ConfirmId, Labelled};
 use seat_input::{InputReceipt, SeatError};
@@ -28,15 +30,18 @@ pub enum Moved {
     Focus,
 }
 
-/// A model's answer to one step, with what it cost.
+/// A model's answer to one step, with the charge the provider reported for it.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ModelReply {
     /// The reply, in window space.
     pub reply: CuaStepReply,
     /// Tokens used.
     pub usage: TokenUsage,
-    /// Money spent (zero on a local model).
-    pub cost: MicroUsd,
+    /// What the provider said the reply cost; `None` when it said nothing (a local model).
+    pub charge: Option<Money>,
+    /// Whether the reply was served from a provider's servers. A run whose spend cap is zero
+    /// ("local models only") stops on one, whatever it reported.
+    pub cloud: bool,
 }
 
 /// The success check's answer.

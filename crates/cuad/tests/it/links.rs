@@ -12,10 +12,9 @@ use almanac_service::Caller;
 use cua_run::{GateCheck, GateEvent, GateLink, MessageLink, RecordSink};
 use cuad::{DaemonLinks, IntentsGate};
 use docket_client::{DbusTransport, Intents};
-use docket_core::{
-    CallRefusal, ConfirmEnd, DraftPart, GateAnswer, GrantAnswer, GrantAsk, InboundPart, InboxAsk,
-    IntentsRequest, MessageDraft,
-};
+use docket_core::{CallRefusal, ConfirmEnd, DraftPart, InboundPart, InboxAsk, MessageDraft};
+use docket_gate_wire::GateAnswer;
+use docket_wire::{GrantAnswer, GrantAsk, IntentsRequest};
 use prov::{Address, AgentRef, Effect, MessageKind, MessageText, RunId, SessionId, SpaceScope};
 use std::sync::Arc;
 use zbus::Connection;
@@ -31,7 +30,7 @@ async fn the_gate_asks_the_person_once_per_app_and_then_runs_reads_and_asks_agai
         gate.grant(GrantAsk {
             app: mail(),
             space: work(),
-            level: docket_core::Level::AlwaysAllow,
+            level: docket_permissions_core::Level::AlwaysAllow,
             run: None,
         })
         .await,
@@ -57,7 +56,7 @@ async fn a_refused_consent_and_a_run_nobody_opened_are_the_routers_answers_not_e
         gate.grant(GrantAsk {
             app: mail(),
             space: work(),
-            level: docket_core::Level::AlwaysAllow,
+            level: docket_permissions_core::Level::AlwaysAllow,
             run: None,
         })
         .await,
@@ -79,7 +78,7 @@ async fn a_check_that_is_dropped_before_its_answer_leaves_the_gate_usable() {
     gate.grant(GrantAsk {
         app: mail(),
         space: work(),
-        level: docket_core::Level::AlwaysAllow,
+        level: docket_permissions_core::Level::AlwaysAllow,
         run: None,
     })
     .await
@@ -103,7 +102,7 @@ fn links(
         Memory::over(InProcess::new(memory, Caller::Cuad)),
         Intents::over(DbusTransport::new(connection)),
     )
-    .reading_time_from(|| porter_core::UnixSeconds(1_700_000_000))
+    .reading_time_from(|| porter_ids::UnixSeconds(1_700_000_000))
 }
 
 fn text_of(parts: &[InboundPart]) -> Vec<String> {

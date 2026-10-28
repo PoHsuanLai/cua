@@ -17,7 +17,7 @@ use cua_action::{
 };
 use cua_run::{CuaModel, CuaModelError, FrameAttachment, StepSink};
 use keyboard_types::Key;
-use porter_core::Tokens;
+use porter_ids::Tokens;
 use porter_infer::{CuaBegin, CuaStepReply, CuaStepRequest, ServedBy, TokenUsage};
 use std::collections::{BTreeSet, VecDeque};
 use std::str::FromStr;
@@ -313,6 +313,7 @@ impl CuaModel for ScriptModel {
             input: Tokens(0),
             output: Tokens(0),
             cached: Tokens(0),
+            charge: None,
         }
     }
 

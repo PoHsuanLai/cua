@@ -19,7 +19,7 @@ use model_provider::{
     Batching, CuaSupport, EngineExtras, ImageBytes, ImageDetail, ImageInput, Limits, ModelName,
     Provider, ProviderError, Reasoning, Sampling, ToolCallId, ToolParallelism,
 };
-use porter_core::Tokens;
+use porter_ids::Tokens;
 use porter_infer::{
     CuaBegin, CuaStepReply, CuaStepRequest, DropReason, DroppedAction, NoteFrom, PrevResult,
     ServedBy, StepNote, TokenUsage, TreeText,
@@ -141,6 +141,7 @@ impl<P: Provider> ProviderModel<P> {
                 input: Tokens(0),
                 output: Tokens(0),
                 cached: Tokens(0),
+                charge: None,
             },
         }
     }
@@ -278,6 +279,7 @@ impl<P: Provider + 'static> CuaModel for ProviderModel<P> {
                 input: Tokens(end.usage.input.0),
                 output: Tokens(end.usage.output.0),
                 cached: Tokens(0),
+                charge: end.usage.charge,
             };
             let turn = collect.finish(end);
             sink.event(StepEvent::ThoughtDelta(ThoughtText(said_in(&turn))));

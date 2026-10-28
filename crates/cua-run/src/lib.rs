@@ -33,7 +33,7 @@
 //! use cua_desktop::{BackendCaps, BackendKind, EiOrigin, LeaseGrant, LeaseId, Stamp};
 //! use cua_fake::scene;
 //! use cua_run::{RunEffect, RunInput, RunPhase};
-//! use docket_core::GrantAnswer;
+//! use docket_wire::GrantAnswer;
 //!
 //! let kind = BackendKind::KwinStock;
 //! let run = scene::started(kind);

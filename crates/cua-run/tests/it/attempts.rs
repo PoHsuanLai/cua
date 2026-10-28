@@ -12,9 +12,10 @@ use cua_bus::{
 };
 use cua_desktop::{BackendKind, Digest32};
 use cua_run::{Limits, Mark, Tried, Verb, digest, digest_within, stall_words, steps_words};
-use docket_core::EffectBasis;
-use porter_core::{AppName, Count, MicroUsd};
-use porter_infer::StepIndex;
+use docket_gate_wire::EffectBasis;
+use porter_core::AppName;
+use porter_ids::Count;
+use porter_infer::{ChargeTotal, StepIndex};
 use prov::{Effect, RunId, SessionId};
 use std::collections::BTreeSet;
 
@@ -68,7 +69,7 @@ fn finished(n: u32, outcome: CuaOutcome) -> CuaRecord {
         run: run(n),
         outcome,
         steps: Count(3),
-        cost: MicroUsd(0),
+        charges: ChargeTotal::default(),
         report: None,
     }
 }

@@ -4,7 +4,9 @@ use crate::desk::*;
 use cua_run::{GateCheck, GateEvent, GateLink, MessageLink, RecordSink};
 use cuad::IntentsGate;
 use docket_client::DbusTransport;
-use docket_core::{GateAnswer, GrantAnswer, GrantAsk, InboxAsk};
+use docket_core::InboxAsk;
+use docket_gate_wire::GateAnswer;
+use docket_wire::{GrantAnswer, GrantAsk};
 use prov::{AgentRef, Effect, SessionId};
 
 #[tokio::test]
@@ -12,14 +14,17 @@ async fn the_daemon_links_are_built_over_one_connection_and_each_reaches_its_nei
     let desk = desk(vec![yes()]).await;
     let planner = desk.as_companion().await;
     desk.open_sessions(&planner).await;
-    let links = cua_system::Links::over(&desk.cuad_connection().await, porter_core::Tier::Balanced);
+    let links = cua_system::Links::over(
+        &desk.cuad_connection().await,
+        porter_capability::Tier::Balanced,
+    );
     assert_eq!(
         links
             .gate
             .grant(GrantAsk {
                 app: mail(),
                 space: work(),
-                level: docket_core::Level::AlwaysAllow,
+                level: docket_permissions_core::Level::AlwaysAllow,
                 run: None,
             })
             .await,
@@ -58,7 +63,7 @@ async fn the_run_opens_its_own_session_once_and_a_withdrawn_check_leaves_the_gat
     assert_eq!(
         gate.open_session(&run(), &work(), &conversation).await,
         Err(cua_run::LinkError::Refused(
-            docket_core::WireRefusal::Malformed
+            docket_wire::WireRefusal::Malformed
         )),
         "a run has one session"
     );
@@ -66,7 +71,7 @@ async fn the_run_opens_its_own_session_once_and_a_withdrawn_check_leaves_the_gat
     gate.grant(GrantAsk {
         app: mail(),
         space: work(),
-        level: docket_core::Level::AlwaysAllow,
+        level: docket_permissions_core::Level::AlwaysAllow,
         run: None,
     })
     .await

@@ -1,7 +1,9 @@
 //! A router gate that answers from a table.
 
 use cua_run::{GateCheck, GateEvent, GateLink, LinkError};
-use docket_core::{CallRefusal, CuaAsk, GateAnswer, GrantAnswer, GrantAsk};
+use docket_core::CallRefusal;
+use docket_gate_wire::{CuaAsk, GateAnswer};
+use docket_wire::{GrantAnswer, GrantAsk};
 use prov::{ConfirmId, RunId, SessionId, SpaceId};
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};

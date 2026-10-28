@@ -13,6 +13,10 @@ name = "cua-eval"
 path = "src/main.rs"
 
 [dependencies]
+docket-gate-wire = { workspace = true }
+docket-wire = { workspace = true }
+porter-capability = { workspace = true }
+porter-ids = { workspace = true }
 cua-action = { workspace = true }
 cua-desktop = { workspace = true }
 chordkit = { workspace = true }
@@ -33,6 +37,7 @@ model-catalog = { workspace = true }
 model-http = { workspace = true, features = ["client"] }
 model-openai-compat = { workspace = true }
 model-provider = { workspace = true }
+rust_decimal = { workspace = true }
 vision-prep = { workspace = true, features = ["pixels"] }
 keyboard-types = { workspace = true }
 serde = { workspace = true }

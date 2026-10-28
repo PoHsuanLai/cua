@@ -5,7 +5,7 @@ use cua_desktop::{
     EiOrigin, GlobalCoord, GlobalRect, LeaseGrant, LeaseId, Ms, SeatIsolation, ToplevelInfo,
 };
 use cua_fake::{EisEvent, FakeEis, scene};
-use porter_core::Px;
+use porter_ids::Px;
 use seat_ei::EiSeat;
 use seat_input::{AgentSeat, Emulation, InputOp, InputOrigin, Keycode, Press, Produces, SeatError};
 

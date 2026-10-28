@@ -11,7 +11,8 @@ use cua_desktop::{
     BackendKind, DesktopEvent, GlowState, LeaseId, RevokeReason, Stamp, Suspend, ToplevelIdent,
 };
 use cua_run::{CheckResult, CuaModelError, RunEffect, RunInput, RunPhase, StepEvent};
-use docket_core::{GateAnswer, GrantAnswer};
+use docket_gate_wire::GateAnswer;
+use docket_wire::GrantAnswer;
 use maskcap::{CaptureError, DamageAt, DamageSource, Settle};
 use porter_infer::StepIndex;
 use prov::{ConfirmId, MessageKind, ReportStatus};
@@ -26,7 +27,7 @@ fn model_says() -> SuccessCheck {
 fn receipt(at: u64) -> InputReceipt {
     InputReceipt {
         lease: LeaseId(1),
-        ops: porter_core::Count(3),
+        ops: porter_ids::Count(3),
         text_path: None,
         origin: InputOrigin::SharedSeatViaEi,
         at: Stamp(at),
@@ -254,8 +255,8 @@ fn inferd_saying_who_answers_is_recorded_once() {
     let mut d = Drive::thinking(STOCK, task(model_says()), tree(vec![]));
     let served = porter_infer::ServedBy {
         account: porter_core::AccountId::parse("local").unwrap(),
-        model: porter_core::ModelId::parse("qwen3-vl").unwrap(),
-        locality: porter_core::Locality::OnDevice,
+        model: porter_capability::ModelId::parse("qwen3-vl").unwrap(),
+        locality: porter_capability::Locality::OnDevice,
     };
     d.feed(RunInput::Routed(served.clone()));
     assert_eq!(kinds(&d.effects), ["cua.run.routed"]);

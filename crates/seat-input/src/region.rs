@@ -80,7 +80,7 @@ impl RegionMap {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use porter_core::Px;
+    use porter_ids::Px;
 
     fn frame(x: i32, y: i32) -> GlobalRect {
         GlobalRect {

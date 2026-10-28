@@ -13,8 +13,8 @@ use cua_run::Clock;
 use cua_run::{LinkError, MessageLink, RecordSink};
 use docket_client::{ClientError, Intents, Transport as IntentsTransport, TransportError};
 use docket_core::{Delivery, InboundLine, InboxAsk, MessageDraft};
-use porter_core::UnixSeconds;
 use porter_core::{AppName, DataClass};
+use porter_ids::UnixSeconds;
 use prov::{Effect, EntityId, EntityKey, EntityKind, Label, RunId, SessionId, Source, SpaceId};
 use std::collections::BTreeMap;
 use std::sync::Mutex;
@@ -246,7 +246,9 @@ impl<M: MemoryTransport, I: IntentsTransport> MessageLink for DaemonLinks<M, I> 
 mod tests {
     use super::*;
     use cua_bus::{CancelledBy, CuaOutcome};
-    use porter_core::{Count, DataClass, MicroUsd};
+    use porter_core::DataClass;
+    use porter_ids::Count;
+    use porter_infer::ChargeTotal;
     use prov::{ActorKind, Confidentiality, Integrity, RunId, Source};
     use std::collections::BTreeSet;
 
@@ -275,7 +277,7 @@ mod tests {
             run: RunId::parse("r-1").unwrap(),
             outcome: CuaOutcome::Cancelled(CancelledBy::User),
             steps: Count(3),
-            cost: MicroUsd(0),
+            charges: ChargeTotal::default(),
             report: None,
         };
         let event = record_of(&ctx(), &record).expect("an event");

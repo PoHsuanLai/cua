@@ -8,9 +8,12 @@ use cua_action::{RunMode, WindowClass};
 use cua_bus::*;
 use cua_desktop::{BackendKind, Digest32, Ms, Stamp, ToplevelIdent, WindowTitle};
 use cua_types::{FrameDigest, InputOrigin, InputReceipt, SeatError, TextPath};
-use docket_core::{CallRefusal, EffectBasis};
-use porter_core::{AccountId, AppName, Count, DataClass, Locality, MicroUsd, ModelId, UnixSeconds};
-use porter_infer::{ServedBy, StepIndex};
+use docket_core::CallRefusal;
+use docket_gate_wire::EffectBasis;
+use porter_capability::{Locality, ModelId};
+use porter_core::{AccountId, AppName, DataClass};
+use porter_ids::{Count, UnixSeconds};
+use porter_infer::{ChargeTotal, ServedBy, StepIndex};
 use prov::{
     Address, AgentRef, Confidentiality, Effect, Integrity, Label, Labelled, MessageId, RunId,
     SessionId, Source, SpaceId, ThreadId,
@@ -160,7 +163,7 @@ fn every_record() -> Vec<(CuaRecord, &'static str)> {
                 run: run(),
                 outcome: CuaOutcome::Done,
                 steps: Count(9),
-                cost: MicroUsd(0),
+                charges: ChargeTotal::default(),
                 report: Some(MessageId::parse("m-88").unwrap()),
             },
             "cua.run.finished",
@@ -219,7 +222,7 @@ fn a_finished_record_pins_its_json() {
     let (record, _) = every_record().remove(7);
     assert_eq!(
         serde_json::to_string(&record).unwrap(),
-        r#"{"kind":"cua.run.finished","v":{"run":"r-17","outcome":{"kind":"done"},"steps":9,"cost":0,"report":"m-88"}}"#
+        r#"{"kind":"cua.run.finished","v":{"run":"r-17","outcome":{"kind":"done"},"steps":9,"charges":{"reported":{"amount":"0","currency":"USD"},"unpriced":0},"report":"m-88"}}"#
     );
 }
 
@@ -321,7 +324,7 @@ fn the_property_and_signal_bodies_round_trip() {
     });
     let budget = BudgetBody {
         limits: RunBudget::PROPOSED,
-        used: BudgetUse::NONE,
+        used: BudgetUse::none(),
     };
     let json = round_trip(&budget);
     assert!(json.starts_with(r#"{"limits":{"steps":40"#), "{json}");

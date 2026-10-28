@@ -109,7 +109,7 @@ pub(crate) fn finish(run: &mut Run, fx: &mut Vec<RunEffect>, outcome: CuaOutcome
         run: run.id.clone(),
         outcome,
         steps: run.used.steps,
-        cost: run.used.spend,
+        charges: run.used.spend,
         report: None,
     })));
     fx.push(RunEffect::Emit(CuaSignal::StateChanged(

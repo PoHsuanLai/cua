@@ -244,7 +244,6 @@ fn every_schema_key_is_read_by_the_daemon() {
 
 #[test]
 fn each_key_lands_in_the_typed_value_the_design_names() {
-    use porter_core::MicroUsd;
     let one = |p: &str, v: toml::Value| read(&doc(p, v), &base()).value.config;
     let int = toml::Value::Integer;
     let word = |w: &str| toml::Value::String(w.to_owned());
@@ -262,7 +261,7 @@ fn each_key_lands_in_the_typed_value_the_design_names() {
         one("cua.budget.spend_microusd", int(2_500_000))
             .budget
             .spend,
-        MicroUsd(2_500_000)
+        model_provider::Money::usd(rust_decimal::Decimal::new(2_500_000, 6))
     );
 }
 
@@ -301,7 +300,8 @@ fn a_bad_value_falls_back_for_that_key_alone() {
             if other == "cua.enabled" {
                 want.config.enabled = Switch::On;
             } else {
-                want.config.budget.spend = porter_core::MicroUsd(700);
+                want.config.budget.spend =
+                    model_provider::Money::usd(rust_decimal::Decimal::new(700, 6));
             }
             assert_eq!(loaded.value, want, "{p} = {value}");
             assert_eq!(loaded.fallbacks.len(), 1, "{p} = {value}");
@@ -313,7 +313,7 @@ fn a_bad_value_falls_back_for_that_key_alone() {
 #[test]
 fn a_fallback_is_the_base_value_not_the_default() {
     let mut start = base();
-    start.config.budget.spend = porter_core::MicroUsd(11);
+    start.config.budget.spend = model_provider::Money::usd(rust_decimal::Decimal::new(11, 6));
     let loaded = read("[cua.budget]\nspend_microusd = -1\n", &start);
     assert_eq!(loaded.value, start);
     assert_eq!(

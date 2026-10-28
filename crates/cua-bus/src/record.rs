@@ -18,9 +18,10 @@ use cua_action::RunMode;
 use cua_desktop::{BackendKind, Digest32};
 use cua_types::FrameDigest;
 use cua_types::InputReceipt;
-use docket_core::EffectBasis;
-use porter_core::{AppName, Count, MicroUsd, UnixSeconds};
-use porter_infer::{ServedBy, StepIndex};
+use docket_gate_wire::EffectBasis;
+use porter_core::AppName;
+use porter_ids::{Count, UnixSeconds};
+use porter_infer::{ChargeTotal, ServedBy, StepIndex};
 use prov::{Actor, AgentRole, Effect, Labelled, MessageId, RunId, SessionId, SpaceId};
 use serde::{Deserialize, Serialize};
 
@@ -206,8 +207,8 @@ pub enum CuaRecord {
         outcome: CuaOutcome,
         /// Steps taken.
         steps: Count,
-        /// Money spent.
-        cost: MicroUsd,
+        /// The charges the providers reported, and the replies that reported none.
+        charges: ChargeTotal,
         /// The report message the router delivered, if it did.
         report: Option<MessageId>,
     },

@@ -3,7 +3,7 @@
 //!
 //! ```text
 //! cua-eval-cloud --dir eval --entry eval/cloud-catalog/claude-sonnet-5.5.toml --label claude-sonnet-5.5 \
-//!     --tier balanced --max-steps 400 --ledger $XDG_STATE_HOME/quire/inferd/spend.json
+//!     --tier balanced --max-steps 400
 //! ```
 //!
 //! It must run on a bus with inferd (and accountd) already up, as a caller inferd serves: use
@@ -17,19 +17,21 @@ use cua_eval::flags::FlagError;
 use cua_eval::live::{Plan, Thinking};
 use cua_eval::report::{Report, render};
 use cua_eval::run::RunRecord;
-use cua_eval_cloud::entry::price_of;
 use cua_eval_cloud::error::{ArgError, RunError};
 use cua_eval_cloud::isolation;
 use cua_eval_cloud::provider::InferdProvider;
 use cua_eval_cloud::request::SamplingFrom;
 use cua_eval_cloud::watch::{Totals, Watch};
 use model_catalog::parse_entry;
+use porter_capability::LlmFeature;
+use porter_capability::Tier;
 use porter_client::{DbusTransport, OpenOptions, Transport};
-use porter_core::capability::LlmFeature;
+use porter_core::DataClass;
 use porter_core::consent::Usage;
-use porter_core::need::LlmNeed;
-use porter_core::{DataClass, Need, Tier, Tokens};
+use porter_ids::Tokens;
 use porter_infer::ServedBy;
+use porter_match::LlmNeed;
+use porter_match::Need;
 use std::collections::BTreeSet;
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -46,7 +48,6 @@ struct Args {
     sampling: SamplingFrom,
     repeat: u32,
     max_steps: u32,
-    ledger: Option<PathBuf>,
 }
 
 fn tier_of(word: &str) -> Result<Tier, FlagError> {
@@ -73,7 +74,6 @@ fn parse(mut argv: impl Iterator<Item = String>) -> Result<Args, ArgError> {
         sampling: SamplingFrom::Entry,
         repeat: 1,
         max_steps: 400,
-        ledger: None,
     };
     while let Some(flag) = argv.next() {
         let mut value = || {
@@ -86,7 +86,6 @@ fn parse(mut argv: impl Iterator<Item = String>) -> Result<Args, ArgError> {
             "--label" => args.label = value()?,
             "--task" => args.only.push(value()?),
             "--tier" => args.tier = tier_of(&value()?)?,
-            "--ledger" => args.ledger = Some(PathBuf::from(value()?)),
             "--repeat" => {
                 args.repeat = value()?
                     .parse()
@@ -134,28 +133,26 @@ fn parse(mut argv: impl Iterator<Item = String>) -> Result<Args, ArgError> {
     Ok(args)
 }
 
-/// What inferd's own ledger says was spent today, in micro-dollars: the largest daily total of any
-/// scope (every request is counted once on its account and once on its app).
-fn ledger_micro_usd(path: &std::path::Path) -> Option<u64> {
-    let text = std::fs::read_to_string(path).ok()?;
-    let doc: serde_json::Value = serde_json::from_str(&text).ok()?;
-    doc["rows"]
-        .as_array()?
-        .iter()
-        .filter(|row| row["period"] == "daily")
-        .filter_map(|row| row["spent"]["micro_usd"].as_u64())
-        .max()
-}
-
-fn dollars(micro: u64) -> String {
-    format!("${}.{:04}", micro / 1_000_000, (micro % 1_000_000) / 100)
+/// What the provider said the run cost, summed from the turns that carried a charge; "not
+/// reported" when none did.
+fn charged(totals: &Totals) -> String {
+    let charges = totals.charges;
+    if u64::from(charges.unpriced.0) >= totals.turns {
+        return "not reported".to_owned();
+    }
+    let reported = charges.reported;
+    let unpriced = match charges.unpriced.0 {
+        0 => String::new(),
+        n => format!(" over the turns that reported one ({n} did not)"),
+    };
+    format!("{} {}{unpriced}", reported.amount, reported.currency.code())
 }
 
 fn served() -> Result<ServedBy, RunError> {
     Ok(ServedBy {
         account: porter_core::AccountId::parse("openrouter")?,
-        model: porter_core::ModelId::parse("hosted")?,
-        locality: porter_core::Locality::Cloud { region: None },
+        model: porter_capability::ModelId::parse("hosted")?,
+        locality: porter_capability::Locality::Cloud { region: None },
     })
 }
 
@@ -223,7 +220,6 @@ async fn run(args: Args) -> Result<(), RunError> {
         source,
     })?;
     let entry = parse_entry(&text)?;
-    let price = price_of(&entry).ok_or(RunError::NoPrice)?;
     let plan = Plan::of(&text, &entry.id.0, args.thinking)?;
     let connection = zbus::Connection::session().await?;
     let transport = DbusTransport::over(connection.clone());
@@ -253,15 +249,9 @@ async fn run(args: Args) -> Result<(), RunError> {
     })
     .await?;
     let totals: Totals = watch.totals();
-    let estimate = price.of(totals);
-    let ledger = args
-        .ledger
-        .as_deref()
-        .and_then(ledger_micro_usd)
-        .map(dollars)
-        .unwrap_or_else(|| "unknown".to_owned());
+    let charged = charged(&totals);
     let engine = format!(
-        "{} through inferd on a private bus (Need::Llm with images on class screen, tier {:?}, the key held by accountd), thinking {:?}, sampling from the {}, {} run(s) per task; {} model turns, {} prompt and {} reply tokens, {} at the list price, inferd's ledger {}; {}; {}",
+        "{} through inferd on a private bus (Need::Llm with images on class screen, tier {:?}, the key held by accountd), thinking {:?}, sampling from the {}, {} run(s) per task; {} model turns, {} prompt and {} reply tokens, {} reported by the provider; {}; {}",
         entry.id.0,
         args.tier,
         args.thinking,
@@ -273,8 +263,7 @@ async fn run(args: Args) -> Result<(), RunError> {
         totals.turns,
         totals.input,
         totals.output,
-        dollars(estimate),
-        ledger,
+        charged,
         halted.map_or_else(
             || "ran to the end".to_owned(),
             |why| format!("STOPPED: {why}")

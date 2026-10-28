@@ -11,7 +11,7 @@ use cua_fake::scene::{click, finish, reply, task, user_goal, window};
 use cua_fake::{DesktopCall, FakePdp, Fixture, SeatEvent, Verdict};
 use cua_run::{CuaSignal, FORCED_YES, RunPhase};
 use cuad::Supervisor;
-use docket_core::GateAnswer;
+use docket_gate_wire::GateAnswer;
 use prov::{Labelled, MessageKind, ReportStatus};
 use seat_input::Emulation;
 
@@ -50,7 +50,7 @@ async fn end_to_end_scripted_run_done() {
     .unwrap();
     let (end, signals) = ended_with(&mut events, &id).await;
     assert_eq!(end.outcome, CuaOutcome::Done);
-    assert_eq!(end.steps, porter_core::Count(2));
+    assert_eq!(end.steps, porter_ids::Count(2));
     assert!(
         matches!(end.report, ReportDelivery::Sent(_)),
         "the report went out"
@@ -487,8 +487,8 @@ async fn the_callers_body_is_a_request_the_app_is_the_windows_and_limits_stay_in
         Err(ControlRefusal::BadTask)
     ));
     let mut greedy = task();
-    greedy.budget.steps = porter_core::Count(1_000_000);
-    greedy.budget.stall_frames = porter_core::Count(0);
+    greedy.budget.steps = porter_ids::Count(1_000_000);
+    greedy.budget.stall_frames = porter_ids::Count(0);
     let id = sup.start(CuaCaller::Companion, greedy).await.unwrap();
     let view = sup.view(&id).expect("live");
     assert_eq!(view.task.budget, cua_bus::RunBudget::PROPOSED);
@@ -502,13 +502,13 @@ async fn the_callers_body_is_a_request_the_app_is_the_windows_and_limits_stay_in
 
 #[tokio::test(start_paused = true)]
 async fn the_grant_carries_the_level_the_persons_row_for_the_app_gives() {
-    use docket_core::Level;
+    use docket_permissions_core::Level;
     let rows = [
         (cuad::AppAllow::Ask, Level::AlwaysAsk),
         (cuad::AppAllow::Always, Level::AlwaysAllow),
     ];
     for (allow, level) in rows {
-        let refused = docket_core::GrantAnswer::Refused(docket_core::ConfirmEnd::Refused);
+        let refused = docket_wire::GrantAnswer::Refused(docket_core::ConfirmEnd::Refused);
         let sup = supervisor(STOCK, vec![], FakePdp::scripted(vec![refused], vec![]));
         sup.apply_settings(&cuad::CuaSettings {
             config: sup.settings(),

@@ -10,7 +10,10 @@ use cua_fake::{
     run_harness_answering,
 };
 use cua_run::{CuaModelError, CuaSignal, FORCED_NO, FORCED_YES, RunPhase};
-use docket_core::{CallRefusal, ConfirmEnd, DenyCode, GateAnswer, GrantAnswer, InboundLine};
+use docket_core::{CallRefusal, ConfirmEnd, InboundLine};
+use docket_gate_wire::GateAnswer;
+use docket_permissions_core::DenyCode;
+use docket_wire::GrantAnswer;
 use porter_infer::{NoteFrom, PrevResult, StepNote};
 use prov::{Address, AgentRef, Crossing, MessageId, MessageKind, ReportStatus, ThreadId};
 use seat_input::Emulation;
@@ -118,8 +121,8 @@ fn input_goes_only_to_the_window_that_is_focused_and_visible() {
         change(&mut window);
         w.desktop = FakeDesktop::new(BackendKind::KwinStock, vec![window]);
         // The keys wait a moment for the focus: a clock that answers at once.
-        w.clock = cua_fake::FixedClock::at(cua_desktop::Stamp(0), porter_core::UnixSeconds(0))
-            .impatient();
+        w.clock =
+            cua_fake::FixedClock::at(cua_desktop::Stamp(0), porter_ids::UnixSeconds(0)).impatient();
         let report = block_on(run_harness(started(BackendKind::KwinStock), &mut w)).expect("ends");
         assert_eq!(outcome_of(&report), CuaOutcome::Done, "{name}");
         assert!(

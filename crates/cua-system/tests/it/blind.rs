@@ -3,7 +3,8 @@
 use crate::scripted::*;
 use cua_run::{CuaModel, CuaModelError, ModelSight};
 use cua_system::InferdCuaModel;
-use porter_core::{AccountId, ModelId};
+use porter_capability::ModelId;
+use porter_core::AccountId;
 use porter_infer::{
     Declined, DeclinedBecause, InferEvent, InferRefusal, InferReply, ModelRef, PlaceId, PlaceModel,
     PlaceRow, PlaceState, Takes,

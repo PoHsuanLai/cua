@@ -7,7 +7,7 @@ use almanac_client::Memory;
 use cua_host::DaemonLinks;
 use cua_host::IntentsGate;
 use docket_client::Intents;
-use porter_core::Tier;
+use porter_capability::Tier;
 use zbus::Connection;
 
 /// The links of the running daemon, as `SystemSeams` names their types.

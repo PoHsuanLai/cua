@@ -6,8 +6,9 @@ use cua_eval::flags::FlagError;
 use cua_eval::live::LiveError;
 use cua_eval::run::SetupError;
 use model_catalog::CatalogError;
+use porter_capability::Tier;
 use porter_client::TransportError;
-use porter_core::{CoreError, Tier};
+use porter_ids::IdError;
 use std::path::PathBuf;
 
 /// A command-line flag that cannot be used.
@@ -39,12 +40,9 @@ pub enum RunError {
     /// The catalogue entry did not parse.
     #[error("catalogue entry: {0}")]
     Catalog(#[from] CatalogError),
-    /// The entry names no OpenRouter route to price.
-    #[error("the entry has no OpenRouter reach")]
-    NoPrice,
     /// A fixed account or model id was refused.
     #[error(transparent)]
-    Id(#[from] CoreError),
+    Id(#[from] IdError),
     /// The session bus could not be reached.
     #[error("the bus: {0}")]
     Bus(#[from] zbus::Error),

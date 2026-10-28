@@ -15,7 +15,7 @@ use cua_action::ActionClass;
 use cua_bus::{ActionOutcome, ActionResult, FrameNote};
 use cua_bus::{CuaOutcome, CuaRecord, FailReason, RunBudgetKind};
 use maskcap::{FrameDigest, FrameWant, digest};
-use porter_core::Count;
+use porter_ids::Count;
 
 /// Whether one of the actions ended as done and sent input.
 fn input_ran(prev: &[ActionOutcome]) -> bool {

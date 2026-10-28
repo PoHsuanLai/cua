@@ -241,7 +241,7 @@ fn run_end<S: Seams>(exec: &Exec<'_, S>, run: &Run, outcome: CuaOutcome) -> RunE
         outcome,
         steps: run.used.steps,
         active: run.used.active,
-        cost: run.used.spend,
+        charges: run.used.spend,
         report: exec.report_delivery(),
     }
 }

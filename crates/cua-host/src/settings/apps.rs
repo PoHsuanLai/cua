@@ -1,6 +1,6 @@
 //! `cua.apps`: which apps computer use may drive and how it asks for each.
 
-use docket_core::Level;
+use docket_permissions_core::Level;
 use porter_core::AppName;
 
 /// How computer use is allowed for one app (design/22 section 3.29, QUESTIONS S9). It is the

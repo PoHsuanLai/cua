@@ -15,7 +15,7 @@ use cua_run::{
     CuaSignal, FORCED_NO, FORCED_YES, Held, ReaderMode, Run, RunEffect, RunInput, RunPhase,
     ScreenRead,
 };
-use docket_core::GateAnswer;
+use docket_gate_wire::GateAnswer;
 use porter_core::AppName;
 use porter_infer::StepIndex;
 use prov::{Label, Labelled};
@@ -303,7 +303,7 @@ fn reading() -> Drive {
         effects,
         at: Stamp(0),
     };
-    d.feed(RunInput::Granted(docket_core::GrantAnswer::Granted));
+    d.feed(RunInput::Granted(docket_wire::GrantAnswer::Granted));
     d.feed(RunInput::Leased(grant(STOCK)));
     d.feed(observed(
         1,

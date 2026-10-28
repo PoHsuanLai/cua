@@ -13,7 +13,8 @@ use cua_bus::{CuaTask, ReportRoute, RunBudget, RunOrigin, SuccessCheck, TaskTarg
 use cua_desktop::{BackendCaps, BackendKind, MaskWhere, Stamp, ToplevelIdent, ToplevelInfo};
 use cua_run::{CuaConfig, CuaModelError, Rules, Run, RunEnv};
 use maskcap::{Frame, FrameSeq, MaskReport, PixelBuf, WholeMask};
-use porter_core::{AppName, Px, UnixSeconds};
+use porter_core::AppName;
+use porter_ids::{Px, UnixSeconds};
 use porter_infer::CuaStepReply;
 use prov::{
     Address, AgentRef, Confidentiality, Integrity, Label, Labelled, RunId, SessionId, Source,

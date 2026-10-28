@@ -4,7 +4,8 @@
 //! this table to each other.
 
 use super::CuaSettings;
-use porter_core::MicroUsd;
+use model_provider::Money;
+use rust_decimal::Decimal;
 use serde::de::DeserializeOwned;
 use std::ops::RangeInclusive;
 
@@ -74,7 +75,8 @@ pub(crate) fn table() -> Vec<Key> {
             read_word(w).map(|v| s.config.accessibility = v).is_some()
         }),
         num("cua.budget.spend_microusd", 0..=1_000_000_000, |s, v| {
-            s.config.budget.spend = MicroUsd(u64::try_from(v).unwrap_or(u64::MAX));
+            // Millionths of a US dollar in the file; 0 is a cap of nothing (local models only).
+            s.config.budget.spend = Money::usd(Decimal::new(v, 6));
         }),
     ]
 }

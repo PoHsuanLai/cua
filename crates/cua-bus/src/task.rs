@@ -5,7 +5,7 @@ use crate::record::CuaRecord;
 use cua_action::RunMode;
 use cua_desktop::{Stamp, ToplevelIdent};
 use cua_types::NodeSelector;
-use docket_core::Value;
+use docket_vocab::Value;
 use porter_core::AppName;
 use prov::{Address, Labelled, MessageId, SessionId, SpaceId, ThreadId};
 use serde::{Deserialize, Serialize};
