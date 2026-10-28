@@ -38,4 +38,4 @@ pub use state::{
     BlockedOn, CancelledBy, CuaOutcome, FailReason, ModeGap, ModeSupport, RunStateSlug,
     backend_wire, modes_wire,
 };
-pub use task::{CuaTask, ProcedureUse, ReportRoute, RunOrigin, SuccessCheck, TaskTarget};
+pub use task::{CuaTask, ReportRoute, RunOrigin, SuccessCheck, TaskTarget};

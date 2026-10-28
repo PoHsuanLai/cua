@@ -41,21 +41,6 @@ impl ControlRefusal {
         ControlRefusal::BadTask,
         ControlRefusal::ModelUnavailable,
     ];
-
-    /// The D-Bus error name.
-    pub fn error_name(self) -> &'static str {
-        match self {
-            ControlRefusal::NotPermitted => "org.quire.Cua1.Error.NotPermitted",
-            ControlRefusal::WrongState => "org.quire.Cua1.Error.WrongState",
-            ControlRefusal::UnknownQuestion => "org.quire.Cua1.Error.UnknownQuestion",
-            ControlRefusal::Disabled => "org.quire.Cua1.Error.Disabled",
-            ControlRefusal::WindowUnknown => "org.quire.Cua1.Error.WindowUnknown",
-            ControlRefusal::LeaseHeld => "org.quire.Cua1.Error.LeaseHeld",
-            ControlRefusal::ModeUnsupported => "org.quire.Cua1.Error.ModeUnsupported",
-            ControlRefusal::BadTask => "org.quire.Cua1.Error.BadTask",
-            ControlRefusal::ModelUnavailable => "org.quire.Cua1.Error.ModelUnavailable",
-        }
-    }
 }
 
 /// Who is calling, derived by cuad from the connection (never sent in a body).
@@ -204,24 +189,6 @@ mod tests {
             if member != CuaMember::Runs {
                 assert!(!permits(CuaCaller::Other, member), "{member:?}");
             }
-        }
-    }
-
-    #[test]
-    fn every_refusal_has_its_error_name_and_the_names_are_distinct() {
-        let mut names: Vec<&str> = ControlRefusal::ALL.iter().map(|r| r.error_name()).collect();
-        for name in &names {
-            assert!(name.starts_with("org.quire.Cua1.Error."), "{name}");
-        }
-        names.sort_unstable();
-        names.dedup();
-        assert_eq!(names.len(), ControlRefusal::ALL.len());
-        for refusal in ControlRefusal::ALL {
-            let variant = format!("{refusal:?}");
-            assert_eq!(
-                refusal.error_name(),
-                format!("org.quire.Cua1.Error.{variant}")
-            );
         }
     }
 

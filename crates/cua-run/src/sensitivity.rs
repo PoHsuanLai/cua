@@ -7,6 +7,7 @@
 //! window class the app and title name, and the title. The window's trust is not a signal: the
 //! shell's own windows are not administration by default, and the router rules on them itself.
 
+use crate::rules::Rules;
 use crate::window_class::window_class_in;
 use a11y_tree::{A11yNode, Role, Sensitivity};
 use cua_action::WindowClass;
@@ -50,51 +51,37 @@ impl WindowSensitivity {
     }
 }
 
-/// Fragments of a window title that say a password or another secret is asked for. Lower case.
-const CREDENTIAL_TITLES: &[&str] = &[
-    "master password",
-    "enter password",
-    "enter your password",
-    "password required",
-    "unlock vault",
-    "unlock keyring",
-    "unlock your",
-];
-
-/// Fragments of a window title that say a privilege is being asked for. Lower case.
-const ADMIN_TITLES: &[&str] = &[
-    "authentication required",
-    "authorization required",
-    "administrator privileges",
-    "root password",
-];
-
 fn holds_secret(node: &A11yNode) -> bool {
     node.role == Role::PasswordText || node.sensitivity == Sensitivity::Secret
 }
 
-fn title_has(title: &str, fragments: &[&str]) -> bool {
+fn title_has(title: &str, fragments: &[String]) -> bool {
     let title = title.to_lowercase();
-    fragments.iter().any(|f| title.contains(f))
+    fragments.iter().any(|f| title.contains(f.as_str()))
 }
 
 /// The sensitivity of the window of `app` titled `title`, whose
 /// accessibility tree is `nodes`. A password entry on screen makes it `Credentials` first; then
 /// the class the app and title name (a password manager is `Credentials`, an admin tool is
 /// `Admin`, payments and banking are `Payment`); then the title's own words. Pure.
-pub fn window_sensitivity(app: &AppName, title: &str, nodes: &[A11yNode]) -> WindowSensitivity {
+pub fn window_sensitivity(
+    rules: &Rules,
+    app: &AppName,
+    title: &str,
+    nodes: &[A11yNode],
+) -> WindowSensitivity {
     if nodes.iter().any(holds_secret) {
         return WindowSensitivity::Credentials;
     }
-    match window_class_in(app, title, nodes) {
+    match window_class_in(rules, app, title, nodes) {
         WindowClass::PasswordManager => return WindowSensitivity::Credentials,
         WindowClass::Admin => return WindowSensitivity::Admin,
         WindowClass::Banking | WindowClass::Payments => return WindowSensitivity::Payment,
         WindowClass::Ordinary | WindowClass::MailCompose | WindowClass::Terminal => {}
     }
-    if title_has(title, CREDENTIAL_TITLES) {
+    if title_has(title, &rules.windows.credential_titles) {
         WindowSensitivity::Credentials
-    } else if title_has(title, ADMIN_TITLES) {
+    } else if title_has(title, &rules.windows.admin_titles) {
         WindowSensitivity::Admin
     } else {
         WindowSensitivity::Ordinary
@@ -104,6 +91,7 @@ pub fn window_sensitivity(app: &AppName, title: &str, nodes: &[A11yNode]) -> Win
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::rules::shipped;
     use a11y_tree::{NodeState, NodeValue, Parent, TypedHint};
     use cua_action::{Coord, NodeId, Point, Rect, Size};
     use prov::{Label, Labelled};
@@ -173,7 +161,7 @@ mod tests {
         for r in rows {
             let app = AppName::parse(r.app).unwrap();
             assert_eq!(
-                window_sensitivity(&app, r.title, &r.nodes),
+                window_sensitivity(&shipped(), &app, r.title, &r.nodes),
                 r.want,
                 "{} {}",
                 r.app,

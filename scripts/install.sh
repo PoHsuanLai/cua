@@ -26,6 +26,10 @@
 #                                        cuad.service.d/sandbox.conf, its protections
 #   PREFIX/share/dbus-1/services/        the activation files; interfaces/ has the interface XML
 #   PREFIX/share/quire/settings/         the Settings schema
+#   PREFIX/share/quire/cua/              screen-rules.toml: the phrases, window classes and words the
+#                                        screen check uses. cuad has the same file built in; this copy
+#                                        is the reference. To change them, put your own whole
+#                                        screen-rules.toml in SYSCONFDIR/quire/ (read at start)
 #   SYSCONFDIR/quire/cuad-callers.toml   which units may call cuad. It is the machine's security table:
 #                                        always replaced, reset on every install. Needs root; read at
 #                                        start, so restart cuad after
@@ -50,6 +54,7 @@ install_rest() {
   put 644 "$ROOT/dist/dbus/org.quire.Cua.service" "$SHARE/dbus-1/services/org.quire.Cua.service" unit
   put_tree 644 "$ROOT/dbus" "$SHARE/dbus-1/interfaces"
   put_tree 644 "$ROOT/dist/settings" "$SHARE/quire/settings"
+  put 644 "$ROOT/dist/screen-rules.toml" "$SHARE/quire/cua/screen-rules.toml" copy
   install_callers "$ROOT/dist/cuad-callers.toml" cuad-callers.toml
 }
 

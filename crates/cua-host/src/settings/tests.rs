@@ -2,7 +2,7 @@
 
 use super::keys::{APPS_KEY, Rule, table};
 use super::*;
-use cua_run::{Accessibility, Autopause, DefaultMode, Enabled};
+use cua_run::{DefaultMode, Switch};
 use porter_core::AppName;
 use std::collections::BTreeSet;
 
@@ -248,15 +248,15 @@ fn each_key_lands_in_the_typed_value_the_design_names() {
     let one = |p: &str, v: toml::Value| read(&doc(p, v), &base()).value.config;
     let int = toml::Value::Integer;
     let word = |w: &str| toml::Value::String(w.to_owned());
-    assert_eq!(one("cua.enabled", word("on")).enabled, Enabled::On);
+    assert_eq!(one("cua.enabled", word("on")).enabled, Switch::On);
     assert_eq!(
         one("cua.default_mode", word("agent_workspace")).default_mode,
         DefaultMode::AgentWorkspace
     );
-    assert_eq!(one("cua.autopause", word("off")).autopause, Autopause::Off);
+    assert_eq!(one("cua.autopause", word("off")).autopause, Switch::Off);
     assert_eq!(
         one("cua.accessibility", word("off")).accessibility,
-        Accessibility::Off
+        Switch::Off
     );
     assert_eq!(
         one("cua.budget.spend_microusd", int(2_500_000))
@@ -299,7 +299,7 @@ fn a_bad_value_falls_back_for_that_key_alone() {
             let loaded = read(&text, &base());
             let mut want = base();
             if other == "cua.enabled" {
-                want.config.enabled = Enabled::On;
+                want.config.enabled = Switch::On;
             } else {
                 want.config.budget.spend = porter_core::MicroUsd(700);
             }
@@ -341,7 +341,7 @@ fn unknown_keys_are_reported_and_the_retired_screens_keys_are_among_them() {
         "version = 1\n[cua.screens]\nkeep = \"on\"\n[cua]\nenabled = \"on\"\n",
         &base(),
     );
-    assert_eq!(loaded.value.config.enabled, Enabled::On);
+    assert_eq!(loaded.value.config.enabled, Switch::On);
     assert_eq!(loaded.unknown, ["cua.screens.keep"]);
     assert_eq!(
         loaded.lines("cuad"),

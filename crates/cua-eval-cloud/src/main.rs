@@ -13,6 +13,7 @@
 
 use cua_eval::corpus::Corpus;
 use cua_eval::eval::{Cassette, Lot, run_live_until};
+use cua_eval::flags::FlagError;
 use cua_eval::live::{Plan, Thinking};
 use cua_eval::report::{Report, render};
 use cua_eval::run::RunRecord;
@@ -48,12 +49,12 @@ struct Args {
     ledger: Option<PathBuf>,
 }
 
-fn tier_of(word: &str) -> Result<Tier, ArgError> {
+fn tier_of(word: &str) -> Result<Tier, FlagError> {
     match word {
         "fast" => Ok(Tier::Fast),
         "balanced" => Ok(Tier::Balanced),
         "best" => Ok(Tier::Best),
-        other => Err(ArgError::NotAllowed {
+        other => Err(FlagError::NotAllowed {
             flag: "--tier",
             allowed: "fast, balanced or best",
             given: other.to_owned(),
@@ -77,7 +78,7 @@ fn parse(mut argv: impl Iterator<Item = String>) -> Result<Args, ArgError> {
     while let Some(flag) = argv.next() {
         let mut value = || {
             argv.next()
-                .ok_or_else(|| ArgError::NeedsValue(flag.clone()))
+                .ok_or_else(|| FlagError::NeedsValue(flag.clone()))
         };
         match flag.as_str() {
             "--dir" => args.dir = PathBuf::from(value()?),
@@ -89,23 +90,24 @@ fn parse(mut argv: impl Iterator<Item = String>) -> Result<Args, ArgError> {
             "--repeat" => {
                 args.repeat = value()?
                     .parse()
-                    .map_err(|_| ArgError::NotANumber("--repeat"))?
+                    .map_err(|_| FlagError::NotANumber("--repeat"))?
             }
             "--max-steps" => {
                 args.max_steps = value()?
                     .parse()
-                    .map_err(|_| ArgError::NotANumber("--max-steps"))?
+                    .map_err(|_| FlagError::NotANumber("--max-steps"))?
             }
             "--thinking" => {
                 args.thinking = match value()?.as_str() {
                     "on" => Thinking::On,
                     "off" => Thinking::Off,
                     other => {
-                        return Err(ArgError::NotAllowed {
+                        return Err(FlagError::NotAllowed {
                             flag: "--thinking",
                             allowed: "on or off",
                             given: other.to_owned(),
-                        });
+                        }
+                        .into());
                     }
                 }
             }
@@ -114,15 +116,16 @@ fn parse(mut argv: impl Iterator<Item = String>) -> Result<Args, ArgError> {
                     "entry" => SamplingFrom::Entry,
                     "provider" => SamplingFrom::Provider,
                     other => {
-                        return Err(ArgError::NotAllowed {
+                        return Err(FlagError::NotAllowed {
                             flag: "--sampling",
                             allowed: "entry or provider",
                             given: other.to_owned(),
-                        });
+                        }
+                        .into());
                     }
                 }
             }
-            other => return Err(ArgError::UnknownFlag(other.to_owned())),
+            other => return Err(FlagError::UnknownFlag(other.to_owned()).into()),
         }
     }
     if args.entry.as_os_str().is_empty() || args.label.is_empty() {

@@ -26,18 +26,18 @@
 //! use cua_fake::FakePdp;
 //! use cua_fake::scene::world;
 //! use cua_host::{CuadConfig, Supervisor};
-//! use cua_run::{CuaConfig, Enabled};
+//! use cua_run::{CuaConfig, Switch};
 //!
 //! let config = CuadConfig {
 //!     settings: CuaConfig {
-//!         enabled: Enabled::On,
+//!         enabled: Switch::On,
 //!         ..CuaConfig::default()
 //!     },
 //!     ..CuadConfig::default()
 //! };
 //! let parts = world(BackendKind::KwinStock, Vec::new(), FakePdp::allow_all());
 //! let supervisor = Supervisor::new(parts, config);
-//! assert_eq!(supervisor.settings().enabled, Enabled::On);
+//! assert_eq!(supervisor.settings().enabled, Switch::On);
 //! assert_eq!(supervisor.started(), 0);
 //! assert!(supervisor.runs().is_empty());
 //! ```
@@ -50,6 +50,7 @@ mod gate;
 mod guard;
 mod links;
 mod lock;
+mod rules;
 mod settings;
 mod supervisor;
 
@@ -60,6 +61,7 @@ pub use events::{RunView, SupervisorEvent};
 pub use gate::{IntentsCheck, IntentsGate};
 pub use guard::guard;
 pub use links::{DaemonLinks, RecordContext, RecordError, record_of};
+pub use rules::{RULES_FILE, RulesError, SHIPPED_RULES, parse_rules, shipped_rules};
 pub use settings::{
     AppAllow, AppRule, Apps, CuaSettings, Fallback, Loaded, Locator, ReadFailure, ReadText, SCHEMA,
     SETTINGS_FILE, SettingsFeed, Why, is_browser, read,

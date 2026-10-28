@@ -18,6 +18,7 @@ mod session;
 use crate::machine::effect::{CuaSignal, RunEffect};
 use crate::machine::input::RunInput;
 use crate::model::CuaModel;
+use crate::rules::Rules;
 use crate::screen::ScreenRead;
 use crate::seams::{
     Clock, GateCheck, GateEvent, GateLink, LinkError, MessageLink, Parts, RecordSink, Seams,
@@ -88,6 +89,8 @@ pub struct Seam<'a, S: Seams> {
     pub events: &'a S::Events,
     /// The clock.
     pub clock: &'a S::Time,
+    /// The screen rules.
+    pub rules: &'a Rules,
 }
 
 impl<'a, S: Seams> Clone for Seam<'a, S> {
@@ -109,22 +112,9 @@ impl<'a, S: Seams> Seam<'a, S> {
             gate: &parts.gate,
             events: &parts.events,
             clock: &parts.clock,
+            rules: &parts.rules,
         }
     }
-}
-
-/// Whether the model's session has been opened (`CuaModel::begin`).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum ModelSession {
-    NotYet,
-    Open,
-}
-
-/// Whether the record sink has been told of the run.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Opened {
-    No,
-    Yes,
 }
 
 /// How the last report ended, for the record of the end.
@@ -145,10 +135,12 @@ pub struct Exec<'a, S: Seams> {
     check: Option<<S::Gate as GateLink>::Check>,
     notes: Vec<porter_infer::StepNote>,
     last_message: Option<MessageId>,
-    model: ModelSession,
+    /// Whether the model's session has been opened (`CuaModel::begin`).
+    model_open: bool,
     announced: Option<porter_infer::ServedBy>,
     reported: Reported,
-    opened: Opened,
+    /// Whether the record sink has been told of the run.
+    opened: bool,
     hints: Vec<String>,
     seen: Option<fit::Seen>,
     record_failures: Count,
@@ -174,10 +166,10 @@ impl<'a, S: Seams> Exec<'a, S> {
             check: None,
             notes: Vec::new(),
             last_message: None,
-            model: ModelSession::NotYet,
+            model_open: false,
             announced: None,
             reported: Reported::Nothing,
-            opened: Opened::No,
+            opened: false,
             hints: Vec::new(),
             seen: None,
             record_failures: Count(0),
@@ -217,8 +209,8 @@ impl<'a, S: Seams> Exec<'a, S> {
         model: Option<&mut S::Model>,
         out: &mut impl Outlet,
     ) {
-        if self.opened == Opened::No {
-            self.opened = Opened::Yes;
+        if !self.opened {
+            self.opened = true;
             self.seam.events.open(&self.run, &self.task).await;
         }
         match effect {

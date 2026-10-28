@@ -76,7 +76,11 @@ mod tests {
         for refusal in ControlRefusal::ALL {
             let error = CuaError::from(refusal);
             assert_eq!(error.refusal(), Some(refusal));
-            assert_eq!(error.name().as_str(), refusal.error_name(), "{refusal:?}");
+            assert_eq!(
+                error.name().as_str(),
+                format!("org.quire.Cua1.Error.{refusal:?}"),
+                "{refusal:?}"
+            );
         }
     }
 }

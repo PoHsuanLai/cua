@@ -20,7 +20,7 @@ mod traits;
 mod units;
 mod window;
 
-pub use caps::{BackendCaps, BackendKind, ConsentGuard, GlowDraw, HiddenCapture, MaskWhere};
+pub use caps::{BackendCaps, BackendKind, ConsentGuard, HiddenCapture, MaskWhere};
 pub use cua_action::{RunMode, WindowTrust};
 pub use error::DesktopError;
 pub use event::DesktopEvent;

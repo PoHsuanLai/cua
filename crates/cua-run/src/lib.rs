@@ -17,8 +17,7 @@
 //!
 //! The machine is the phase table; [`Exec`] carries a run's effects out against the seams
 //! ([`Seams`]), and a driver (cuad's supervisor, `cua-fake`'s harness) feeds the answers back.
-//! Before the model is shown a screen, the machine asks the screen check ([`ScreenCheck`],
-//! [`PatternCheck`]) whether it holds text aimed at the assistant; a suspicious screen pauses the
+//! Before the model is shown a screen, the machine asks the screen check ([`PatternCheck`]) whether it holds text aimed at the assistant; a suspicious screen pauses the
 //! run and asks the person ([`ScreenVerdict`]).
 //!
 //! Besides the machine: [`classify_effect`], [`turn`] (the model's turn from an observation, with
@@ -68,6 +67,7 @@ mod mode;
 mod model;
 mod observation;
 mod progress;
+mod rules;
 mod screen;
 mod seams;
 mod sensitivity;
@@ -79,12 +79,9 @@ mod window_class;
 
 pub use attempts::{Limits, Mark, Tried, Verb, digest, digest_within, stall_words, steps_words};
 pub use briefing::{hints as briefing_hints, task_line};
-pub use chord_scope::{KeyWorld, acts_on_desktop, standard_actions_of};
-pub use commit::{Commit, commit_of};
-pub use config::{
-    Accessibility, Autopause, CuaConfig, Days, DefaultMode, Enabled, KeepScreens, SettleLimits,
-};
-pub use effect_class::{classify_effect, classify_effect_in};
+pub use chord_scope::{acts_on_desktop, standard_actions_of};
+pub use config::{CuaConfig, Days, DefaultMode, SettleLimits, Switch};
+pub use effect_class::classify_effect;
 pub use exec::{Collected, Deadline, Exec, Outlet, Progress, Seam, Step, StepNote, deadline_of};
 pub use lease_book::{LeaseBook, LeaseHeld, Slot, SlotState};
 pub use machine::acquire::{AcquireFailure, AcquirePhase, AcquireWhy};
@@ -92,7 +89,7 @@ pub use machine::effect::{CuaSignal, HintSource, RunEffect};
 pub use machine::input::{CheckResult, ModelReply, Moved, RunInput};
 pub use machine::phase::{ActionQueue, RunPhase};
 pub use machine::run::{Run, RunEnv};
-pub use machine::track::{CaptureTries, DamageWanted, Held, RunTrack, SettleWatch, Waited};
+pub use machine::track::{CaptureTries, Held, RunTrack, SettleWatch};
 pub use mode::{choose_mode, mode_support};
 pub use model::{
     CuaModel, CuaModelError, ModelReach, ModelSight, NO_SIGHT_NOTE, StepEvent, StepSink,
@@ -102,11 +99,13 @@ pub use observation::{
     ContextObs, CursorObs, Focus, Observation, TreeAbsence, TreeObs, Visibility, WindowInfo,
 };
 pub use progress::{Effect, Look};
+pub use rules::{
+    ClassFragments, CommitRules, InjectionRules, Match, PhraseGroup, Rules, Together, WindowRules,
+};
 pub use screen::{
     Asking, EXCERPT_CHARS, Excerpt, Family, HiddenKind, MAX_REASONS, PatternCheck, READER_CHARS,
-    ReaderMode, ReaderWait, Reason, ScreenCheck, ScreenRead, ScreenText, ScreenTrack,
-    ScreenVerdict, ScreenView, Suspicion, UnseenWhy, WindowKey, Withheld, secret_masks,
-    split_unseen,
+    ReaderMode, ReaderWait, Reason, ScreenRead, ScreenText, ScreenTrack, ScreenVerdict, ScreenView,
+    UnseenWhy, WindowKey, Withheld, secret_masks, split_unseen,
 };
 pub use seams::{
     Clock, GateCheck, GateEvent, GateLink, LinkError, MessageLink, Parts, RecordSink, Seams,

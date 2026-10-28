@@ -1,0 +1,386 @@
+# What cua treats as suspicious or sensitive on a screen, as data. cuad reads this file; the pure
+# crate cua-run gets it as `cua_run::Rules`. Shipped in the binary and installed as
+# /usr/share/quire/cua/screen-rules.toml (reference copy); the administrator's own
+# /etc/quire/screen-rules.toml, when there is one, replaces it whole. To cover a new phrase, app,
+# title or word (in any language), add a line here: no code changes.
+#
+# Every phrase and fragment is lower case, with single spaces and straight quotes: the text is
+# folded the same way before it is looked for, so case, spacing and zero-width characters between
+# letters do not matter.
+#
+# [injection]: text that reads as instructions aimed at an assistant, grouped by the style of
+# attack (the styles of docket's injection corpus, plus the shapes agents are known to be hijacked
+# by). `how` says how a group is looked for:
+#   anywhere   the phrase anywhere
+#   addressed  the phrase anywhere, and the same text also names an assistant (`addressees`)
+#   opening    the phrase opens the text (or a sentence of it), and what follows names an assistant
+#              or holds a strong directive (`directives`): "system: ready" stays clear
+# `family` is one of: ignore_previous, important_message, fake_system, role_marker, tool_call,
+# addressee_cue. A `together` row needs every fragment to be present (a written-out tool call).
+#
+# [windows]: what kind of window a step acts in. `apps` are fragments of an app id and the first
+# class that matches wins; `money_titles` are fragments of a window title; a mail window whose
+# title holds a compose word is a compose window. `credential_titles` and `admin_titles` say a
+# secret or a privilege is being asked for. A class is one of: terminal, password_manager, admin,
+# banking, payments.
+#
+# [commit]: words of a button's name that commit something. The name is lower-cased and split at
+# every character that is not a letter or a digit, so "Pay now" matches and "Payroll" does not.
+# `pay` words also mark a window as a payment window; the list errs towards asking.
+
+[injection]
+addressees = [
+  "assistant",
+  "assistants",
+  "ai",
+  "agent",
+  "agents",
+  "llm",
+  "llms",
+  "chatbot",
+  "claude",
+  "chatgpt",
+  "copilot",
+]
+
+directives = [
+  "ignore",
+  "disregard",
+  "delete",
+  "send",
+  "forward",
+  "email",
+  "click",
+  "execute",
+  "download",
+  "upload",
+  "reveal",
+  "transfer",
+  "install",
+  "paste",
+  "override",
+  "disable",
+  "grant",
+  "curl",
+  "sudo",
+]
+
+[[injection.groups]]
+family = "ignore_previous"
+how = "anywhere"
+phrases = [
+  "ignore previous instructions",
+  "ignore all previous instructions",
+  "ignore the previous instructions",
+  "ignore your previous instructions",
+  "ignore any previous instructions",
+  "ignore prior instructions",
+  "ignore all prior instructions",
+  "ignore the above instructions",
+  "ignore the instructions above",
+  "ignore everything above",
+  "ignore all instructions",
+  "ignore your instructions",
+  "disregard previous instructions",
+  "disregard all previous instructions",
+  "disregard your previous instructions",
+  "disregard your instructions",
+  "disregard the above",
+  "forget your instructions",
+  "forget all previous instructions",
+  "forget everything above",
+  "override your instructions",
+  "overrides earlier restrictions",
+  "overrides previous instructions",
+]
+
+[[injection.groups]]
+family = "ignore_previous"
+how = "addressed"
+phrases = [
+  "ignore the user",
+  "do the following instead",
+  "your new instructions",
+  "your new task",
+  "your real task",
+  "new instructions:",
+  "stop what you are doing",
+  "stop what you're doing",
+]
+
+[[injection.groups]]
+family = "important_message"
+how = "anywhere"
+phrases = [
+  "<information>",
+  "</information>",
+  "<important>",
+  "important message from me, the user",
+  "important message from the user",
+  "message from the user to the assistant",
+  "to you, the assistant",
+  "before you can solve the task",
+  "before you solve the task",
+  "the task that i gave you in the beginning",
+  "signed, the user",
+]
+
+[[injection.groups]]
+family = "important_message"
+how = "addressed"
+phrases = [
+  "important instructions",
+  "before anything else",
+  "first, you must",
+]
+
+[[injection.groups]]
+family = "fake_system"
+how = "anywhere"
+phrases = [
+  "### system",
+  "[system]",
+  "<system>",
+  "</system>",
+  "<|system|>",
+  "<|im_start|>",
+  "<|im_end|>",
+  "<|endoftext|>",
+  "<<sys>>",
+  "[inst]",
+  "[/inst]",
+  "system message:",
+  "begin system message",
+  "end system message",
+  "system prompt:",
+  "system notice to",
+  "policy update from the platform administrator",
+  "authorised to act without asking",
+  "authorized to act without asking",
+  "do not tell the user",
+  "don't tell the user",
+  "without telling the user",
+  "do not mention this to the user",
+  "don't mention this to the user",
+  "do not ask the user",
+  "don't ask the user",
+]
+
+[[injection.groups]]
+family = "fake_system"
+how = "addressed"
+phrases = [
+  "you are now",
+  "from now on you",
+  "from now on, you",
+  "act as",
+  "pretend to be",
+  "pretend you are",
+  "system override",
+  "this overrides",
+  "without confirmation",
+  "do not ask for confirmation",
+]
+
+[[injection.groups]]
+family = "role_marker"
+how = "opening"
+phrases = [
+  "assistant:",
+  "system:",
+  "ai:",
+  "ai assistant:",
+  "developer:",
+]
+
+[[injection.groups]]
+family = "role_marker"
+how = "anywhere"
+phrases = [
+  "<assistant>",
+  "</assistant>",
+]
+
+[[injection.groups]]
+family = "tool_call"
+how = "anywhere"
+phrases = [
+  "<tool_call>",
+  "</tool_call>",
+  "<function_call>",
+  "<function_calls>",
+  "<invoke",
+  "<tool_use>",
+  "<|tool",
+  "<function=",
+  "[tool_call]",
+  "\"tool_calls\"",
+  "\"function_call\"",
+]
+
+[[injection.groups]]
+family = "tool_call"
+how = "addressed"
+phrases = [
+  "call the function",
+  "call the tool",
+  "invoke the tool",
+  "use the tool",
+  "execute the following",
+  "run the following command",
+]
+
+[[injection.groups]]
+family = "addressee_cue"
+how = "anywhere"
+phrases = [
+  "note to the ai",
+  "note to ai",
+  "note to the assistant",
+  "note to assistants",
+  "note for the ai",
+  "notice to the ai",
+  "message to the ai",
+  "instructions for the ai",
+  "instruction for the ai",
+  "instructions for ai",
+  "ai assistants reading this",
+  "ai agents reading this",
+  "assistants reading this page",
+  "attention ai",
+  "attention assistant",
+  "attention llm",
+  "dear assistant",
+  "dear ai",
+  "if you are an ai",
+  "if you're an ai",
+  "if you are a language model",
+  "if you are an llm",
+  "if you are reading this as an ai",
+  "to any ai",
+  "for any ai",
+  "to all ai",
+]
+
+[[injection.together]]
+family = "tool_call"
+fragments = ["\"name\"", "\"arguments\""]
+
+[[injection.together]]
+family = "tool_call"
+fragments = ["\"name\"", "\"parameters\""]
+
+[[injection.together]]
+family = "tool_call"
+fragments = ["\"function\"", "\"arguments\""]
+
+[[injection.together]]
+family = "tool_call"
+fragments = ["\"tool\"", "\"args\""]
+
+[windows]
+compose_words = [
+  "compose",
+  "new message",
+  "write:",
+  "reply",
+  "forward",
+]
+mail_apps = [
+  "mail",
+  "thunderbird",
+  "evolution",
+  "geary",
+]
+credential_titles = [
+  "master password",
+  "enter password",
+  "enter your password",
+  "password required",
+  "unlock vault",
+  "unlock keyring",
+  "unlock your",
+]
+admin_titles = [
+  "authentication required",
+  "authorization required",
+  "administrator privileges",
+  "root password",
+]
+[[windows.apps]]
+class = "terminal"
+fragments = [
+  "terminal",
+  "konsole",
+  "alacritty",
+  "kitty",
+  "wezterm",
+  "foot",
+]
+
+[[windows.apps]]
+class = "password_manager"
+fragments = [
+  "keepass",
+  "bitwarden",
+  "1password",
+]
+
+[[windows.apps]]
+class = "admin"
+fragments = [
+  "polkit",
+  "policykit",
+  "gparted",
+]
+
+[[windows.apps]]
+class = "banking"
+fragments = [
+  "bank",
+  "paypal",
+  "venmo",
+]
+
+[[windows.money_titles]]
+class = "payments"
+fragments = [
+  "checkout",
+  "check out",
+  "payment",
+  "billing",
+  "credit card",
+  "place order",
+  "pay now",
+  "purchase",
+]
+
+[[windows.money_titles]]
+class = "banking"
+fragments = [
+  "online banking",
+  "internet banking",
+  "wire transfer",
+  "bank transfer",
+  "money transfer",
+  "transfer funds",
+  "send money",
+]
+
+[commit]
+pay = [
+  "pay",
+  "payment",
+  "purchase",
+  "buy",
+  "order",
+  "donate",
+]
+also = [
+  "send",
+  "submit",
+  "transfer",
+  "confirm",
+  "authorize",
+  "authorise",
+]

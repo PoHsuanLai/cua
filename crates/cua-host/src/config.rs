@@ -77,7 +77,7 @@ mod tests {
     #[test]
     fn the_default_configuration_is_off_and_detects_its_backend() {
         let config = CuadConfig::default();
-        assert_eq!(config.settings.enabled, cua_run::Enabled::Off);
+        assert_eq!(config.settings.enabled, cua_run::Switch::Off);
         assert_eq!(config.backend, BackendChoice::Detect);
     }
 

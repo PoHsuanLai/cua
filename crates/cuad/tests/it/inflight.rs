@@ -72,6 +72,7 @@ fn mute() -> Supervisor<MuteSeams> {
         gate: w.gate,
         events: w.events,
         clock: w.clock,
+        rules: w.rules,
     };
     Supervisor::new(parts, enabled())
 }

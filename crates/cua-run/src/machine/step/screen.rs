@@ -15,8 +15,8 @@ use crate::machine::phase::RunPhase;
 use crate::machine::run::Run;
 use crate::machine::track::Held;
 use crate::screen::{
-    Asking, PatternCheck, ReaderMode, ReaderWait, Reason, ScreenCheck, ScreenRead, ScreenText,
-    ScreenVerdict, ScreenView, Suspicion, WindowKey,
+    Asking, PatternCheck, ReaderMode, ReaderWait, Reason, ScreenRead, ScreenText, ScreenVerdict,
+    ScreenView, WindowKey,
 };
 use crate::sensitivity::{FORCED_NO, FORCED_YES};
 use crate::turn::turn_after;
@@ -37,7 +37,10 @@ pub(super) fn stage(run: &mut Run, fx: &mut Vec<RunEffect>, n: StepIndex) {
     let (verdict, text) = match run.working.as_deref() {
         Some(obs) => {
             let view = ScreenView::of(obs);
-            (PatternCheck.check(&view), ScreenText::of(&view))
+            (
+                PatternCheck::new(&run.env.rules.injection).check(&view),
+                ScreenText::of(&view),
+            )
         }
         None => (ScreenVerdict::Clear, None),
     };
@@ -140,7 +143,7 @@ fn flagged(run: &mut Run, fx: &mut Vec<RunEffect>, n: StepIndex, verdict: &Scree
     let remembered = kinds
         .iter()
         .all(|k| run.track.screen.allowed.contains(&(window.clone(), *k)));
-    run.track.screen.suspicion = Suspicion::Seen;
+    run.track.screen.suspicious = true;
     let ask = if remembered {
         ScreenAsk::Remembered
     } else {
@@ -199,7 +202,7 @@ pub(super) fn answered(
 /// The effect of the head action, when the run has seen a suspicious screen and the action sends
 /// something out or removes something.
 pub(super) fn suspicious_head(run: &Run) -> Option<Effect> {
-    if run.track.screen.suspicion != Suspicion::Seen {
+    if !run.track.screen.suspicious {
         return None;
     }
     head_effect(run).filter(|effect| *effect >= Effect::Outbound)

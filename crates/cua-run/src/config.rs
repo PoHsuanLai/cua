@@ -9,12 +9,13 @@ use cua_bus::RunBudget;
 use cua_desktop::Ms;
 use serde::{Deserialize, Serialize};
 
-/// `cua.enabled`: computer use is off until the person turns it on, and then still needs the
-/// per-app consent.
+/// An on/off setting; the field that holds it says which setting it is. Its slugs, `off` and
+/// `on`, are the stored values of `cua.enabled`, `cua.autopause`, `cua.accessibility` and
+/// `cua.screens.keep`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum Enabled {
-    /// Off: `Cua1.Start` answers `Disabled` and the `org.quire.Cua` action is hidden.
+pub enum Switch {
+    /// Off.
     Off,
     /// On.
     On,
@@ -30,37 +31,6 @@ pub enum DefaultMode {
     InPlace,
     /// The agent workspace.
     AgentWorkspace,
-}
-
-/// `cua.autopause`: whether physical input pauses a run on a shared seat.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum Autopause {
-    /// It does not.
-    Off,
-    /// It does.
-    On,
-}
-
-/// `cua.accessibility`: whether a run reads the controls (buttons, fields) of the window it is
-/// using, as the app describes them. Only that window's; with it off a run goes from pixels.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum Accessibility {
-    /// It does not.
-    Off,
-    /// It does.
-    On,
-}
-
-/// `cua.screens.keep`: whether thumbnails of steps are stored.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum KeepScreens {
-    /// No pixels are stored.
-    Off,
-    /// Thumbnails are kept in the Space's encrypted store.
-    On,
 }
 
 /// A number of days.
@@ -96,18 +66,21 @@ pub const TREE_MAX_NODES: NodeBudget = NodeBudget(400);
 /// Every proposed value of computer use in one place.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CuaConfig {
-    /// `cua.enabled`.
-    pub enabled: Enabled,
+    /// `cua.enabled`: off until the person turns it on, and then still needs the per-app
+    /// consent. Off, `Cua1.Start` answers `Disabled` and the `org.quire.Cua` action is hidden.
+    pub enabled: Switch,
     /// `cua.default_mode`.
     pub default_mode: DefaultMode,
     /// `cua.budget.*`.
     pub budget: RunBudget,
-    /// `cua.autopause`.
-    pub autopause: Autopause,
-    /// `cua.accessibility` (on).
-    pub accessibility: Accessibility,
-    /// `cua.screens.keep`.
-    pub keep_screens: KeepScreens,
+    /// `cua.autopause`: whether physical input pauses a run on a shared seat.
+    pub autopause: Switch,
+    /// `cua.accessibility` (on): whether a run reads the controls (buttons, fields) of the
+    /// window it is using, as the app describes them. Only that window's; with it off a run
+    /// goes from pixels.
+    pub accessibility: Switch,
+    /// `cua.screens.keep`: whether thumbnails of steps are kept in the Space's encrypted store.
+    pub keep_screens: Switch,
     /// `cua.screens.keep_days` (7).
     pub keep_days: Days,
 }
@@ -115,12 +88,12 @@ pub struct CuaConfig {
 impl Default for CuaConfig {
     fn default() -> Self {
         CuaConfig {
-            enabled: Enabled::Off,
+            enabled: Switch::Off,
             default_mode: DefaultMode::Auto,
             budget: RunBudget::PROPOSED,
-            autopause: Autopause::On,
-            accessibility: Accessibility::On,
-            keep_screens: KeepScreens::Off,
+            autopause: Switch::On,
+            accessibility: Switch::On,
+            keep_screens: Switch::Off,
             keep_days: Days(7),
         }
     }
@@ -133,8 +106,8 @@ mod tests {
     #[test]
     fn computer_use_is_off_by_default_and_the_breaker_not_the_run_counts_denials() {
         let config = CuaConfig::default();
-        assert_eq!(config.enabled, Enabled::Off);
-        assert_eq!(config.keep_screens, KeepScreens::Off);
+        assert_eq!(config.enabled, Switch::Off);
+        assert_eq!(config.keep_screens, Switch::Off);
     }
 
     #[test]

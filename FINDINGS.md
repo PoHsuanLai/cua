@@ -686,3 +686,25 @@ needs: docket pin bump, `docket-reader` in `[workspace.dependencies]`, and cuad'
   look after each action). Closing the gap means a field on `cua.step`.
 - The digest reads whatever the router hands over (the newest 200 records of the conversation); a
   conversation with more runs than that loses its oldest attempts first.
+
+## Simplification lane (E-C1 to E-C3, 2026-10-28)
+
+CONVENTIONS 11 now holds the owner's type rules of 2026-10-28 (bool allowed; one fact, one type;
+two-way outcomes are `Result`/`Option`; growing sets are data; newtypes only with a rule), and 2
+no longer says "never `dyn`". Done: `Option` for the absent desktop, capture and tree (the
+single-variant `SeatBackend`, `SystemDesktop`, `SystemA11y`, `CaptureKind` and the second
+capture-session kind are gone); one `Switch` for `cua.enabled`, `cua.autopause`,
+`cua.accessibility` and `cua.screens.keep` (keys and stored words unchanged; the reader takes
+the word through serde); the yes/no enums of the run machine, the host's drive loop and the
+gate are `bool`/`Option`; `GlowDraw`, `KeyWorld` (chordkit's `Platform` is used instead),
+`ProcedureUse`, `ControlRefusal::error_name`, `ModeChoice`, the `ScreenCheck` trait and the two
+`Stalls` twins are deleted; the phrase, window-class, commit-word and sensitive-title tables are
+`dist/screen-rules.toml` (built into cuad, replaced whole by `/etc/quire/screen-rules.toml`),
+handed to `cua-run` as `Rules` through `Parts`. Left as they were, each with its reason: the
+`A11yChoice` of `cuad.toml` (stored words `off`/`atspi`), `ConsentGuard` (read by the
+authorise step), `Verb` (serialised in the run track: F18),
+`CuaSignal` against `StepEvent` (the proposed action is re-targeted, not re-typed: F16),
+`AxRole` (`Role` is adjacently tagged, so a TOML string cannot read it: F15), `Drivable` (an
+alias for twenty bounds), `Reason`/`Cause` (F8) and the a11y-tree/maskcap option-shaped enums
+(F10; they re-record goldens), the keys table of cua-eval (F22), and F3 (waits for the porter
+re-pin).

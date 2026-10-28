@@ -7,7 +7,7 @@ use cua_bus::RunEnd;
 use cua_desktop::BackendKind;
 use cua_fake::scene::{world, world_over};
 use cua_fake::{FakePdp, FakeSeams, Fixture};
-use cua_run::{CuaConfig, CuaModelError, CuaSignal, Enabled};
+use cua_run::{CuaConfig, CuaModelError, CuaSignal, Switch};
 use cuad::{CuadConfig, Supervisor, SupervisorEvent};
 use porter_infer::CuaStepReply;
 use prov::RunId;
@@ -17,7 +17,7 @@ use tokio::sync::broadcast::Receiver;
 pub fn enabled() -> CuadConfig {
     CuadConfig {
         settings: CuaConfig {
-            enabled: Enabled::On,
+            enabled: Switch::On,
             ..CuaConfig::default()
         },
         ..CuadConfig::default()

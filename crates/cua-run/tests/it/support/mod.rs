@@ -11,16 +11,14 @@ use cua_action::{
     Scale120, Size, Summary, Target, WaitMs, WindowSpace,
 };
 use cua_action::{RunMode, WindowTrust};
-use cua_bus::{
-    CuaTask, ProcedureUse, ReportRoute, RunBudget, RunOrigin, SuccessCheck, TaskTarget, WindowRef,
-};
+use cua_bus::{CuaTask, ReportRoute, RunBudget, RunOrigin, SuccessCheck, TaskTarget, WindowRef};
 use cua_desktop::{
     BackendCaps, BackendKind, GlobalCoord, GlobalRect, LeaseGrant, LeaseId, MaskWhere, Pid, Stamp,
     ToplevelIdent, ToplevelInfo, WindowTitle, WorkspaceRef, WorkspaceShown,
 };
 use cua_run::{
-    ContextObs, CuaConfig, CursorObs, Focus, ModelReply, Observation, Run, RunEffect, RunEnv,
-    RunInput, RunPhase, TreeObs, Visibility, WindowInfo,
+    ContextObs, CuaConfig, CursorObs, Focus, ModelReply, Observation, Rules, Run, RunEffect,
+    RunEnv, RunInput, RunPhase, TreeObs, Visibility, WindowInfo,
 };
 use maskcap::{Frame, FrameSeq, MaskReport, PixelBuf, WholeMask};
 use porter_core::{AppName, Count, DataClass, MicroUsd, Px, Tokens};
@@ -76,7 +74,6 @@ pub fn task(success: SuccessCheck) -> CuaTask {
         data_in: vec![],
         success,
         origin: RunOrigin::Planner,
-        procedure: ProcedureUse::None,
         report: ReportRoute {
             to: Address::new(AgentRef::Companion, space()),
             thread: None,
@@ -85,8 +82,14 @@ pub fn task(success: SuccessCheck) -> CuaTask {
     }
 }
 
+/// The shipped screen rules, from the file the daemon reads.
+pub fn rules() -> Rules {
+    toml::from_str(include_str!("../../../../../dist/screen-rules.toml"))
+        .expect("the shipped screen rules read")
+}
+
 pub fn env(kind: BackendKind) -> RunEnv {
-    RunEnv::new(&CuaConfig::default(), BackendCaps::of(kind))
+    RunEnv::new(&CuaConfig::default(), BackendCaps::of(kind), rules())
 }
 
 pub fn run_id() -> RunId {

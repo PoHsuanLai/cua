@@ -46,16 +46,6 @@ pub enum HiddenCapture {
     Withheld,
 }
 
-/// Who draws the glow and the agent's cursor.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum GlowDraw {
-    /// The compositor, from lease state.
-    Compositor,
-    /// The shell's orb only.
-    ShellOnly,
-}
-
 /// What one backend can do.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct BackendCaps {
@@ -69,8 +59,6 @@ pub struct BackendCaps {
     pub consent: ConsentGuard,
     /// Whether hidden windows keep rendering.
     pub hidden: HiddenCapture,
-    /// Who draws the glow.
-    pub glow: GlowDraw,
 }
 
 impl BackendCaps {
@@ -84,7 +72,6 @@ impl BackendCaps {
                 masking: MaskWhere::Cuad,
                 consent: ConsentGuard::CuadSuspendsInput,
                 hidden: HiddenCapture::Renders,
-                glow: GlowDraw::ShellOnly,
             },
             // Input reaches only the leased window, but it is still the person's seat and
             // cursor; casement does not mask yet (cuad does) and does not render a window of
@@ -95,7 +82,6 @@ impl BackendCaps {
                 masking: MaskWhere::Cuad,
                 consent: ConsentGuard::CuadSuspendsInput,
                 hidden: HiddenCapture::Withheld,
-                glow: GlowDraw::ShellOnly,
             },
         }
     }
@@ -114,7 +100,6 @@ mod tests {
         assert_eq!(caps.masking, MaskWhere::Cuad);
         assert_eq!(caps.consent, ConsentGuard::CuadSuspendsInput);
         assert_eq!(caps.hidden, HiddenCapture::Renders);
-        assert_eq!(caps.glow, GlowDraw::ShellOnly);
     }
 
     #[test]
@@ -125,6 +110,5 @@ mod tests {
         assert_eq!(caps.masking, MaskWhere::Cuad);
         assert_eq!(caps.consent, ConsentGuard::CuadSuspendsInput);
         assert_eq!(caps.hidden, HiddenCapture::Withheld);
-        assert_eq!(caps.glow, GlowDraw::ShellOnly);
     }
 }

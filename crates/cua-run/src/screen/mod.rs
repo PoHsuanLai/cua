@@ -2,11 +2,11 @@
 //!
 //! cua labels everything it reads off the screen `Untrusted(Screen)` and shows it as data; this
 //! is the stage that *looks*. Each turn, before the model is called, the run machine asks a
-//! [`ScreenCheck`] about the window's title and its accessibility tree (the text the model will
-//! read). The default, [`PatternCheck`], is deterministic and uses no model:
+//! [`PatternCheck`] about the window's title and its accessibility tree (the text the model will
+//! read). It is deterministic and uses no model:
 //!
-//! - text that reads as instructions for an assistant (the phrase table in [`Family`]'s home,
-//!   `phrases.rs`, and links that carry credentials);
+//! - text that reads as instructions for an assistant (the phrase tables in `dist/screen-rules.toml`,
+//!   [`Family`], and links that carry credentials);
 //! - text hidden from the person with invisible characters ([`HiddenKind`]);
 //! - either of those in a node the person cannot see ([`UnseenWhy`]): reported as well, as
 //!   [`Reason::Unseen`]. Plain words the person cannot see are not a reason: they are left out of
@@ -28,10 +28,11 @@ pub use excerpt::{EXCERPT_CHARS, Excerpt};
 pub use hidden::HiddenKind;
 pub use phrases::Family;
 pub use reader::{READER_CHARS, ScreenRead, ScreenText};
-pub use track::{Asking, ReaderMode, ReaderWait, ScreenTrack, Suspicion};
+pub use track::{Asking, ReaderMode, ReaderWait, ScreenTrack};
 pub use unseen::{UnseenWhy, Withheld, secret_masks, split_unseen};
 
 use crate::observation::{Observation, TreeObs};
+use crate::rules::InjectionRules;
 use a11y_tree::{A11yNode, NodeValue, Role, Sensitivity};
 use cua_action::{Size, WindowSpace};
 use cua_bus::ScreenKind;
@@ -185,17 +186,13 @@ impl<'a> ScreenView<'a> {
     }
 }
 
-/// Looks at a screen before the model does. The run machine uses [`PatternCheck`]; a stricter
-/// deterministic check plugs in behind the same trait, and the quarantined reader adds its own
-/// verdict through `CuaModel::classify_screen` (see `RunEffect::ReadScreen`).
-pub trait ScreenCheck {
-    /// The verdict on `view`. Pure.
-    fn check(&self, view: &ScreenView<'_>) -> ScreenVerdict;
+/// Looks at a screen before the model does: the phrase tables and hidden characters, and whether
+/// the node holding them is unseen. No model; the quarantined reader adds its own verdict through
+/// `CuaModel::classify_screen` (see `RunEffect::ReadScreen`).
+#[derive(Debug, Clone, Copy)]
+pub struct PatternCheck<'a> {
+    rules: &'a InjectionRules,
 }
-
-/// The default check: the phrase table and hidden characters, and whether the node holding them is unseen. No model.
-#[derive(Debug, Clone, Copy, Default)]
-pub struct PatternCheck;
 
 /// A node whose content never reaches a model.
 fn is_secret(node: &A11yNode) -> bool {
@@ -212,12 +209,12 @@ fn node_text(node: &A11yNode) -> String {
 
 /// What the reasons of one run of the check add up to: each cause once, no more than
 /// [`MAX_REASONS`].
-#[derive(Default)]
-struct Found {
+struct Found<'a> {
+    rules: &'a InjectionRules,
     reasons: Vec<Reason>,
 }
 
-impl Found {
+impl Found<'_> {
     fn add(&mut self, reason: Reason) {
         let cause = reason.cause();
         let known = self.reasons.iter().any(|r| r.cause() == cause);
@@ -244,7 +241,7 @@ impl Found {
             views.push(shown.chars().rev().collect());
         }
         for view in &views {
-            for hit in phrases::scan(&fold(view)) {
+            for hit in phrases::scan(self.rules, &fold(view)) {
                 hits += 1;
                 self.add(Reason::Instruction {
                     family: hit.family,
@@ -281,9 +278,18 @@ impl Found {
     }
 }
 
-impl ScreenCheck for PatternCheck {
-    fn check(&self, view: &ScreenView<'_>) -> ScreenVerdict {
-        let mut found = Found::default();
+impl<'a> PatternCheck<'a> {
+    /// A check over these phrase tables.
+    pub fn new(rules: &'a InjectionRules) -> Self {
+        Self { rules }
+    }
+
+    /// The verdict on `view`. Pure.
+    pub fn check(&self, view: &ScreenView<'_>) -> ScreenVerdict {
+        let mut found = Found {
+            rules: self.rules,
+            reasons: Vec::new(),
+        };
         found.read(view.title);
         for node in view.nodes.iter().filter(|n| !is_secret(n)) {
             found.read_node(node, None);

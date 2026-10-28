@@ -56,7 +56,7 @@ mod tests {
     use super::*;
     use ModeSupport::{Full, HandsOff, Unsupported};
     use cua_bus::ModeGap::{HiddenCaptureWithheld, NoHiddenInput, NoNestedHost};
-    use cua_desktop::{BackendKind, ConsentGuard, GlowDraw, MaskWhere};
+    use cua_desktop::{BackendKind, ConsentGuard, MaskWhere};
 
     struct Row {
         name: &'static str,
@@ -71,7 +71,6 @@ mod tests {
             seat: SeatIsolation::AgentSeat,
             masking: MaskWhere::Compositor,
             consent: ConsentGuard::CompositorOrigin,
-            glow: GlowDraw::Compositor,
             ..BackendCaps::of(BackendKind::KwinStock)
         }
     }

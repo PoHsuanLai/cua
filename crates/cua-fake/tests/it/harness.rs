@@ -4,9 +4,7 @@ use cua_action::{
     Button, ClickCount, Coord, CuaAction, DeviceSize, FinishOutcome, PixelFormat, Point, RunMode,
     Scale120, Size, Summary, Target, WindowSpace, WindowTrust,
 };
-use cua_bus::{
-    CuaOutcome, CuaTask, ProcedureUse, ReportRoute, RunBudget, RunOrigin, SuccessCheck, TaskTarget,
-};
+use cua_bus::{CuaOutcome, CuaTask, ReportRoute, RunBudget, RunOrigin, SuccessCheck, TaskTarget};
 use cua_desktop::{BackendCaps, BackendKind, MaskWhere, Stamp, ToplevelIdent};
 use cua_fake::{
     DesktopCall, FakeA11y, FakeCapture, FakeDesktop, FakePdp, FakeSeat, FixedClock, Fixture,
@@ -102,6 +100,7 @@ fn new_world(script: Vec<Result<CuaStepReply, cua_run::CuaModelError>>) -> World
         gate: FakePdp::allow_all(),
         events: MemoryEvents::new(),
         clock: FixedClock::at(Stamp(0), UnixSeconds(1_700_000_000)),
+        rules: cua_fake::scene::rules(),
     }
 }
 
@@ -120,7 +119,6 @@ fn new_run() -> Run {
         data_in: vec![],
         success: SuccessCheck::ModelSays,
         origin: RunOrigin::Planner,
-        procedure: ProcedureUse::None,
         report: ReportRoute {
             to: Address::new(AgentRef::Companion, space()),
             thread: None,
@@ -130,6 +128,7 @@ fn new_run() -> Run {
     let env = RunEnv::new(
         &CuaConfig::default(),
         BackendCaps::of(BackendKind::KwinStock),
+        cua_fake::scene::rules(),
     );
     Run::start(RunId::parse("r-1").unwrap(), task, env, Stamp(0)).0
 }

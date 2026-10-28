@@ -294,7 +294,6 @@ fn a_task_round_trips_with_its_report_route() {
         data_in: vec![],
         success: SuccessCheck::ModelSays,
         origin: RunOrigin::Planner,
-        procedure: ProcedureUse::None,
         report: ReportRoute {
             to: Address::new(AgentRef::Companion, space()),
             thread: Some(ThreadId::parse("t-7").unwrap()),
@@ -309,7 +308,6 @@ fn a_task_round_trips_with_its_report_route() {
     let window = CuaTask {
         target: TaskTarget::Window(ToplevelIdent::parse("w1").unwrap()),
         origin: RunOrigin::Handover { since: Stamp(5) },
-        procedure: ProcedureUse::Hint(ProcedureId("p".into())),
         ..task
     };
     round_trip(&window);

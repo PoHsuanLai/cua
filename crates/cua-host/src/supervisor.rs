@@ -10,8 +10,8 @@ use cua_bus::{
 };
 use cua_desktop::Desktop;
 use cua_run::{
-    Clock, CuaConfig, CuaModel, Enabled, GateLink, LeaseBook, ModelReach, ModelSight,
-    NO_SIGHT_NOTE, Parts, Run, RunEnv, RunInput, RunPhase, Seams, mode_support,
+    Clock, CuaConfig, CuaModel, GateLink, LeaseBook, ModelReach, ModelSight, NO_SIGHT_NOTE, Parts,
+    Run, RunEnv, RunInput, RunPhase, Seams, Switch, mode_support,
 };
 use prov::{Integrity, Labelled, ModelRole, RunId, Source};
 use std::sync::Arc;
@@ -247,7 +247,7 @@ impl<S: Drivable> Supervisor<S> {
     /// is on and every model that could serve is known not to read images, and nothing
     /// otherwise. A model a run is working with is plainly in use, so only an idle one is asked.
     pub async fn sight_note(&self) -> Option<&'static str> {
-        if self.settings().enabled != Enabled::On {
+        if self.settings().enabled != Switch::On {
             return None;
         }
         let sight = match self.shared.model.try_lock() {
@@ -303,7 +303,8 @@ impl<S: Drivable> Supervisor<S> {
         if caller == CuaCaller::Companion {
             task = untrusted_from_planner(task);
         }
-        let env = RunEnv::new(&self.settings(), caps).with_grant_level(allow.grant_level());
+        let env = RunEnv::new(&self.settings(), caps, self.shared.rules.clone())
+            .with_grant_level(allow.grant_level());
         let (control, inbox) = mpsc::unbounded_channel();
         let id = {
             let mut state = self.shared.state();

@@ -9,8 +9,7 @@ use crate::settings::CuaSettings;
 use cua_bus::{BudgetBody, CuaOutcome, RunEnd};
 use cua_desktop::Stamp;
 use cua_run::{
-    Clock, DamageWanted, Exec, Outlet, Parts, Run, RunEffect, RunInput, RunPhase, Seam, Seams,
-    SlotState,
+    Clock, Exec, Outlet, Parts, Rules, Run, RunEffect, RunInput, RunPhase, Seam, Seams, SlotState,
 };
 use prov::RunId;
 use std::collections::{BTreeMap, VecDeque};
@@ -64,6 +63,8 @@ pub(crate) struct Shared<S: Seams> {
     pub gate: S::Gate,
     pub events: S::Events,
     pub clock: S::Time,
+    /// The screen rules every run checks a screen against.
+    pub rules: Rules,
     pub config: CuadConfig,
     /// What every run's model is told about the desktop when its session opens.
     pub hints: Vec<String>,
@@ -84,6 +85,7 @@ impl<S: Seams> Shared<S> {
             gate,
             events,
             clock,
+            rules,
         } = parts;
         Self {
             desktop,
@@ -94,6 +96,7 @@ impl<S: Seams> Shared<S> {
             gate,
             events,
             clock,
+            rules,
             settings: RwLock::new(CuaSettings::over(config.settings)),
             config,
             hints,
@@ -116,6 +119,7 @@ impl<S: Seams> Shared<S> {
             gate: &self.gate,
             events: &self.events,
             clock: &self.clock,
+            rules: &self.rules,
         }
     }
 
@@ -195,14 +199,6 @@ fn is_work(effect: &RunEffect) -> bool {
     )
 }
 
-/// Whether the screen's damage was asked for and ran dry (nothing more will come until the
-/// next action).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Damage {
-    Flowing,
-    Dry,
-}
-
 /// The run and the effects it has not carried out yet.
 struct Machine {
     run: Run,
@@ -224,27 +220,20 @@ impl Machine {
     /// it answers with effects) drops what was about to start, and the machine answers it. An
     /// input the machine has nothing to say to (a window moved, a question shown) changes nothing:
     /// the effect in hand and the ones queued go on, or the run would wait for an answer to a
-    /// question nobody is asking any more.
-    fn interrupt<S: Seams>(&mut self, shared: &Shared<S>, input: RunInput, at: Stamp) -> Moved {
+    /// question nobody is asking any more. Returns whether the run moved.
+    fn interrupt<S: Seams>(&mut self, shared: &Shared<S>, input: RunInput, at: Stamp) -> bool {
         let before = self.run.phase.clone();
         let effects = self.run.advance(input, at);
         shared.update(&self.run);
         if self.run.phase == before && effects.is_empty() {
-            return Moved::No;
+            return false;
         }
         if !before.is_finished() {
             self.queue.retain(|e| !is_work(e));
         }
         self.queue.extend(effects);
-        Moved::Yes
+        true
     }
-}
-
-/// Whether an interruption moved the run.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Moved {
-    Yes,
-    No,
 }
 
 fn run_end<S: Seams>(exec: &Exec<'_, S>, run: &Run, outcome: CuaOutcome) -> RunEnd {
@@ -294,7 +283,8 @@ pub(crate) async fn drive<S: Drivable>(
         run,
         queue: initial.into(),
     };
-    let mut damage = Damage::Flowing;
+    // Whether the screen's damage ran dry (nothing more will come until the next action).
+    let mut damage_dry = false;
     let outcome = loop {
         while let Ok(input) = control.try_recv() {
             machine.interrupt(&shared, input, shared.clock.now());
@@ -357,8 +347,7 @@ pub(crate) async fn drive<S: Drivable>(
         }
         // Nothing to do: wait for the person, the desktop, the screen or the clock.
         let wake = machine.run().wake();
-        let watching = machine.run().track.settle.wants_damage() == DamageWanted::Yes
-            && damage == Damage::Flowing;
+        let watching = machine.run().track.settle.wants_damage() && !damage_dry;
         let nap = wake.map_or(Duration::MAX, |at| {
             Duration::from_millis(at.0.saturating_sub(shared.clock.now().0))
         });
@@ -368,15 +357,15 @@ pub(crate) async fn drive<S: Drivable>(
             Some(event) = wire.recv() => heard(&shared, &id, &mut machine, event),
             seen = exec.next_damage(), if watching => match seen {
                 Some(change) => machine.feed(&shared, RunInput::Damage(change), shared.clock.now()),
-                None => damage = Damage::Dry,
+                None => damage_dry = true,
             },
             () = tokio::time::sleep(nap), if wake.is_some() => {
                 let now = shared.clock.now();
                 machine.feed(&shared, RunInput::Tick, wake.map_or(now, |due| now.max(due)));
             }
         }
-        if machine.run().track.settle.wants_damage() == DamageWanted::No {
-            damage = Damage::Flowing;
+        if !machine.run().track.settle.wants_damage() {
+            damage_dry = false;
         }
     };
     while let Ok(event) = wire.try_recv() {
@@ -425,7 +414,7 @@ async fn race<S: Seams, T>(
         tokio::select! {
             biased;
             Some(input) = control.recv() => {
-                if machine.interrupt(shared, input, shared.clock.now()) == Moved::Yes {
+                if machine.interrupt(shared, input, shared.clock.now()) {
                     return Raced::Interrupted;
                 }
             }

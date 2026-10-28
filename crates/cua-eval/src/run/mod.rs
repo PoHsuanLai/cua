@@ -15,8 +15,8 @@ use crate::world::{EvalA11y, EvalCapture, EvalClock, EvalDesktop, EvalSeams, Eva
 use cua_desktop::{BackendCaps, BackendKind};
 use cua_fake::MemoryEvents;
 use cua_run::{
-    Clock, Collected, CuaConfig, CuaModel, CuaSignal, DamageWanted, Exec, FORCED_NO, FORCED_YES,
-    Held, Run, RunEffect, RunEnv, RunInput, Seam,
+    Clock, Collected, CuaConfig, CuaModel, CuaSignal, Exec, FORCED_NO, FORCED_YES, Held, Run,
+    RunEffect, RunEnv, RunInput, Seam,
 };
 use prov::{Label, Labelled, RunId};
 use std::collections::VecDeque;
@@ -51,6 +51,7 @@ pub async fn play<M: CuaModel + 'static>(
     let a11y = EvalA11y::new(arena.stage.clone(), arena.clock.clone());
     let gate = EvalGate::new(arena.task.person, arena.log.clone());
     let events = MemoryEvents::new();
+    let rules = cua_fake::scene::rules();
     let seam = Seam::<EvalSeams<Timed<M>>> {
         desktop: &desktop,
         seat: &seat,
@@ -59,10 +60,12 @@ pub async fn play<M: CuaModel + 'static>(
         gate: &gate,
         events: &events,
         clock: &arena.clock,
+        rules: &rules,
     };
     let env = RunEnv::new(
         &CuaConfig::default(),
         BackendCaps::of(BackendKind::KwinStock),
+        rules.clone(),
     );
     let id = RunId::parse("r-1").map_err(|e| SetupError::Id(e.to_string()))?;
     let (run, _) = Run::start(id, arena.cua_task()?, env, arena.clock.now());
@@ -139,7 +142,7 @@ async fn idle<M: CuaModel + 'static>(
     exec: &mut Exec<'_, EvalSeams<Timed<M>>>,
     clock: &EvalClock,
 ) -> Option<RunInput> {
-    if run.track.settle.wants_damage() == DamageWanted::Yes
+    if run.track.settle.wants_damage()
         && let Some(damage) = exec.next_damage().await
     {
         return Some(RunInput::Damage(damage));

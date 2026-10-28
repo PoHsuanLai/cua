@@ -3,18 +3,6 @@
 use super::{ScreenKind, WindowKey};
 use serde::{Deserialize, Serialize};
 
-/// Whether the run has seen suspicious screen content.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum Suspicion {
-    /// Not so far.
-    #[default]
-    Clean,
-    /// At least once, whatever the person answered. From then on a step that sends something
-    /// out or removes something asks.
-    Seen,
-}
-
 /// Whether the screen's text is also handed to the quarantined reader.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -51,8 +39,9 @@ pub struct Asking {
 pub struct ScreenTrack {
     /// Windows and kinds the person said to go on with: asked once per run.
     pub allowed: Vec<(WindowKey, ScreenKind)>,
-    /// Whether the run has seen suspicious content.
-    pub suspicion: Suspicion,
+    /// Whether the run has seen suspicious content, whatever the person answered. From then on
+    /// a step that sends something out or removes something asks.
+    pub suspicious: bool,
     /// The finding now being asked about.
     pub asking: Option<Asking>,
     /// The reader, if it was asked.

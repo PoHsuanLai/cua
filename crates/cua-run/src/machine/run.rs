@@ -1,8 +1,7 @@
 //! The run itself: its state, and the three functions that drive it.
 
-use crate::chord_scope::KeyWorld;
 use crate::config::{
-    Accessibility, Autopause, CuaConfig, SETTLE, SettleLimits, TREE_MAX_NODES, WAIT_MAX, WAIT_TOTAL,
+    CuaConfig, SETTLE, SettleLimits, Switch, TREE_MAX_NODES, WAIT_MAX, WAIT_TOTAL,
 };
 use crate::machine::effect::RunEffect;
 use crate::machine::input::RunInput;
@@ -10,6 +9,7 @@ use crate::machine::phase::{ActionQueue, RunPhase};
 use crate::machine::step;
 use crate::machine::track::RunTrack;
 use crate::observation::Observation;
+use crate::rules::Rules;
 use crate::screen::ReaderMode;
 use crate::stall::Repeats;
 use a11y_tree::NodeBudget;
@@ -22,7 +22,7 @@ use serde::{Deserialize, Serialize};
 
 /// What the machine needs to know about the world it runs in, fixed for the run: what the
 /// backend can do and the settings that shape the loop.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RunEnv {
     /// The backend's capabilities (consent guard, seat isolation, masking).
     pub caps: BackendCaps,
@@ -35,13 +35,12 @@ pub struct RunEnv {
     #[serde(default = "default_wait_total")]
     pub wait_total: Ms,
     /// Whether physical input pauses a run on a shared seat.
-    pub autopause: Autopause,
+    pub autopause: Switch,
     /// How many tree nodes a snapshot keeps.
     pub tree_max_nodes: NodeBudget,
-    /// The key conventions of the desktop, to tell a chord for the desktop from one for the
-    /// window.
-    #[serde(default)]
-    pub keys: KeyWorld,
+    /// The screen rules: the phrases, window classes, commit words and sensitive titles this run
+    /// checks a screen against.
+    pub rules: Rules,
     /// The consent level the person set for this run's app (`cua.apps`), sent with the grant.
     /// The supervisor decides it; the caller's task never carries it.
     #[serde(default = "strictest_grant")]
@@ -64,7 +63,7 @@ fn strictest_grant() -> Level {
 
 impl RunEnv {
     /// The environment of a run under `config` on a backend with `caps`.
-    pub fn new(config: &CuaConfig, caps: BackendCaps) -> RunEnv {
+    pub fn new(config: &CuaConfig, caps: BackendCaps, rules: Rules) -> RunEnv {
         RunEnv {
             caps,
             settle: SETTLE,
@@ -73,10 +72,10 @@ impl RunEnv {
             autopause: config.autopause,
             // Reading the controls turned off is a run with no room for any of them.
             tree_max_nodes: match config.accessibility {
-                Accessibility::On => TREE_MAX_NODES,
-                Accessibility::Off => NodeBudget(0),
+                Switch::On => TREE_MAX_NODES,
+                Switch::Off => NodeBudget(0),
             },
-            keys: KeyWorld::default(),
+            rules,
             grant_level: strictest_grant(),
             reader: ReaderMode::Off,
         }
@@ -93,11 +92,6 @@ impl RunEnv {
     /// The same environment with the quarantined reader switched `reader`.
     pub fn with_reader(self, reader: ReaderMode) -> RunEnv {
         RunEnv { reader, ..self }
-    }
-
-    /// The same environment on a desktop with these key conventions.
-    pub fn with_keys(self, keys: KeyWorld) -> RunEnv {
-        RunEnv { keys, ..self }
     }
 }
 

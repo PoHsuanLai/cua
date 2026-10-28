@@ -1,11 +1,12 @@
 //! The run machine's transitions, as the phase table of cua.md section 4 (changed for the
 //! router's gate) states them.
 
+use crate::support::rules;
 use cua_action::RunMode;
 use cua_action::{Button, ClickCount, Coord, CuaAction, Point, Target, WindowSpace};
 use cua_bus::{
-    BlockedOn, BudgetUse, CancelledBy, CuaOutcome, CuaTask, ProcedureUse, ReportRoute, RunBudget,
-    RunOrigin, SuccessCheck, TargetedAction, TaskTarget, WindowRef,
+    BlockedOn, BudgetUse, CancelledBy, CuaOutcome, CuaTask, ReportRoute, RunBudget, RunOrigin,
+    SuccessCheck, TargetedAction, TaskTarget, WindowRef,
 };
 use cua_desktop::{
     BackendCaps, BackendKind, ConsentGuard, DesktopEvent, LeaseId, Stamp, Suspend, ToplevelIdent,
@@ -67,7 +68,6 @@ fn task(target: TaskTarget, mode: RunMode) -> CuaTask {
         data_in: vec![],
         success: SuccessCheck::ModelSays,
         origin: RunOrigin::Planner,
-        procedure: ProcedureUse::None,
         report: ReportRoute {
             to: Address::new(AgentRef::Companion, space()),
             thread: None,
@@ -81,7 +81,7 @@ fn window() -> TaskTarget {
 }
 
 fn env(kind: BackendKind) -> RunEnv {
-    RunEnv::new(&CuaConfig::default(), BackendCaps::of(kind))
+    RunEnv::new(&CuaConfig::default(), BackendCaps::of(kind), rules())
 }
 
 fn run_id() -> RunId {

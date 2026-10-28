@@ -7,14 +7,6 @@ use maskcap::{
 use std::collections::VecDeque;
 use std::sync::Mutex;
 
-/// Whether a call waits for ever.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-enum Stalls {
-    #[default]
-    Never,
-    Next,
-}
-
 /// A [`WindowCapture`] that opens sessions over scripted frames and damage. Each session gets a
 /// copy of the script; when it runs out the window "is gone".
 #[derive(Debug, Default)]
@@ -22,7 +14,8 @@ pub struct FakeCapture {
     frames: Vec<Frame>,
     damage: Vec<DamageAt>,
     refuse: Mutex<Option<CaptureError>>,
-    stall: Mutex<Stalls>,
+    /// Whether the next call waits for ever.
+    stall: Mutex<bool>,
     opened: Mutex<Vec<ToplevelIdent>>,
 }
 
@@ -33,7 +26,7 @@ impl FakeCapture {
             frames,
             damage,
             refuse: Mutex::new(None),
-            stall: Mutex::new(Stalls::Never),
+            stall: Mutex::new(false),
             opened: Mutex::new(Vec::new()),
         }
     }
@@ -45,7 +38,7 @@ impl FakeCapture {
 
     /// Makes the next `open` wait for ever, like a compositor that never sends the constraints.
     pub fn stall_next_open(&self) {
-        *self.stall.lock().expect("fake capture lock") = Stalls::Next;
+        *self.stall.lock().expect("fake capture lock") = true;
     }
 
     /// Makes the next `open` fail with `error`.
@@ -77,11 +70,8 @@ impl WindowCapture for FakeCapture {
             .lock()
             .expect("fake capture lock")
             .push(lease.window.ident.clone());
-        let stalled = std::mem::replace(
-            &mut *self.stall.lock().expect("fake capture lock"),
-            Stalls::Never,
-        );
-        if stalled == Stalls::Next {
+        let stalled = std::mem::replace(&mut *self.stall.lock().expect("fake capture lock"), false);
+        if stalled {
             std::future::pending::<()>().await;
         }
         if let Some(error) = self.refuse.lock().expect("fake capture lock").take() {

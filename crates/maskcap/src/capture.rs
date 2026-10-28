@@ -61,6 +61,18 @@ pub trait WindowCapture: Send + Sync {
     ) -> impl Future<Output = Result<Self::Session, CaptureError>> + Send;
 }
 
+/// No capture source: every `open` is refused.
+impl<C: WindowCapture> WindowCapture for Option<C> {
+    type Session = C::Session;
+
+    async fn open(&self, lease: &LeaseGrant) -> Result<C::Session, CaptureError> {
+        match self {
+            Some(capture) => capture.open(lease).await,
+            None => Err(CaptureError::Refused),
+        }
+    }
+}
+
 /// One open capture of one window.
 pub trait CaptureSession: Send {
     /// A masked frame. `hints` are the regions cuad wants masked; on the fork they go to the

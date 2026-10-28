@@ -13,7 +13,7 @@ use cua_bus::{
 use cua_desktop::{BackendKind, Stamp};
 use cua_run::{
     CuaSignal, FORCED_NO, FORCED_YES, Held, ReaderMode, Run, RunEffect, RunInput, RunPhase,
-    ScreenRead, Suspicion,
+    ScreenRead,
 };
 use docket_core::GateAnswer;
 use porter_core::AppName;
@@ -85,7 +85,7 @@ fn a_suspicious_look_asks_before_the_model_is_called() {
     );
     assert!(!d.has(|e| matches!(e, RunEffect::CallModel { .. })));
     assert_eq!(d.run.track.held, Held::SuspiciousScreen);
-    assert_eq!(d.run.track.screen.suspicion, Suspicion::Seen);
+    assert!(d.run.track.screen.suspicious);
     assert_eq!(
         screen_records(&d),
         vec![(vec![ScreenKind::Instruction], ScreenAsk::Asked)]
@@ -125,7 +125,7 @@ fn a_clear_look_goes_straight_to_the_model() {
     assert_eq!(*d.phase(), RunPhase::Thinking(StepIndex(1)));
     assert!(d.has(|e| matches!(e, RunEffect::CallModel { .. })));
     assert!(screen_records(&d).is_empty());
-    assert_eq!(d.run.track.screen.suspicion, Suspicion::Clean);
+    assert!(!d.run.track.screen.suspicious);
 }
 
 #[test]
@@ -158,7 +158,7 @@ fn a_yes_calls_the_model_and_is_remembered_for_that_window_and_kind() {
         RunEffect::Record(r) if matches!(**r, CuaRecord::Confirmed { .. })
     )));
     assert_eq!(d.run.track.held, Held::Nothing);
-    assert_eq!(d.run.track.screen.suspicion, Suspicion::Seen);
+    assert!(d.run.track.screen.suspicious);
 
     // The next look shows the same text in the same window: recorded, not asked.
     d.feed(RunInput::ModelReplied(reply(vec![wait(10)])));

@@ -1,7 +1,6 @@
 //! The task a run starts from: the `Start` body.
 
 use crate::budget::RunBudget;
-use crate::ids::ProcedureId;
 use crate::record::CuaRecord;
 use cua_action::RunMode;
 use cua_desktop::{Stamp, ToplevelIdent};
@@ -46,18 +45,6 @@ pub enum SuccessCheck {
     TreeHas(NodeSelector),
     /// The model says so and the tree has this node.
     Both(NodeSelector),
-}
-
-/// A learned procedure to use (a later wave; `None` is the only value built).
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "kind", content = "v", rename_all = "snake_case")]
-pub enum ProcedureUse {
-    /// Plain run.
-    None,
-    /// Show the model the procedure as a hint.
-    Hint(ProcedureId),
-    /// Replay it.
-    Replay(ProcedureId),
 }
 
 /// Where the run's reports go: the requester's address, and the conversation they continue.
@@ -111,8 +98,6 @@ pub struct CuaTask {
     pub success: SuccessCheck,
     /// Where it came from.
     pub origin: RunOrigin,
-    /// A procedure to use.
-    pub procedure: ProcedureUse,
     /// Where it reports.
     pub report: ReportRoute,
 }

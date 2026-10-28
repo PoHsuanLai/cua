@@ -80,6 +80,6 @@ impl<S: Seams> Exec<'_, S> {
     /// The model's session is no longer this run's (the driver let the model go while the run
     /// waited): the next model call opens a new one.
     pub fn forget_model_session(&mut self) {
-        self.model = super::ModelSession::NotYet;
+        self.model_open = false;
     }
 }

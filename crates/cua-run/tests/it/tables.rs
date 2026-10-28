@@ -1,5 +1,6 @@
 //! What the pure functions of cua-run must do.
 
+use crate::support::rules;
 use a11y_tree::{
     A11yNode, A11ySnapshot, NodeState, NodeValue, Parent, Role, Sensitivity, TreeSource,
     Truncation, TypedHint,
@@ -259,14 +260,14 @@ fn classify_effect_table() {
     ];
     for row in rows {
         assert_eq!(
-            classify_effect(&row.action, None, row.class),
+            classify_effect(&rules().commit, &row.action, None, row.class),
             row.want,
             "{}",
             row.name
         );
     }
     let node = node_with_typed_action();
-    let (_, basis) = classify_effect(&click(), Some(&node), MailCompose);
+    let (_, basis) = classify_effect(&rules().commit, &click(), Some(&node), MailCompose);
     assert_eq!(
         basis,
         EffectBasis::NodeTypedAction(ActionName::parse("mail.thread.archive").unwrap()),
@@ -304,17 +305,20 @@ fn a_click_on_a_commit_control_in_a_form_window_is_outbound() {
         };
         let node = named(role, name);
         assert_eq!(
-            classify_effect(&click(), Some(&node), class),
+            classify_effect(&rules().commit, &click(), Some(&node), class),
             want,
             "{name} {role:?} {class:?}"
         );
     }
     assert_eq!(
-        classify_effect(&click(), None, Payments),
+        classify_effect(&rules().commit, &click(), None, Payments),
         outbound(Payments),
         "a click on an unknown node in a payment form might be the commit"
     );
-    assert_eq!(classify_effect(&click(), None, Ordinary), plain(Ordinary));
+    assert_eq!(
+        classify_effect(&rules().commit, &click(), None, Ordinary),
+        plain(Ordinary)
+    );
 }
 
 #[test]
@@ -322,7 +326,7 @@ fn a_pay_button_on_screen_makes_an_untitled_window_a_payment_form() {
     let app = AppName::parse("org.mozilla.firefox").unwrap();
     let pay = secret_node(1, Role::Button, "Pay now", Sensitivity::Normal, "");
     let back = secret_node(2, Role::Button, "Back", Sensitivity::Normal, "");
-    let class = |nodes: &[A11yNode]| cua_run::window_class_in(&app, "Shop", nodes);
+    let class = |nodes: &[A11yNode]| cua_run::window_class_in(&rules(), &app, "Shop", nodes);
     assert_eq!(class(&[back.clone(), pay]), WindowClass::Payments);
     assert_eq!(class(&[back]), WindowClass::Ordinary);
     assert_eq!(class(&[]), WindowClass::Ordinary);

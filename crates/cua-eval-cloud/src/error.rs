@@ -2,6 +2,7 @@
 //! that failed. The binary prints the error and exits with status 2.
 
 use cua_eval::corpus::CorpusError;
+use cua_eval::flags::FlagError;
 use cua_eval::live::LiveError;
 use cua_eval::run::SetupError;
 use model_catalog::CatalogError;
@@ -12,25 +13,9 @@ use std::path::PathBuf;
 /// A command-line flag that cannot be used.
 #[derive(Debug, thiserror::Error)]
 pub enum ArgError {
-    /// A flag that takes a value was the last word.
-    #[error("{0} needs a value")]
-    NeedsValue(String),
-    /// A flag that takes a number was given something else.
-    #[error("{0} is a number")]
-    NotANumber(&'static str),
-    /// A flag that takes one of a few words was given another word.
-    #[error("{flag} takes {allowed}, not {given}")]
-    NotAllowed {
-        /// The flag.
-        flag: &'static str,
-        /// The words it takes, as a phrase.
-        allowed: &'static str,
-        /// What it was given.
-        given: String,
-    },
-    /// A word that is no flag.
-    #[error("unknown flag {0}")]
-    UnknownFlag(String),
+    /// A flag that cannot be used.
+    #[error(transparent)]
+    Flag(#[from] FlagError),
     /// A flag the program cannot run without.
     #[error("--entry and --label are required")]
     Required,

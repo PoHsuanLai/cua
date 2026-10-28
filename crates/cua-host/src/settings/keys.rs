@@ -4,8 +4,8 @@
 //! this table to each other.
 
 use super::CuaSettings;
-use cua_run::{Accessibility, Autopause, DefaultMode, Enabled};
 use porter_core::MicroUsd;
+use serde::de::DeserializeOwned;
 use std::ops::RangeInclusive;
 
 /// What a key's value may be and how it lands in the settings.
@@ -16,10 +16,10 @@ pub(crate) enum Rule {
         range: RangeInclusive<i64>,
         set: fn(&mut CuaSettings, i64),
     },
-    /// One of `words`, by position.
+    /// One of `words`: `set` reads the word through serde and says whether the field took it.
     Word {
         words: &'static [&'static str],
-        set: fn(&mut CuaSettings, usize),
+        set: fn(&mut CuaSettings, &str) -> bool,
     },
 }
 
@@ -43,7 +43,7 @@ fn num(path: &'static str, range: RangeInclusive<i64>, set: fn(&mut CuaSettings,
 fn word(
     path: &'static str,
     words: &'static [&'static str],
-    set: fn(&mut CuaSettings, usize),
+    set: fn(&mut CuaSettings, &str) -> bool,
 ) -> Key {
     Key {
         path,
@@ -51,31 +51,27 @@ fn word(
     }
 }
 
-const ENABLED: [Enabled; 2] = [Enabled::Off, Enabled::On];
-const MODE: [DefaultMode; 3] = [
-    DefaultMode::Auto,
-    DefaultMode::InPlace,
-    DefaultMode::AgentWorkspace,
-];
-const AUTOPAUSE: [Autopause; 2] = [Autopause::On, Autopause::Off];
-const ACCESSIBILITY: [Accessibility; 2] = [Accessibility::On, Accessibility::Off];
+/// Reads `word` as the serde form of `T`; `None` when it is not one of `T`'s words.
+fn read_word<T: DeserializeOwned>(word: &str) -> Option<T> {
+    toml::Value::String(word.to_owned()).try_into().ok()
+}
 
 /// Every scalar key, in the order the schema lists them.
 pub(crate) fn table() -> Vec<Key> {
     vec![
-        word("cua.enabled", &["off", "on"], |s, i| {
-            s.config.enabled = ENABLED[i];
+        word("cua.enabled", &["off", "on"], |s, w| {
+            read_word(w).map(|v| s.config.enabled = v).is_some()
         }),
         word(
             "cua.default_mode",
             &["auto", "in_place", "agent_workspace"],
-            |s, i| s.config.default_mode = MODE[i],
+            |s, w| read_word(w).map(|v| s.config.default_mode = v).is_some(),
         ),
-        word("cua.autopause", &["on", "off"], |s, i| {
-            s.config.autopause = AUTOPAUSE[i];
+        word("cua.autopause", &["on", "off"], |s, w| {
+            read_word(w).map(|v| s.config.autopause = v).is_some()
         }),
-        word("cua.accessibility", &["on", "off"], |s, i| {
-            s.config.accessibility = ACCESSIBILITY[i];
+        word("cua.accessibility", &["on", "off"], |s, w| {
+            read_word(w).map(|v| s.config.accessibility = v).is_some()
         }),
         num("cua.budget.spend_microusd", 0..=1_000_000_000, |s, v| {
             s.config.budget.spend = MicroUsd(u64::try_from(v).unwrap_or(u64::MAX));

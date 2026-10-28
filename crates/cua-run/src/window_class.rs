@@ -1,84 +1,55 @@
 //! What kind of window a step acts in, as far as the app's name says.
 //!
-//! The router makes the ruling; this only names the class it is told. The table is short on
-//! purpose: a class it does not know is `Ordinary`, and the default effect table applies.
+//! The router makes the ruling; this only names the class it is told. The tables are
+//! [`WindowRules`] (shipped data) and are short on purpose: a class they do not know is
+//! `Ordinary`, and the default effect table applies.
 
-use crate::commit::{Commit, commit_of};
+use crate::commit::pays;
+use crate::rules::{ClassFragments, Rules, WindowRules};
 use a11y_tree::A11yNode;
 use cua_action::WindowClass;
 use porter_core::AppName;
 
-/// Fragments of an app id that name a kind of window, first match wins. Lower case.
-const APPS: &[(&str, WindowClass)] = &[
-    ("terminal", WindowClass::Terminal),
-    ("konsole", WindowClass::Terminal),
-    ("alacritty", WindowClass::Terminal),
-    ("kitty", WindowClass::Terminal),
-    ("wezterm", WindowClass::Terminal),
-    ("foot", WindowClass::Terminal),
-    ("keepass", WindowClass::PasswordManager),
-    ("bitwarden", WindowClass::PasswordManager),
-    ("1password", WindowClass::PasswordManager),
-    ("polkit", WindowClass::Admin),
-    ("policykit", WindowClass::Admin),
-    ("gparted", WindowClass::Admin),
-    ("bank", WindowClass::Banking),
-    ("paypal", WindowClass::Banking),
-    ("venmo", WindowClass::Banking),
-];
-
-/// Fragments of a window title that say money is being paid or moved: a checkout or payment
-/// form in a browser, a transfer screen. Lower case. A false positive only costs a question.
-const MONEY_TITLES: &[(&str, WindowClass)] = &[
-    ("checkout", WindowClass::Payments),
-    ("check out", WindowClass::Payments),
-    ("payment", WindowClass::Payments),
-    ("billing", WindowClass::Payments),
-    ("credit card", WindowClass::Payments),
-    ("place order", WindowClass::Payments),
-    ("pay now", WindowClass::Payments),
-    ("purchase", WindowClass::Payments),
-    ("online banking", WindowClass::Banking),
-    ("internet banking", WindowClass::Banking),
-    ("wire transfer", WindowClass::Banking),
-    ("bank transfer", WindowClass::Banking),
-    ("money transfer", WindowClass::Banking),
-    ("transfer funds", WindowClass::Banking),
-    ("send money", WindowClass::Banking),
-];
-
-/// Words in a mail window's title that say it is composing.
-const COMPOSE: &[&str] = &["compose", "new message", "write:", "reply", "forward"];
-
-/// Fragments of an app id that are mail clients.
-const MAIL: &[&str] = &["mail", "thunderbird", "evolution", "geary"];
+/// The class of the first row of `rows` with a fragment `text` holds.
+fn class_in(rows: &[ClassFragments], text: &str) -> Option<WindowClass> {
+    rows.iter()
+        .find(|row| row.fragments.iter().any(|f| text.contains(f.as_str())))
+        .map(|row| row.class)
+}
 
 /// The class of the window of `app` titled `title`.
-pub fn window_class_of(app: &AppName, title: &str) -> WindowClass {
+pub fn window_class_of(rules: &WindowRules, app: &AppName, title: &str) -> WindowClass {
     let id = app.as_str().to_lowercase();
-    if let Some((_, class)) = APPS.iter().find(|(fragment, _)| id.contains(fragment)) {
-        return *class;
+    if let Some(class) = class_in(&rules.apps, &id) {
+        return class;
     }
     let title = title.to_lowercase();
-    let composing = COMPOSE.iter().any(|word| title.contains(word));
-    if composing && MAIL.iter().any(|fragment| id.contains(fragment)) {
+    let composing = rules
+        .compose_words
+        .iter()
+        .any(|word| title.contains(word.as_str()));
+    if composing
+        && rules
+            .mail_apps
+            .iter()
+            .any(|fragment| id.contains(fragment.as_str()))
+    {
         return WindowClass::MailCompose;
     }
-    match MONEY_TITLES
-        .iter()
-        .find(|(fragment, _)| title.contains(fragment))
-    {
-        Some((_, class)) => *class,
-        None => WindowClass::Ordinary,
-    }
+    class_in(&rules.money_titles, &title).unwrap_or(WindowClass::Ordinary)
 }
 
 /// The class of the window of `app` titled `title` whose accessibility tree is `nodes`: what
 /// [`window_class_of`] says, and when that is `Ordinary`, `Payments` if a pay control is on
 /// screen (a button named for paying, wherever the page's title is silent).
-pub fn window_class_in(app: &AppName, title: &str, nodes: &[A11yNode]) -> WindowClass {
-    match window_class_of(app, title) {
-        WindowClass::Ordinary if nodes.iter().any(|n| commit_of(n) == Some(Commit::Pay)) => {
+pub fn window_class_in(
+    rules: &Rules,
+    app: &AppName,
+    title: &str,
+    nodes: &[A11yNode],
+) -> WindowClass {
+    match window_class_of(&rules.windows, app, title) {
+        WindowClass::Ordinary if nodes.iter().any(|n| pays(&rules.commit, n)) => {
             WindowClass::Payments
         }
         class => class,
@@ -88,6 +59,7 @@ pub fn window_class_in(app: &AppName, title: &str, nodes: &[A11yNode]) -> Window
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::rules::shipped;
 
     #[test]
     fn the_app_and_the_title_pick_the_class_and_anything_else_is_ordinary() {
@@ -131,7 +103,7 @@ mod tests {
         ];
         for (app, title, want) in table {
             assert_eq!(
-                window_class_of(&AppName::parse(app).unwrap(), title),
+                window_class_of(&shipped().windows, &AppName::parse(app).unwrap(), title),
                 want,
                 "{app} {title}"
             );

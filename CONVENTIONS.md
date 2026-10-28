@@ -16,9 +16,11 @@ What cua adds or decides differently, each with its reason:
    a list of every variant is needed (`ControlRefusal::ALL`, `CuaMember::ALL`) it is written by
    hand and a test with a wildcard-free `match` stops the build when a variant is added.
 2. **Async seams use `-> impl Future<Output = ...> + Send`**, so implementations write
-   `async fn` and every future can cross a multi-threaded runtime. Closed sets of
-   implementations are enums (`SeatBackend`, `CaptureBackend`) or generic parameters bundled in
-   `cua_run::Seams`, never `dyn`.
+   `async fn` and every future can cross a multi-threaded runtime. Implementations are generic
+   parameters bundled in `cua_run::Seams`; an absent backend is an `Option` of it (`Option<D>`
+   implements `Desktop`, `LeaseControl`, `A11ySource` and `WindowCapture`); an enum is for two or
+   more real backends that cannot be generic (`CaptureBackend`). `Box<dyn Trait>` is fine when
+   the implementation is picked from configuration at run time.
 3. **`todo!()` bodies exist only while an interface is frozen and its behaviour is not built.**
    Each one is listed in `FINDINGS.md` with the work that removes it. A test whose subject is a
    `todo!()` is `#[ignore = "<what closes it>"]` and carries real assertions.
@@ -53,8 +55,21 @@ What cua adds or decides differently, each with its reason:
 10. **Proposed values are `CuaConfig`.** Every number the specs mark "proposed" is a field of
     `cua_run::CuaConfig` with its default, and a key in `cua-host`'s table with a schema row; a test
     holds the schema to the defaults. The settings keys themselves belong to the person's settings.
-11. **No `bool` in a field, a parameter or a message,** also in test doubles: a two-state enum
-    says what it means (`Emulation::{Running, Stopped}`, `Press::{Down, Up}`).
+11. **Types: plain Rust first** (owner, 2026-10-28; `LANE-RULES.md` rule 4).
+    - `bool` is fine for fields, return values, locals and private functions. Use an enum instead
+      only when a public function would read as `f(true, false)`, a third state is realistic, or
+      the value is written to disk or the bus where a named word reads better (`Switch`,
+      `Emulation::{Running, Stopped}`, `Press::{Down, Up}`).
+    - **One fact, one type.** No mirror enums across crates (`X`/`XKind`/`XWire`/`XState`); the
+      lower crate owns it. A field-less view of an enum is a method, not a second declaration.
+      The four on/off settings are one `Switch`.
+    - **Two-way outcomes are `Result` or `Option`**, not a two-arm enum. "Absent or one real
+      thing" is `Option<T>`. A single-variant enum is not a type.
+    - **Growing sets are data**: apps, phrases, window classes, commit words and sensitive titles
+      are `dist/screen-rules.toml`, read by `cuad` and passed in as `cua_run::Rules`; a closed set
+      the code branches on is an enum.
+    - **Newtypes only with a rule**: parsed or validated, a unit, or an id that must not be
+      mixed with another. Otherwise the plain type.
 12. **Typed points.** A point carries its coordinate space (`Point<WindowSpace>`); a bare pixel
     pair is wrong. The one place that names a global position is `seat-input::region`.
 13. **One integration-test executable per crate.** Cargo links every file directly under `tests/`

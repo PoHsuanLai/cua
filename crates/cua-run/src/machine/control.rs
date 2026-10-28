@@ -1,7 +1,7 @@
 //! What the person, the shell and the desktop do to a run from outside its loop: pause, resume,
 //! take over, hand back, cancel, and what the desktop says on its own.
 
-use crate::config::Autopause;
+use crate::config::Switch;
 use crate::machine::effect::RunEffect;
 use crate::machine::finish::finish_plain;
 use crate::machine::ops::{AlsoContext, drop_rest, enter, next, observe, step_of, synthetic};
@@ -165,7 +165,7 @@ pub(crate) fn desktop(run: &mut Run, fx: &mut Vec<RunEffect>, event: DesktopEven
         }
         DesktopEvent::PhysicalInput { lease } if Some(lease) == run.lease => {
             let hands_off = mode_support(&run.env.caps, run.task.mode) == ModeSupport::HandsOff;
-            if hands_off && run.env.autopause == Autopause::On {
+            if hands_off && run.env.autopause == Switch::On {
                 pause(run, fx);
             }
         }

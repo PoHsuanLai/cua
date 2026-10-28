@@ -1,17 +1,16 @@
 //! Turning a `cua.run.start` into a task: which window or app the run works in, and the apps to
 //! choose from when none was named that is open.
 
-use crate::provider::{ModeChoice, OpenAppsAsk, StartRefusal, StartRequest};
+use crate::provider::{OpenAppsAsk, StartRefusal, StartRequest};
 use crate::reasons::words_of;
 use cua_bus::{
-    ControlRefusal, CuaCaller, CuaTask, ProcedureUse, ReportRoute, RunOrigin, SuccessCheck,
-    TaskTarget,
+    ControlRefusal, CuaCaller, CuaTask, ReportRoute, RunOrigin, SuccessCheck, TaskTarget,
 };
 use cua_desktop::WindowTrust;
 use cua_desktop::{Desktop, RunMode, ToplevelInfo, ToplevelState};
 use cua_host::Supervisor;
 use cua_host::{Apps, Drivable};
-use cua_run::choose_mode;
+use cua_run::{DefaultMode, choose_mode};
 use porter_core::AppName;
 use prov::Address;
 use std::collections::BTreeSet;
@@ -87,9 +86,9 @@ pub(crate) async fn task_for<S: Drivable>(
 ) -> Result<CuaTask, TaskRefusal> {
     let caps = supervisor.desktop().caps();
     let mode = match request.mode {
-        ModeChoice::InPlace => RunMode::InPlace,
-        ModeChoice::AgentWorkspace => RunMode::AgentWorkspace,
-        ModeChoice::Auto => choose_mode(supervisor.settings().default_mode, &caps)
+        DefaultMode::InPlace => RunMode::InPlace,
+        DefaultMode::AgentWorkspace => RunMode::AgentWorkspace,
+        DefaultMode::Auto => choose_mode(supervisor.settings().default_mode, &caps)
             .ok_or(ControlRefusal::ModeUnsupported)?,
     };
     let windows = supervisor.desktop().windows().await;
@@ -146,7 +145,6 @@ pub(crate) async fn task_for<S: Drivable>(
         data_in: Vec::new(),
         success: SuccessCheck::ModelSays,
         origin: RunOrigin::Planner,
-        procedure: ProcedureUse::None,
         report: ReportRoute {
             to: Address::new(request.from.clone(), request.space.clone()),
             thread: None,

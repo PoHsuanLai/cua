@@ -69,27 +69,21 @@ fn link_error(error: ClientError) -> LinkError {
 pub struct IntentsCheck {
     watch: GateWatch,
     steer: GateSteer,
-    over: Over,
-}
-
-/// Whether the router has had the last word on a check.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Over {
-    Open,
-    Answered,
+    /// Whether the router has had the last word on the check.
+    answered: bool,
 }
 
 impl std::fmt::Debug for IntentsCheck {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("IntentsCheck")
-            .field("over", &self.over)
+            .field("answered", &self.answered)
             .finish_non_exhaustive()
     }
 }
 
 impl Drop for IntentsCheck {
     fn drop(&mut self) {
-        if self.over == Over::Open
+        if !self.answered
             && let Ok(runtime) = tokio::runtime::Handle::try_current()
         {
             let steer = self.steer.clone();
@@ -143,14 +137,14 @@ impl<T: Transport + 'static> GateLink for IntentsGate<T> {
         Ok(IntentsCheck {
             steer: watch.steer(),
             watch,
-            over: Over::Open,
+            answered: false,
         })
     }
 }
 
 impl GateCheck for IntentsCheck {
     async fn next(&mut self) -> Result<GateEvent, LinkError> {
-        if self.over == Over::Answered {
+        if self.answered {
             return Err(LinkError::Protocol(
                 "the check was already answered".to_owned(),
             ));
@@ -158,27 +152,29 @@ impl GateCheck for IntentsCheck {
         match self.watch.next().await {
             Ok(Heard::Confirming(id)) => Ok(GateEvent::Confirming(id)),
             Ok(Heard::Verdict(answer)) => {
-                self.over = Over::Answered;
+                self.answered = true;
                 Ok(GateEvent::Answered(answer))
             }
             Err(error) => {
-                self.over = Over::Answered;
+                self.answered = true;
                 Err(link_error(error))
             }
         }
     }
 
     async fn proceed(&mut self) -> Result<(), LinkError> {
-        match self.over {
-            Over::Answered => Ok(()),
-            Over::Open => self.steer.proceed().await.map_err(link_error),
+        if self.answered {
+            Ok(())
+        } else {
+            self.steer.proceed().await.map_err(link_error)
         }
     }
 
     async fn close(&mut self) -> Result<(), LinkError> {
-        match std::mem::replace(&mut self.over, Over::Answered) {
-            Over::Answered => Ok(()),
-            Over::Open => self.steer.close().await.map_err(link_error),
+        if std::mem::replace(&mut self.answered, true) {
+            Ok(())
+        } else {
+            self.steer.close().await.map_err(link_error)
         }
     }
 }

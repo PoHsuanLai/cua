@@ -212,15 +212,17 @@ impl<S: Seams> Exec<'_, S> {
     fn blackout_of(&self, info: &ToplevelInfo) -> Option<MaskRegion> {
         match &self.staged.tree {
             TreeObs::Present(_) => None,
-            TreeObs::Absent(_) => window_sensitivity(&info.app, &info.title.0, &[])
-                .asks()
-                .then(|| MaskRegion {
-                    rect: Rect {
-                        origin: Point::new(Coord(0), Coord(0)),
-                        size: size_of(info),
-                    },
-                    why: MaskReason::SensitiveWindow,
-                }),
+            TreeObs::Absent(_) => {
+                window_sensitivity(self.seam.rules, &info.app, &info.title.0, &[])
+                    .asks()
+                    .then(|| MaskRegion {
+                        rect: Rect {
+                            origin: Point::new(Coord(0), Coord(0)),
+                            size: size_of(info),
+                        },
+                        why: MaskReason::SensitiveWindow,
+                    })
+            }
         }
     }
 

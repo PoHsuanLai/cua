@@ -10,7 +10,7 @@ use crate::verdict::Outcome;
 use crate::world::{EvalClock, WINDOW};
 use chordkit::Keymap;
 use cua_action::RunMode;
-use cua_bus::{CuaTask, ProcedureUse, ReportRoute, RunBudget, RunOrigin, SuccessCheck, TaskTarget};
+use cua_bus::{CuaTask, ReportRoute, RunBudget, RunOrigin, SuccessCheck, TaskTarget};
 use cua_desktop::{Stamp, ToplevelIdent};
 use cua_fake::FixedClock;
 use porter_core::{AppName, Count, MicroUsd, UnixSeconds};
@@ -131,7 +131,6 @@ impl Arena {
             data_in: vec![],
             success: SuccessCheck::ModelSays,
             origin: RunOrigin::Planner,
-            procedure: ProcedureUse::None,
             report: ReportRoute {
                 to: Address::new(AgentRef::Companion, space),
                 thread: None,

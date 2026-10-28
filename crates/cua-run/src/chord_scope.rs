@@ -13,40 +13,12 @@ use chordkit::{
 };
 use cua_action::{Chord, Modifier};
 use keyboard_types::Key;
-use serde::{Deserialize, Serialize};
 
-/// The keyboard conventions the desktop under the run follows.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum KeyWorld {
-    /// macOS.
-    MacOs,
-    /// Windows.
-    Windows,
-    /// KDE Plasma.
-    Kde,
-    /// GNOME.
-    Gnome,
-    /// This project's desktop: the Command key arrives as Super.
-    #[default]
-    Ours,
-    /// Any other Linux desktop.
-    OtherLinux,
-}
-
-impl KeyWorld {
-    fn platform(self) -> Platform {
-        let linux = |desktop| Platform::Linux { desktop };
-        match self {
-            KeyWorld::MacOs => Platform::MacOs,
-            KeyWorld::Windows => Platform::Windows,
-            KeyWorld::Kde => linux(Desktop::Kde),
-            KeyWorld::Gnome => linux(Desktop::Gnome),
-            KeyWorld::Ours => linux(Desktop::Ours),
-            KeyWorld::OtherLinux => linux(Desktop::Other),
-        }
-    }
-}
+/// The keyboard conventions the desktop under the run follows: this project's desktop, where the
+/// Command key arrives as Super.
+pub(crate) const OURS: Platform = Platform::Linux {
+    desktop: Desktop::Ours,
+};
 
 /// Whether the standard action is done by the desktop as a whole (apps, windows, Spaces, the
 /// session, the screen) and not by the app that has the focus.
@@ -131,27 +103,17 @@ fn function_key(key: &Key) -> Option<ChordKey> {
     ChordKey::function(n)
 }
 
-/// Every world's conventions, to read a chord whichever desktop the model had in mind.
-const WORLDS: [KeyWorld; 6] = [
-    KeyWorld::MacOs,
-    KeyWorld::Windows,
-    KeyWorld::Kde,
-    KeyWorld::Gnome,
-    KeyWorld::Ours,
-    KeyWorld::OtherLinux,
-];
-
-/// The standard actions `chord` is bound to in any world's conventions (Ctrl+N and Command+N
+/// The standard actions `chord` is bound to in any platform's conventions (Ctrl+N and Command+N
 /// are both "new"). Empty for a key no shortcut here uses.
 pub fn standard_actions_of(chord: &Chord) -> Vec<StandardAction> {
     let Some(key) = key_of(&chord.key) else {
         return Vec::new();
     };
     let pressed = KeyChord::new(modifiers_of(chord), key);
-    WORLDS
+    Platform::ALL
         .iter()
-        .flat_map(|world| {
-            Keymap::conventional(world.platform())
+        .flat_map(|platform| {
+            Keymap::conventional(*platform)
                 .bindings(Context::Normal)
                 .iter()
                 .filter_map(|(action, bound)| match action {
@@ -163,15 +125,14 @@ pub fn standard_actions_of(chord: &Chord) -> Vec<StandardAction> {
         .collect()
 }
 
-/// Whether `chord` is one the desktop acts on itself in `world`: bound to a desktop-wide action
+/// Whether `chord` is one the desktop acts on itself on `platform`: bound to a desktop-wide action
 /// in the platform's conventions, or reserved by the platform. Ordinary shortcuts (copy, paste,
 /// undo, save, find) are not.
-pub fn acts_on_desktop(chord: &Chord, world: KeyWorld) -> bool {
+pub fn acts_on_desktop(chord: &Chord, platform: Platform) -> bool {
     let Some(key) = key_of(&chord.key) else {
         return false;
     };
     let pressed = KeyChord::new(modifiers_of(chord), key);
-    let platform = world.platform();
     if reserved_reason(platform, pressed).is_some() {
         return true;
     }
@@ -199,23 +160,30 @@ mod tests {
     #[test]
     fn the_desktops_own_chords_are_told_from_the_window_shortcuts() {
         use Modifier::{Alt, Ctrl, Shift, Super};
-        // (chord, world, acts on the desktop)
+        const KDE: Platform = Platform::Linux {
+            desktop: Desktop::Kde,
+        };
+        // (chord, platform, acts on the desktop)
         let table = [
-            (chord(&[Super], letter("c")), KeyWorld::Ours, false),
-            (chord(&[Super], letter("v")), KeyWorld::Ours, false),
-            (chord(&[Super], letter("z")), KeyWorld::Ours, false),
-            (chord(&[Ctrl], letter("c")), KeyWorld::Kde, false),
-            (chord(&[], Key::Enter), KeyWorld::Ours, false),
-            (chord(&[Super], Key::Tab), KeyWorld::Ours, true),
-            (chord(&[Shift, Super], Key::Tab), KeyWorld::Ours, true),
-            (chord(&[Super], letter(" ")), KeyWorld::Ours, true),
-            (chord(&[Ctrl], letter("1")), KeyWorld::Ours, true),
-            (chord(&[Alt], Key::Tab), KeyWorld::Kde, true),
-            (chord(&[Ctrl, Alt], Key::Delete), KeyWorld::Kde, true),
-            (chord(&[], Key::Super), KeyWorld::Ours, true),
+            (chord(&[Super], letter("c")), OURS, false),
+            (chord(&[Super], letter("v")), OURS, false),
+            (chord(&[Super], letter("z")), OURS, false),
+            (chord(&[Ctrl], letter("c")), KDE, false),
+            (chord(&[], Key::Enter), OURS, false),
+            (chord(&[Super], Key::Tab), OURS, true),
+            (chord(&[Shift, Super], Key::Tab), OURS, true),
+            (chord(&[Super], letter(" ")), OURS, true),
+            (chord(&[Ctrl], letter("1")), OURS, true),
+            (chord(&[Alt], Key::Tab), KDE, true),
+            (chord(&[Ctrl, Alt], Key::Delete), KDE, true),
+            (chord(&[], Key::Super), OURS, true),
         ];
-        for (chord, world, want) in table {
-            assert_eq!(acts_on_desktop(&chord, world), want, "{chord:?} {world:?}");
+        for (chord, platform, want) in table {
+            assert_eq!(
+                acts_on_desktop(&chord, platform),
+                want,
+                "{chord:?} {platform:?}"
+            );
         }
     }
 }

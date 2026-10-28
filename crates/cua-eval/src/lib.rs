@@ -9,6 +9,7 @@
 
 pub mod corpus;
 pub mod eval;
+pub mod flags;
 mod font_data;
 pub mod gate;
 pub mod keys;

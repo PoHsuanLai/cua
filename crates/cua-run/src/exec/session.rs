@@ -3,7 +3,7 @@
 use super::cost::reply_cost;
 use super::fit::{Fit, takes};
 use super::phase::{Bound, PHASE_LIMIT, bounded};
-use super::{Exec, ModelSession, Outlet, Progress, Step, StepNote};
+use super::{Exec, Outlet, Progress, Step, StepNote};
 use crate::machine::acquire::{AcquireFailure, AcquirePhase, AcquireWhy};
 use crate::machine::input::{ModelReply, Moved, RunInput};
 use crate::model::{CuaModel, CuaModelError, StepEvent, StepSink};
@@ -307,7 +307,7 @@ impl<S: Seams> Exec<'_, S> {
         frame: FrameAttachment,
         out: &mut impl Outlet,
     ) {
-        if self.model == ModelSession::NotYet {
+        if !self.model_open {
             let begin = CuaBegin::new(
                 crate::briefing::task_line(&self.task),
                 porter_core::capability::CuaEnv::Desktop,
@@ -316,7 +316,7 @@ impl<S: Seams> Exec<'_, S> {
             if let Err(error) = model.begin(begin).await {
                 return out.input(failed_input(&*model, error));
             }
-            self.model = ModelSession::Open;
+            self.model_open = true;
         }
         let reply = model.step(request, frame, &mut Forward(out)).await;
         if let Some(served) = model.served()

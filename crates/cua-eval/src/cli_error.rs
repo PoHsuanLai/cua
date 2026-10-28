@@ -1,6 +1,7 @@
 //! Why the `cua-eval` program stops: a flag it cannot use, or a step of the run that failed. The
 //! program prints the error and exits with status 2.
 
+use cua_eval::flags::FlagError;
 use cua_eval::live::LiveError;
 use cua_eval::run::SetupError;
 use std::path::PathBuf;
@@ -8,28 +9,12 @@ use std::path::PathBuf;
 /// A command-line flag that cannot be used.
 #[derive(Debug, thiserror::Error)]
 pub enum ArgError {
-    /// A flag that takes a value was the last word.
-    #[error("{0} needs a value")]
-    NeedsValue(String),
-    /// A flag that takes a number was given something else.
-    #[error("{0} is a number")]
-    NotANumber(&'static str),
-    /// A flag that takes one of a few words was given another word.
-    #[error("{flag} takes {allowed}, not {given}")]
-    NotAllowed {
-        /// The flag.
-        flag: &'static str,
-        /// The words it takes, as a phrase.
-        allowed: &'static str,
-        /// What it was given.
-        given: String,
-    },
+    /// A flag that cannot be used.
+    #[error(transparent)]
+    Flag(#[from] FlagError),
     /// A platform name chordkit does not know.
     #[error("{0}")]
     Platform(#[from] chordkit::PlatformError),
-    /// A word that is no flag.
-    #[error("unknown flag {0}")]
-    UnknownFlag(String),
 }
 
 /// Why a run could not be played or written.

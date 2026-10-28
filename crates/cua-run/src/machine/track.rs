@@ -47,44 +47,8 @@ pub enum SettleWatch {
 
 impl SettleWatch {
     /// Whether the driver should feed this watch the window's damage.
-    pub fn wants_damage(&self) -> DamageWanted {
-        match self {
-            SettleWatch::Damage { .. } | SettleWatch::Change { .. } => DamageWanted::Yes,
-            SettleWatch::Idle => DamageWanted::No,
-        }
-    }
-}
-
-/// Whether a watch listens for the window's damage.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum DamageWanted {
-    /// It does.
-    Yes,
-    /// It does not.
-    No,
-}
-
-/// How long the run has been waiting on end, `wait` after `wait`. An action that is not a wait
-/// starts the count over. While it is within the run's total (`WAIT_TOTAL`) an unchanged
-/// screen is a slow job and not a stall.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
-#[serde(tag = "kind", content = "v", rename_all = "snake_case")]
-pub enum Waited {
-    /// Not waiting.
-    #[default]
-    No,
-    /// Waiting for this long so far.
-    For(Ms),
-}
-
-impl Waited {
-    /// The count after one more wait of `ms`.
-    #[must_use]
-    pub fn and(self, ms: Ms) -> Waited {
-        match self {
-            Waited::No => Waited::For(ms),
-            Waited::For(Ms(so_far)) => Waited::For(Ms(so_far.saturating_add(ms.0))),
-        }
+    pub fn wants_damage(&self) -> bool {
+        !matches!(self, SettleWatch::Idle)
     }
 }
 
@@ -131,9 +95,11 @@ pub struct RunTrack {
     /// The id of the last question asked, so that no two questions of a run share one.
     #[serde(default)]
     pub last_question: u64,
-    /// How long the run has been waiting, `wait` after `wait`.
+    /// How long the run has been waiting on end, `wait` after `wait`; `None` when it is not
+    /// waiting. An action that is not a wait starts the count over. While it is within the
+    /// run's total (`WAIT_TOTAL`) an unchanged screen is a slow job and not a stall.
     #[serde(default)]
-    pub waited: Waited,
+    pub waited: Option<Ms>,
     /// What the screen check found and what the person said of it.
     #[serde(default)]
     pub screen: ScreenTrack,
@@ -166,7 +132,7 @@ impl RunTrack {
             proposed: 0,
             held: Held::Nothing,
             last_question: 0,
-            waited: Waited::No,
+            waited: None,
             screen: ScreenTrack::default(),
             look: None,
             effect: Effect::Changed,

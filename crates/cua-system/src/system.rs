@@ -1,9 +1,9 @@
 //! The real bundle: the seams of the running daemon.
 
-use crate::backend::{CaptureBackend, SeatBackend, capture_kind};
+use crate::a11y::LoggedAtspi;
+use crate::backend::CaptureBackend;
 use crate::casement::{CasementDesktop, Door};
 use crate::connect::Links;
-use crate::desktop::{SystemA11y, SystemDesktop};
 use crate::model::InferdCuaModel;
 use a11y_atspi::AtspiSource;
 use cua_desktop::{BackendKind, SeatIsolation, Stamp};
@@ -11,7 +11,7 @@ use cua_host::DaemonLinks;
 use cua_host::IntentsGate;
 use cua_host::SystemClock;
 use cua_host::{A11yChoice, BackendChoice, CuadConfig};
-use cua_run::{Clock, Parts, Seams};
+use cua_run::{Clock, Parts, Rules, Seams};
 use maskcap_wayland::StampClock;
 use seat_ei::EiSeat;
 use std::os::unix::net::UnixStream;
@@ -21,16 +21,15 @@ use wayland_client::{ConnectError, Connection};
 /// The daemon's seams: the desktop of casement when it is running (else none), EI for input, stock toplevel capture with
 /// masking in cuad, AT-SPI for the tree, inferd for the model, `Intents1.Gate` for the router,
 /// memoryd and the router's message path for records and reports, and the system clock. With no
-/// compositor the desktop and capture are the unavailable cases of their enums and the daemon
-/// says so on the bus.
+/// compositor the desktop and capture are `None` and the daemon says so on the bus.
 #[derive(Debug)]
 pub struct SystemSeams;
 
 impl Seams for SystemSeams {
-    type Desktop = SystemDesktop;
-    type Seat = SeatBackend;
-    type Capture = CaptureBackend;
-    type A11y = SystemA11y;
+    type Desktop = Option<CasementDesktop>;
+    type Seat = EiSeat;
+    type Capture = Option<CaptureBackend>;
+    type A11y = Option<LoggedAtspi>;
     type Model = InferdCuaModel<porter_client::DbusTransport>;
     type Gate = IntentsGate<docket_client::DbusTransport>;
     type Events = DaemonLinks<almanac_client::DbusTransport, docket_client::DbusTransport>;
@@ -151,42 +150,42 @@ impl Reached {
 
 impl SystemSeams {
     /// The seams of the daemon over `links` and what was `reached` of a compositor: with none,
-    /// the daemon has no desktop and refuses every capture. `clock` is shared with capture.
+    /// the daemon has no desktop and refuses every capture. `clock` is shared with capture. `rules` are
+    /// the screen rules the host read.
     pub fn parts(
         config: &CuadConfig,
         links: Links,
         reached: Reached,
         clock: SystemClock,
+        rules: Rules,
     ) -> Parts<SystemSeams> {
         let capture_over = |kind, connection| {
-            CaptureBackend::open_kind(capture_kind(kind), connection)
-                .with_clock(Arc::new(RunClock(clock)))
+            Some(CaptureBackend::over(kind, connection).with_clock(Arc::new(RunClock(clock))))
         };
         let (desktop, capture) = match reached {
-            Reached::Casement { desktop, capture } => (
-                SystemDesktop::Casement(desktop),
-                capture_over(BackendKind::Casement, capture),
-            ),
-            Reached::Environment(pair) => (
-                SystemDesktop::Absent,
-                capture_over(BackendKind::KwinStock, pair.capture),
-            ),
-            Reached::Unreached(_) => (SystemDesktop::Absent, CaptureBackend::Unavailable),
+            Reached::Casement { desktop, capture } => {
+                (Some(desktop), capture_over(BackendKind::Casement, capture))
+            }
+            Reached::Environment(pair) => {
+                (None, capture_over(BackendKind::KwinStock, pair.capture))
+            }
+            Reached::Unreached(_) => (None, None),
         };
         Parts {
             desktop,
             // One seat for everyone: casement's lease scopes the input, but the seat is the
             // person's until casement's agent seat (P4).
-            seat: SeatBackend::Ei(EiSeat::new(SeatIsolation::SharedSeat)),
+            seat: EiSeat::new(SeatIsolation::SharedSeat),
             capture,
             a11y: match config.a11y {
-                A11yChoice::Off => SystemA11y::Unavailable,
-                A11yChoice::Atspi => SystemA11y::Atspi(AtspiSource::new()),
+                A11yChoice::Off => None,
+                A11yChoice::Atspi => Some(LoggedAtspi(AtspiSource::new())),
             },
             model: links.model,
             gate: links.gate,
             events: links.events,
             clock,
+            rules,
         }
     }
 }

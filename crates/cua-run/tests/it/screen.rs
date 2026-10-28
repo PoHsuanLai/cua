@@ -2,12 +2,12 @@
 //! a node can be unseen, and the rows that must stay clear (the false-positive side of the
 //! trade-off: ordinary text, code, a chat that names an assistant).
 
-use crate::support::{node, tree};
+use crate::support::{node, rules, tree};
 use a11y_tree::{A11yNode, NodeState, NodeValue, Parent, Role, Sensitivity, render};
 use cua_action::{Coord, Size};
 use cua_run::{
-    EXCERPT_CHARS, Family, HiddenKind, MAX_REASONS, PatternCheck, Reason, ScreenCheck,
-    ScreenVerdict, ScreenView, TreeObs, UnseenWhy, Withheld, secret_masks, split_unseen,
+    EXCERPT_CHARS, Family, HiddenKind, MAX_REASONS, PatternCheck, Reason, ScreenVerdict,
+    ScreenView, TreeObs, UnseenWhy, Withheld, secret_masks, split_unseen,
 };
 use prov::{Label, Labelled};
 use std::collections::BTreeSet;
@@ -47,7 +47,7 @@ fn split(nodes: &[A11yNode]) -> (a11y_tree::A11ySnapshot, Withheld) {
 
 fn check(title: &str, nodes: &[A11yNode]) -> ScreenVerdict {
     let (seen, withheld) = split(nodes);
-    PatternCheck.check(&ScreenView {
+    PatternCheck::new(&rules().injection).check(&ScreenView {
         title,
         window: window(),
         nodes: &seen.nodes,

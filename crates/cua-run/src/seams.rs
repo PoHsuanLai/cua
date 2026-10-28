@@ -2,6 +2,7 @@
 //! path. Closed sets of implementations are generic parameters, never `dyn`.
 
 use crate::model::CuaModel;
+use crate::rules::Rules;
 use a11y_tree::A11ySource;
 use cua_bus::{CuaRecord, CuaTask};
 use cua_desktop::{Desktop, LeaseControl, Stamp};
@@ -165,6 +166,8 @@ pub struct Parts<S: Seams> {
     pub events: S::Events,
     /// The clock.
     pub clock: S::Time,
+    /// The screen rules, parsed by the host from the shipped file.
+    pub rules: Rules,
 }
 
 impl<S: Seams> std::fmt::Debug for Parts<S> {

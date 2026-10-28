@@ -10,7 +10,7 @@
 //! the next docket pin.
 
 use cua_host::{Drivable, SettingsFeed, Supervisor};
-use cua_run::Enabled;
+use cua_run::Switch;
 use docket_dbus::PROVIDER_PATH;
 use std::sync::Arc;
 use zbus::object_server::SignalEmitter;
@@ -19,10 +19,10 @@ use zbus::object_server::SignalEmitter;
 const ACTION: &str = "cua.run.start";
 
 /// `{ "cua.run.start": "offered" | "hidden" }` for the setting.
-pub fn reach_json(enabled: Enabled) -> String {
+pub fn reach_json(enabled: Switch) -> String {
     let word = match enabled {
-        Enabled::On => "offered",
-        Enabled::Off => "hidden",
+        Switch::On => "offered",
+        Switch::Off => "hidden",
     };
     serde_json::json!({ ACTION: word }).to_string()
 }
@@ -78,18 +78,18 @@ mod tests {
             serde_json::from_str(&reach_json(enabled)).expect("json")
         };
         assert_eq!(
-            said(Enabled::On),
+            said(Switch::On),
             serde_json::json!({"cua.run.start": "offered"})
         );
         assert_eq!(
-            said(Enabled::Off),
+            said(Switch::Off),
             serde_json::json!({"cua.run.start": "hidden"})
         );
     }
 
     #[test]
     fn the_action_is_the_one_the_manifest_declares() {
-        let manifest = crate::manifest_for(Enabled::On).expect("manifest");
+        let manifest = crate::manifest_for(Switch::On).expect("manifest");
         let names: Vec<&str> = manifest
             .manifest()
             .actions

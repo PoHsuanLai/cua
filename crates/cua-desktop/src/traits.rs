@@ -61,3 +61,74 @@ pub trait LeaseControl: Send + Sync {
         glow: GlowState,
     ) -> impl Future<Output = Result<(), DesktopError>> + Send;
 }
+
+/// No desktop at all: `backend` reads `none`, no window is listed and no lease is granted.
+impl<D: Desktop> Desktop for Option<D> {
+    fn caps(&self) -> BackendCaps {
+        // Never offered (`backend` is `None`); a value is needed all the same.
+        self.as_ref()
+            .map_or_else(|| BackendCaps::of(BackendKind::KwinStock), Desktop::caps)
+    }
+
+    fn backend(&self) -> Option<BackendKind> {
+        self.as_ref().and_then(Desktop::backend)
+    }
+
+    async fn windows(&self) -> Result<Vec<ToplevelInfo>, DesktopError> {
+        match self {
+            Some(desktop) => desktop.windows().await,
+            None => Err(DesktopError::Protocol("no compositor".into())),
+        }
+    }
+
+    async fn next_event(&self) -> DesktopEvent {
+        match self {
+            Some(desktop) => desktop.next_event().await,
+            None => std::future::pending().await,
+        }
+    }
+}
+
+impl<D: LeaseControl> LeaseControl for Option<D> {
+    async fn lease(&self, req: LeaseRequest) -> Result<Leased, DesktopError> {
+        match self {
+            Some(desktop) => desktop.lease(req).await,
+            None => Err(DesktopError::Protocol("no compositor".into())),
+        }
+    }
+
+    async fn release(&self, lease: LeaseId) -> Result<(), DesktopError> {
+        match self {
+            Some(desktop) => desktop.release(lease).await,
+            None => Ok(()),
+        }
+    }
+
+    async fn suspend(&self, lease: LeaseId, why: Suspend) -> Result<(), DesktopError> {
+        match self {
+            Some(desktop) => desktop.suspend(lease, why).await,
+            None => Err(DesktopError::NoSuchWindow),
+        }
+    }
+
+    async fn resume(&self, lease: LeaseId) -> Result<(), DesktopError> {
+        match self {
+            Some(desktop) => desktop.resume(lease).await,
+            None => Err(DesktopError::NoSuchWindow),
+        }
+    }
+
+    async fn focus(&self, lease: LeaseId) -> Result<(), DesktopError> {
+        match self {
+            Some(desktop) => desktop.focus(lease).await,
+            None => Err(DesktopError::NoSuchWindow),
+        }
+    }
+
+    async fn glow(&self, lease: LeaseId, glow: GlowState) -> Result<(), DesktopError> {
+        match self {
+            Some(desktop) => desktop.glow(lease, glow).await,
+            None => Err(DesktopError::NoSuchWindow),
+        }
+    }
+}

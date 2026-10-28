@@ -1,7 +1,7 @@
 //! The small moves the transition rows are made of: entering a phase, starting a look at the
 //! window, recording a finished action, asking the router about the head action.
 
-use crate::effect_class::classify_effect_in;
+use crate::effect_class::classify_effect;
 use crate::machine::effect::{CuaSignal, HintSource, RunEffect};
 use crate::machine::kept::kept_action;
 use crate::machine::phase::RunPhase;
@@ -262,15 +262,25 @@ pub(crate) fn head_effect(run: &Run) -> Option<prov::Effect> {
     let obs = run.working.as_ref()?;
     let head = run.pending.actions.front()?;
     let node = first_target(&head.action).and_then(|t| node_at(obs, &t));
-    let class = window_class_in(&obs.window.app, &obs.window.title.value, nodes_of(obs));
-    Some(classify_effect_in(run.env.keys, &head.action, node, class).0)
+    let class = window_class_in(
+        &run.env.rules,
+        &obs.window.app,
+        &obs.window.title.value,
+        nodes_of(obs),
+    );
+    Some(classify_effect(&run.env.rules.commit, &head.action, node, class).0)
 }
 
 /// The question to the router about the head action.
 pub(crate) fn ask_for(run: &Run, obs: &Observation, action: &CuaAction<WindowSpace>) -> CuaAsk {
     let node = first_target(action).and_then(|t| node_at(obs, &t));
-    let class = window_class_in(&obs.window.app, &obs.window.title.value, nodes_of(obs));
-    let (effect, basis) = classify_effect_in(run.env.keys, action, node, class);
+    let class = window_class_in(
+        &run.env.rules,
+        &obs.window.app,
+        &obs.window.title.value,
+        nodes_of(obs),
+    );
+    let (effect, basis) = classify_effect(&run.env.rules.commit, action, node, class);
     CuaAsk {
         run: run.id.clone(),
         step: obs.step.0,
@@ -298,11 +308,16 @@ pub(crate) fn step_record(
     let (effect, basis) = match &run.working {
         Some(obs) => {
             let node = first_target(&outcome.action.action).and_then(|t| node_at(obs, &t));
-            let class = window_class_in(&obs.window.app, &obs.window.title.value, nodes_of(obs));
-            classify_effect_in(run.env.keys, &outcome.action.action, node, class)
+            let class = window_class_in(
+                &run.env.rules,
+                &obs.window.app,
+                &obs.window.title.value,
+                nodes_of(obs),
+            );
+            classify_effect(&run.env.rules.commit, &outcome.action.action, node, class)
         }
-        None => classify_effect_in(
-            run.env.keys,
+        None => classify_effect(
+            &run.env.rules.commit,
             &outcome.action.action,
             None,
             cua_action::WindowClass::Ordinary,

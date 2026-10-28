@@ -5,6 +5,8 @@ use crate::{
     Apps, CuaSettings, CuadConfig, Locator, ServeError, SettingsWatch, Supervisor, SystemClock,
     WatchState, caller_identity, follow_settings, read_callers, serve_on_as,
 };
+use cua_host::{RULES_FILE, parse_rules, shipped_rules};
+use cua_run::Rules;
 use cua_system::{Links, ReachError, Reached, SystemSeams};
 use futures_util::StreamExt;
 use std::path::{Path, PathBuf};
@@ -72,6 +74,22 @@ fn load_config(path: Option<&Path>) -> Result<CuadConfig, Fatal> {
     }
 }
 
+/// Where an administrator's replacement for the shipped screen rules goes.
+const SYSTEM_DIR: &str = "/etc/quire";
+
+/// The screen rules: the administrator's `screen-rules.toml` when there is one, else the file the
+/// program ships.
+fn load_rules() -> Result<Rules, Fatal> {
+    let path = Path::new(SYSTEM_DIR).join(RULES_FILE);
+    match std::fs::read_to_string(&path) {
+        Ok(text) => {
+            parse_rules(&text).map_err(|e| Fatal::Config(format!("{}: {e}", path.display())))
+        }
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(shipped_rules()),
+        Err(e) => Err(Fatal::Config(format!("{}: {e}", path.display()))),
+    }
+}
+
 /// Runs the daemon for the command line `args` (without the program name), reading the
 /// environment through `env`. It connects to the session bus, tries the compositor (no
 /// compositor is not a failure: the backend reads `none`), serves `org.quire.Cua1` and
@@ -85,6 +103,7 @@ pub async fn run(
         Command::Serve(path) => path,
     };
     let config = load_config(config_path.as_deref())?;
+    let rules = load_rules()?;
     // The desktop's shortcut conventions, read once and told to every run's model.
     let platform = chordkit::detect(chordkit::HostOs::compiled(), env);
     let (keymap, problems) = crate::desktop_keymap(platform, env);
@@ -98,7 +117,7 @@ pub async fn run(
     let reached = Reached::find(&config, &connection).await?;
     eprintln!("cuad: {}", reached.describe());
     let links = Links::over(&connection, config.tier);
-    let parts = SystemSeams::parts(&config, links, reached, SystemClock::start());
+    let parts = SystemSeams::parts(&config, links, reached, SystemClock::start(), rules);
     let supervisor = Arc::new(Supervisor::with_hints(parts, config, hints));
     // The person's settings (`cua/settings.toml`) over the configuration's values, now and
     // whenever the file changes. Until the file lists an app, none is on.

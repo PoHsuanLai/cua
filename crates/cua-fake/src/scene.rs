@@ -9,9 +9,9 @@ use cua_action::{
     Button, ClickCount, Coord, CuaAction, DeviceSize, FinishOutcome, PixelFormat, Point, RunMode,
     Scale120, Size, Summary, Target, WindowSpace, WindowTrust,
 };
-use cua_bus::{CuaTask, ProcedureUse, ReportRoute, RunBudget, RunOrigin, SuccessCheck, TaskTarget};
+use cua_bus::{CuaTask, ReportRoute, RunBudget, RunOrigin, SuccessCheck, TaskTarget};
 use cua_desktop::{BackendCaps, BackendKind, MaskWhere, Stamp, ToplevelIdent, ToplevelInfo};
-use cua_run::{CuaConfig, CuaModelError, Run, RunEnv};
+use cua_run::{CuaConfig, CuaModelError, Rules, Run, RunEnv};
 use maskcap::{Frame, FrameSeq, MaskReport, PixelBuf, WholeMask};
 use porter_core::{AppName, Px, UnixSeconds};
 use porter_infer::CuaStepReply;
@@ -141,7 +141,14 @@ pub fn world_over(
         gate,
         events: MemoryEvents::new(),
         clock: FixedClock::at(Stamp(0), UnixSeconds(1_700_000_000)),
+        rules: rules(),
     }
+}
+
+/// The screen rules the daemon ships, parsed from the same file.
+pub fn rules() -> Rules {
+    toml::from_str(include_str!("../../../dist/screen-rules.toml"))
+        .expect("the shipped screen rules read")
 }
 
 pub fn task() -> CuaTask {
@@ -159,7 +166,6 @@ pub fn task() -> CuaTask {
         data_in: vec![],
         success: SuccessCheck::ModelSays,
         origin: RunOrigin::Planner,
-        procedure: ProcedureUse::None,
         report: ReportRoute {
             to: Address::new(AgentRef::Companion, space()),
             thread: None,
@@ -169,6 +175,6 @@ pub fn task() -> CuaTask {
 }
 
 pub fn started(kind: BackendKind) -> Run {
-    let env = RunEnv::new(&CuaConfig::default(), BackendCaps::of(kind));
+    let env = RunEnv::new(&CuaConfig::default(), BackendCaps::of(kind), rules());
     Run::start(RunId::parse("r-1").unwrap(), task(), env, Stamp(0)).0
 }

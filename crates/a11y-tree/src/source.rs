@@ -63,3 +63,17 @@ pub trait A11ySource: Send + Sync {
         budget: NodeBudget,
     ) -> impl Future<Output = Result<A11ySnapshot, A11yError>> + Send;
 }
+
+/// No accessibility tree: every read says there is no bus.
+impl<S: A11ySource> A11ySource for Option<S> {
+    async fn snapshot(
+        &self,
+        target: &A11yTarget,
+        budget: NodeBudget,
+    ) -> Result<A11ySnapshot, A11yError> {
+        match self {
+            Some(source) => source.snapshot(target, budget).await,
+            None => Err(A11yError::NoBus),
+        }
+    }
+}

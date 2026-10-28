@@ -2,7 +2,7 @@
 
 use cua_bus::{ControlRefusal, CuaRecord};
 use cua_desktop::ToplevelIdent;
-use cua_run::Enabled;
+use cua_run::{DefaultMode, Switch};
 use docket_core::{
     AgentReach, AppRefusal, EntityRef, FailText, Follow, Hit, Invocation, Manifest, ManifestError,
     Outcome, ParamName, Preview, SuggestAsk, UndoFault, UndoToken, Undoable, ValidManifest, Value,
@@ -33,29 +33,17 @@ pub enum ProviderError {
 /// The provider's manifest for a setting: `cua.run.start` is `Hidden` from agents while
 /// computer use is off, `Offered` once it is on. The per-app consent is asked by the router at
 /// the first use either way.
-pub fn manifest_for(enabled: Enabled) -> Result<ValidManifest, ProviderError> {
+pub fn manifest_for(enabled: Switch) -> Result<ValidManifest, ProviderError> {
     let mut manifest: Manifest =
         toml::from_str(MANIFEST).map_err(|e| ProviderError::Parse(e.to_string()))?;
     let reach = match enabled {
-        Enabled::Off => AgentReach::Hidden,
-        Enabled::On => AgentReach::Offered,
+        Switch::Off => AgentReach::Hidden,
+        Switch::On => AgentReach::Offered,
     };
     for action in &mut manifest.actions {
         action.reach = reach;
     }
     validate(manifest).map_err(ProviderError::Invalid)
-}
-
-/// Where a run is to run, as the planner chose: the setting's `auto` is resolved by cuad, which
-/// knows its backend.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ModeChoice {
-    /// The setting decides (`choose_mode`).
-    Auto,
-    /// In place.
-    InPlace,
-    /// The agent workspace.
-    AgentWorkspace,
 }
 
 /// Why a start was refused.
@@ -87,8 +75,8 @@ pub struct StartRequest {
     pub window: Option<ToplevelIdent>,
     /// The app, when it named that instead. With neither, the window the person is in.
     pub app: Option<AppName>,
-    /// Where to run.
-    pub mode: ModeChoice,
+    /// Where to run, as the planner chose; `auto` is resolved by cuad, which knows its backend.
+    pub mode: DefaultMode,
     /// The session that asked.
     pub session: SessionId,
     /// The Space it acts in.
@@ -126,7 +114,7 @@ pub struct CuaProvider {
 impl CuaProvider {
     /// A provider whose action is offered or hidden by `enabled`. It starts nothing (`perform`
     /// is `Unsupported`); the daemon builds one with [`CuaProvider::starting`].
-    pub fn new(enabled: Enabled) -> Result<Self, ProviderError> {
+    pub fn new(enabled: Switch) -> Result<Self, ProviderError> {
         Ok(Self {
             manifest: manifest_for(enabled)?,
             starts: None,
@@ -137,7 +125,7 @@ impl CuaProvider {
     /// A provider whose `perform` hands each start to whoever reads the returned queues, and
     /// whose `suggest` asks them which apps are open (the daemon turns the starts into runs and
     /// answers the questions through its supervisor).
-    pub fn starting(enabled: Enabled) -> Result<(Self, ProviderQueues), ProviderError> {
+    pub fn starting(enabled: Switch) -> Result<(Self, ProviderQueues), ProviderError> {
         let (starts, start_queue) = mpsc::unbounded_channel();
         let (open_apps, app_queue) = mpsc::unbounded_channel();
         Ok((
@@ -217,12 +205,11 @@ fn start_of(
     .map(|id| AppName::parse(id).map_err(|_| needs("app")))
     .transpose()?;
     let mode = match param(inv, "mode").map(|p| &p.value) {
-        Some(Value::Choice(choice)) => match choice.as_str() {
-            "in_place" => ModeChoice::InPlace,
-            "agent_workspace" => ModeChoice::AgentWorkspace,
-            _ => ModeChoice::Auto,
-        },
-        _ => ModeChoice::Auto,
+        Some(Value::Choice(choice)) => {
+            serde_json::from_value(serde_json::Value::String(choice.as_str().to_owned()))
+                .unwrap_or(DefaultMode::Auto)
+        }
+        _ => DefaultMode::Auto,
     };
     let (session, from) = requester(&inv.actor).ok_or(AppRefusal::Unsupported)?;
     let (reply, answer) = oneshot::channel();
@@ -365,7 +352,7 @@ mod tests {
 
     #[test]
     fn the_shipped_manifest_validates_and_declares_one_read_action() {
-        for enabled in [Enabled::Off, Enabled::On] {
+        for enabled in [Switch::Off, Switch::On] {
             let valid = manifest_for(enabled).expect("a valid manifest");
             let manifest = valid.manifest();
             assert_eq!(manifest.app.as_str(), "org.quire.Cua");
@@ -391,7 +378,7 @@ mod tests {
     #[test]
     fn a_refused_start_tells_the_planner_why_except_a_busy_window() {
         for why in ControlRefusal::ALL {
-            let words = words_of(why, Enabled::On);
+            let words = words_of(why, Switch::On);
             let refused = refusal_of(StartRefusal::Control { why, words });
             match why {
                 ControlRefusal::LeaseHeld => assert_eq!(refused, AppRefusal::Busy),
@@ -406,7 +393,7 @@ mod tests {
 
     #[test]
     fn a_start_the_model_cannot_serve_says_so_in_one_plain_sentence() {
-        let words = words_of(ControlRefusal::ModelUnavailable, Enabled::On);
+        let words = words_of(ControlRefusal::ModelUnavailable, Switch::On);
         let refused = refusal_of(StartRefusal::Control {
             why: ControlRefusal::ModelUnavailable,
             words,
@@ -422,7 +409,7 @@ mod tests {
     #[test]
     fn the_action_is_hidden_from_agents_until_computer_use_is_on() {
         let reach = |enabled| manifest_for(enabled).unwrap().manifest().actions[0].reach;
-        assert_eq!(reach(Enabled::Off), AgentReach::Hidden);
-        assert_eq!(reach(Enabled::On), AgentReach::Offered);
+        assert_eq!(reach(Switch::Off), AgentReach::Hidden);
+        assert_eq!(reach(Switch::On), AgentReach::Offered);
     }
 }

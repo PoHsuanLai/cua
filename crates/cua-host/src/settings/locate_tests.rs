@@ -2,7 +2,7 @@
 
 use super::tests::base;
 use super::*;
-use cua_run::Enabled;
+use cua_run::Switch;
 use std::path::{Path, PathBuf};
 
 /// The files a test shows the locator: a path with its text, or `None` for a file that is there
@@ -52,7 +52,7 @@ fn the_locator_reads_the_first_file_of_the_configuration_directories() {
     let value = locator.read(&files, &base()).value;
     assert_eq!(value.config.budget.spend, porter_core::MicroUsd(900));
     // The first file wins whole: the later directory's other keys are not merged in.
-    assert_eq!(value.config.enabled, Enabled::Off);
+    assert_eq!(value.config.enabled, Switch::Off);
     let none = Locator::from_env(&|_: &str| None::<String>);
     assert_eq!(none.read(&files, &base()), Loaded::of(base()));
     // A settings file that is there and cannot be read is reported, and the next directory

@@ -96,7 +96,10 @@ pub(super) fn wait(run: &mut Run, fx: &mut Vec<RunEffect>, at: Stamp, n: StepInd
     // After a wait the same action is a fresh try: the job it waited for may be done.
     run.track.last_input = None;
     let until = Stamp(at.0.saturating_add(u64::from(ms)));
-    run.track.waited = run.track.waited.and(Ms(ms));
+    run.track.waited = Some(Ms(run
+        .track
+        .waited
+        .map_or(ms, |Ms(so_far)| so_far.saturating_add(ms))));
     action_ended(
         run,
         fx,
@@ -199,7 +202,12 @@ fn sensitive_head(run: &Run) -> Option<WindowSensitivity> {
         head.action.class(),
         ActionClass::Pointer | ActionClass::Keyboard
     );
-    let sensitivity = window_sensitivity(&obs.window.app, &obs.window.title.value, nodes_of(obs));
+    let sensitivity = window_sensitivity(
+        &run.env.rules,
+        &obs.window.app,
+        &obs.window.title.value,
+        nodes_of(obs),
+    );
     (drives && sensitivity.asks()).then_some(sensitivity)
 }
 

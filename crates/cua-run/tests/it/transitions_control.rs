@@ -242,7 +242,7 @@ fn physical_input_pauses_a_run_on_a_shared_seat_only_while_autopause_is_on() {
     assert!(matches!(d.phase(), RunPhase::Paused(_)));
 
     let mut off = Drive::thinking(STOCK, task(model_says()), tree(vec![]));
-    off.run.env.autopause = cua_run::Autopause::Off;
+    off.run.env.autopause = cua_run::Switch::Off;
     off.feed(RunInput::Desktop(DesktopEvent::PhysicalInput {
         lease: LeaseId(1),
     }));

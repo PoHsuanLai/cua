@@ -20,13 +20,6 @@ pub enum SeatEvent {
     Detached(LeaseId),
 }
 
-/// Whether a call waits for ever.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Stalls {
-    Never,
-    Next,
-}
-
 /// An [`AgentSeat`] that records every call and can be told to fail the next `perform`.
 #[derive(Debug)]
 pub struct FakeSeat {
@@ -35,7 +28,8 @@ pub struct FakeSeat {
     at: Stamp,
     log: Mutex<Vec<SeatEvent>>,
     fail_next: Mutex<Option<SeatError>>,
-    stall_attach: Mutex<Stalls>,
+    /// Whether the next `attach` waits for ever.
+    stall_attach: Mutex<bool>,
     emulation: Mutex<Emulation>,
     rebinds: Mutex<Vec<(LeaseId, GlobalRect)>>,
 }
@@ -49,7 +43,7 @@ impl FakeSeat {
             at,
             log: Mutex::new(Vec::new()),
             fail_next: Mutex::new(None),
-            stall_attach: Mutex::new(Stalls::Never),
+            stall_attach: Mutex::new(false),
             emulation: Mutex::new(Emulation::Running),
             rebinds: Mutex::new(Vec::new()),
         }
@@ -72,7 +66,7 @@ impl FakeSeat {
 
     /// Makes the next `attach` wait for ever, like a server that never finishes its handshake.
     pub fn stall_next_attach(&self) {
-        *self.stall_attach.lock().expect("fake seat lock") = Stalls::Next;
+        *self.stall_attach.lock().expect("fake seat lock") = true;
     }
 
     /// Everything that happened, in order.
@@ -103,9 +97,9 @@ impl AgentSeat for FakeSeat {
         drop(socket);
         let stalled = std::mem::replace(
             &mut *self.stall_attach.lock().expect("fake seat lock"),
-            Stalls::Never,
+            false,
         );
-        if stalled == Stalls::Next {
+        if stalled {
             std::future::pending::<()>().await;
         }
         self.push(SeatEvent::Attached(lease.id));

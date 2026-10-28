@@ -20,6 +20,7 @@ use chordkit::Platform;
 use cli_error::{ArgError, PlayError};
 use cua_eval::corpus::Corpus;
 use cua_eval::eval::{Cassette, run_cassette, run_live, run_scripted};
+use cua_eval::flags::FlagError;
 use cua_eval::live::{Plan, Thinking};
 use cua_eval::report::{Check, Report, render};
 use cua_eval::run::RunRecord;
@@ -76,7 +77,7 @@ fn parse(mut argv: impl Iterator<Item = String>) -> Result<Args, ArgError> {
     while let Some(flag) = argv.next() {
         let mut value = || {
             argv.next()
-                .ok_or_else(|| ArgError::NeedsValue(flag.clone()))
+                .ok_or_else(|| FlagError::NeedsValue(flag.clone()))
         };
         match flag.as_str() {
             "--dir" => args.dir = PathBuf::from(value()?),
@@ -91,12 +92,12 @@ fn parse(mut argv: impl Iterator<Item = String>) -> Result<Args, ArgError> {
             "--port" => {
                 args.port = value()?
                     .parse()
-                    .map_err(|_| ArgError::NotANumber("--port"))?
+                    .map_err(|_| FlagError::NotANumber("--port"))?
             }
             "--repeat" => {
                 args.repeat = value()?
                     .parse()
-                    .map_err(|_| ArgError::NotANumber("--repeat"))?
+                    .map_err(|_| FlagError::NotANumber("--repeat"))?
             }
             "--engine" => {
                 args.engine = match value()?.as_str() {
@@ -104,11 +105,12 @@ fn parse(mut argv: impl Iterator<Item = String>) -> Result<Args, ArgError> {
                     "cassette" => Engine::Cassette,
                     "local" => Engine::Local,
                     other => {
-                        return Err(ArgError::NotAllowed {
+                        return Err(FlagError::NotAllowed {
                             flag: "--engine",
                             allowed: "scripted, cassette or local",
                             given: other.to_owned(),
-                        });
+                        }
+                        .into());
                     }
                 }
             }
@@ -117,15 +119,16 @@ fn parse(mut argv: impl Iterator<Item = String>) -> Result<Args, ArgError> {
                     "on" => Thinking::On,
                     "off" => Thinking::Off,
                     other => {
-                        return Err(ArgError::NotAllowed {
+                        return Err(FlagError::NotAllowed {
                             flag: "--thinking",
                             allowed: "on or off",
                             given: other.to_owned(),
-                        });
+                        }
+                        .into());
                     }
                 }
             }
-            other => return Err(ArgError::UnknownFlag(other.to_owned())),
+            other => return Err(FlagError::UnknownFlag(other.to_owned()).into()),
         }
     }
     Ok(args)

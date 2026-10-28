@@ -8,7 +8,7 @@ use crate::machine::ops::{
 };
 use crate::machine::phase::RunPhase;
 use crate::machine::run::Run;
-use crate::machine::track::{DamageWanted, SettleWatch, Waited};
+use crate::machine::track::SettleWatch;
 use crate::observation::CursorObs;
 use cua_action::{CuaAction, Point, WindowSpace};
 use cua_bus::{
@@ -63,7 +63,7 @@ pub(super) fn injected(run: &mut Run, fx: &mut Vec<RunEffect>, at: Stamp, receip
         return;
     };
     run.track.acted.push(at);
-    run.track.waited = Waited::No;
+    run.track.waited = None;
     let Some(head) = run.pending.actions.pop_front() else {
         finish_plain(run, fx, CuaOutcome::Failed(FailReason::Input));
         return;
@@ -252,7 +252,7 @@ pub(super) fn settling(run: &mut Run, fx: &mut Vec<RunEffect>, at: Stamp) {
                 } => FrameWant::AfterDamage,
                 SettleWatch::Change { latest: None, .. } | SettleWatch::Idle => FrameWant::Now,
             };
-            if run.track.settle.wants_damage() == DamageWanted::Yes {
+            if run.track.settle.wants_damage() {
                 fx.push(RunEffect::CancelSettle);
             }
             run.track.settle = SettleWatch::Idle;

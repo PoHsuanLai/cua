@@ -1,7 +1,8 @@
 //! How much an action matters, before the router sees it.
 
-use crate::chord_scope::{KeyWorld, acts_on_desktop};
-use crate::commit::commit_of;
+use crate::chord_scope::{OURS, acts_on_desktop};
+use crate::commit::commits;
+use crate::rules::CommitRules;
 use a11y_tree::{A11yNode, TypedHint};
 use cua_action::WindowClass;
 use cua_action::{ActionClass, CuaAction, WindowSpace};
@@ -18,19 +19,10 @@ use prov::Effect;
 /// (observing is `Read`, pointer actions and keys `UndoableWrite`). The router makes the ruling;
 /// this only names the effect it is asked about. A key chord the desktop acts on itself
 /// (switching apps, the launcher, locking, logging out, Space switches: [`acts_on_desktop`]) is
-/// `Outbound` whatever the window: it leaves the leased window, and the router asks. Pure.
-/// This is [`classify_effect_in`] on our own desktop's keys.
+/// `Outbound` whatever the window: it leaves the leased window, and the router asks. The keys are
+/// those of our own desktop. Pure.
 pub fn classify_effect(
-    action: &CuaAction<WindowSpace>,
-    node: Option<&A11yNode>,
-    class: WindowClass,
-) -> (Effect, EffectBasis) {
-    classify_effect_in(KeyWorld::default(), action, node, class)
-}
-
-/// [`classify_effect`] for the desktop whose key conventions are `world`.
-pub fn classify_effect_in(
-    world: KeyWorld,
+    rules: &CommitRules,
     action: &CuaAction<WindowSpace>,
     node: Option<&A11yNode>,
     class: WindowClass,
@@ -42,7 +34,7 @@ pub fn classify_effect_in(
         ActionClass::Pointer | ActionClass::Keyboard => Effect::UndoableWrite,
     };
     if let CuaAction::Key { chord, .. } = action
-        && acts_on_desktop(chord, world)
+        && acts_on_desktop(chord, OURS)
     {
         return (Effect::Outbound, EffectBasis::DefaultTable);
     }
@@ -52,7 +44,7 @@ pub fn classify_effect_in(
     if sends_something(action) && sends_in(class) {
         return (Effect::Outbound, EffectBasis::WindowClass(class));
     }
-    if commits_in(action, node, class) {
+    if commits_in(rules, action, node, class) {
         return (Effect::Outbound, EffectBasis::WindowClass(class));
     }
     match class {
@@ -62,9 +54,10 @@ pub fn classify_effect_in(
 }
 
 /// A click in a form window (mail compose, payments, banking) on a commit control
-/// ([`commit_of`]). A click whose node is unknown (no tree, or nothing under the point) might be
+/// ([`commits`]). A click whose node is unknown (no tree, or nothing under the point) might be
 /// the commit, so it counts: the window asks rather than guesses.
 fn commits_in(
+    rules: &CommitRules,
     action: &CuaAction<WindowSpace>,
     node: Option<&A11yNode>,
     class: WindowClass,
@@ -74,7 +67,7 @@ fn commits_in(
         WindowClass::MailCompose | WindowClass::Payments | WindowClass::Banking
     );
     let click = matches!(action, CuaAction::Click { .. });
-    form && click && node.is_none_or(|n| commit_of(n).is_some())
+    form && click && node.is_none_or(|n| commits(rules, n))
 }
 
 /// Typing, or a chord whose key is Enter: what puts typed text on its way.

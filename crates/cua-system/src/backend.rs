@@ -1,63 +1,44 @@
-//! The backends the system seams choose between: closed sets, so enums that implement the seams.
+//! The capture backend the system seam chooses between: the stock toplevel source with masking
+//! in cuad, or the fork's masked source. Both open the same session type.
 
 use cua_desktop::{BackendCaps, BackendKind, LeaseGrant, MaskWhere};
-use cua_desktop::{EiSocket, GlobalRect, LeaseId};
-use maskcap::{
-    CaptureError, CaptureSession, DamageAt, Frame, FrameWant, MaskRegion, WindowCapture,
-};
+use maskcap::{CaptureError, WindowCapture};
 use maskcap_wayland::{QuireMaskedCapture, StampClock, StockToplevelCapture, WaylandSession};
-use seat_ei::EiSeat;
-use seat_input::{AgentSeat, Emulation, InputOp, InputReceipt, Keymap, SeatCaps, SeatError};
 use std::sync::Arc;
 use wayland_client::Connection;
 
-/// Which capture backend a desktop backend uses: the stock toplevel source with masking in
-/// cuad, or the fork's masked source.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum CaptureKind {
-    /// `ext_foreign_toplevel_image_capture_source_manager_v1`, masked by `maskcap::apply_masks`.
-    StockToplevel,
-    /// The lease's `get_capture_source`, masked by the compositor.
-    QuireMasked,
-}
-
-/// The capture backend for a desktop backend: the fork's masked source where the compositor
-/// masks, the stock source (and `apply_masks` in cuad) everywhere else.
-pub fn capture_kind(kind: BackendKind) -> CaptureKind {
+/// Whether the compositor of `kind` masks frames itself, so the fork's masked source is used;
+/// otherwise the stock source is used and `maskcap::apply_masks` runs in cuad.
+fn compositor_masks(kind: BackendKind) -> bool {
     match BackendCaps::of(kind).masking {
-        MaskWhere::Compositor => CaptureKind::QuireMasked,
-        MaskWhere::Cuad => CaptureKind::StockToplevel,
+        MaskWhere::Compositor => true,
+        MaskWhere::Cuad => false,
     }
 }
 
-/// Capture over either backend.
+/// Capture over either backend. "No compositor to capture from" is `Option::<CaptureBackend>::None`,
+/// which refuses every `open`.
 #[derive(Debug)]
 pub enum CaptureBackend {
-    /// Stock toplevel capture.
+    /// Stock toplevel capture (`ext_foreign_toplevel_image_capture_source_manager_v1`), masked by
+    /// `maskcap::apply_masks`.
     StockToplevel(StockToplevelCapture),
-    /// The compositor's masked source.
+    /// The lease's `get_capture_source`, masked by the compositor.
     QuireMasked(QuireMaskedCapture),
-    /// No compositor to capture from: every `open` is refused.
-    Unavailable,
 }
 
 impl CaptureBackend {
-    /// The backend of `kind` over an open connection.
-    pub fn open_kind(kind: CaptureKind, connection: Connection) -> Self {
-        match kind {
-            CaptureKind::StockToplevel => {
-                CaptureBackend::StockToplevel(StockToplevelCapture::over(connection))
-            }
-            CaptureKind::QuireMasked => {
-                CaptureBackend::QuireMasked(QuireMaskedCapture::over(connection))
-            }
+    /// The backend that fits desktop backend `kind`, over an open connection.
+    pub fn over(kind: BackendKind, connection: Connection) -> Self {
+        if compositor_masks(kind) {
+            CaptureBackend::QuireMasked(QuireMaskedCapture::over(connection))
+        } else {
+            CaptureBackend::StockToplevel(StockToplevelCapture::over(connection))
         }
     }
-}
 
-impl CaptureBackend {
     /// The same backend, stamping its frames with `clock`: the stock source takes it, the
-    /// others have no frames of their own to stamp.
+    /// masked one has no frames of its own to stamp.
     #[must_use]
     pub fn with_clock(self, clock: Arc<dyn StampClock>) -> Self {
         match self {
@@ -70,99 +51,12 @@ impl CaptureBackend {
 }
 
 impl WindowCapture for CaptureBackend {
-    type Session = CaptureSessionKind;
+    type Session = WaylandSession;
 
-    async fn open(&self, lease: &LeaseGrant) -> Result<CaptureSessionKind, CaptureError> {
+    async fn open(&self, lease: &LeaseGrant) -> Result<WaylandSession, CaptureError> {
         match self {
-            CaptureBackend::StockToplevel(capture) => {
-                capture.open(lease).await.map(CaptureSessionKind::Stock)
-            }
-            CaptureBackend::QuireMasked(capture) => {
-                capture.open(lease).await.map(CaptureSessionKind::Masked)
-            }
-            CaptureBackend::Unavailable => Err(CaptureError::Refused),
-        }
-    }
-}
-
-/// An open capture session of either backend.
-#[derive(Debug)]
-pub enum CaptureSessionKind {
-    /// Over the stock source.
-    Stock(WaylandSession),
-    /// Over the masked source.
-    Masked(WaylandSession),
-}
-
-impl CaptureSession for CaptureSessionKind {
-    async fn frame(
-        &mut self,
-        want: FrameWant,
-        hints: &[MaskRegion],
-    ) -> Result<Frame, CaptureError> {
-        match self {
-            CaptureSessionKind::Stock(session) | CaptureSessionKind::Masked(session) => {
-                session.frame(want, hints).await
-            }
-        }
-    }
-
-    async fn damage(&mut self) -> Result<DamageAt, CaptureError> {
-        match self {
-            CaptureSessionKind::Stock(session) | CaptureSessionKind::Masked(session) => {
-                session.damage().await
-            }
-        }
-    }
-}
-
-/// The agent's seat: EI through reis, to the fork's lease socket or stock's `GetSenderSocket`.
-#[derive(Debug)]
-pub enum SeatBackend {
-    /// An EIS connection.
-    Ei(EiSeat),
-}
-
-impl AgentSeat for SeatBackend {
-    fn caps(&self) -> SeatCaps {
-        match self {
-            SeatBackend::Ei(seat) => seat.caps(),
-        }
-    }
-
-    fn keymap(&self) -> Arc<Keymap> {
-        match self {
-            SeatBackend::Ei(seat) => seat.keymap(),
-        }
-    }
-
-    async fn attach(&self, lease: &LeaseGrant, socket: EiSocket) -> Result<(), SeatError> {
-        match self {
-            SeatBackend::Ei(seat) => seat.attach(lease, socket).await,
-        }
-    }
-
-    async fn perform(&self, lease: LeaseId, ops: &[InputOp]) -> Result<InputReceipt, SeatError> {
-        match self {
-            SeatBackend::Ei(seat) => seat.perform(lease, ops).await,
-        }
-    }
-
-    async fn emulation(&self, lease: LeaseId, state: Emulation) -> Result<(), SeatError> {
-        match self {
-            SeatBackend::Ei(seat) => seat.emulation(lease, state).await,
-        }
-    }
-
-    async fn rebind(&self, lease: LeaseId, frame: GlobalRect) -> Result<(), SeatError> {
-        match self {
-            SeatBackend::Ei(seat) => seat.rebind(lease, frame).await,
-        }
-    }
-
-    async fn detach(&self, lease: LeaseId) -> Result<(), SeatError> {
-        match self {
-            SeatBackend::Ei(seat) => seat.detach(lease).await,
+            CaptureBackend::StockToplevel(capture) => capture.open(lease).await,
+            CaptureBackend::QuireMasked(capture) => capture.open(lease).await,
         }
     }
 }
@@ -173,12 +67,8 @@ mod tests {
 
     #[test]
     fn capture_follows_who_masks() {
-        let table = [
-            (BackendKind::KwinStock, CaptureKind::StockToplevel),
-            (BackendKind::Casement, CaptureKind::StockToplevel),
-        ];
-        for (kind, want) in table {
-            assert_eq!(capture_kind(kind), want, "{kind:?}");
+        for kind in [BackendKind::KwinStock, BackendKind::Casement] {
+            assert!(!compositor_masks(kind), "{kind:?}");
         }
     }
 }

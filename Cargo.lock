@@ -1014,6 +1014,7 @@ dependencies = [
  "serde_json",
  "thiserror",
  "tokio",
+ "toml",
 ]
 
 [[package]]
@@ -1074,6 +1075,7 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
+ "toml",
 ]
 
 [[package]]
