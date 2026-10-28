@@ -9,13 +9,13 @@ use crate::start::{answer_open_apps, starts};
 use cua_dbus::{CUA_BUS, CUA_PATH};
 use cua_host::Drivable;
 use cua_host::Supervisor;
-use docket_client::{ContextSource, SummonTarget};
 use docket_core::{
     ContextScope, ContextSnapshot, Here, Selection, SummonAnswer, SummonOrigin, SummonSerial,
     TextTarget, Visible, WindowPrivacy,
 };
 use docket_dbus::PROVIDER_PATH;
 use docket_dbus::callers::{CallerTable, Identity};
+use docket_provider::{ContextSource, SummonTarget};
 use futures_util::StreamExt;
 use porter_core::{AppName, Count};
 use prov::{Label, Labelled};
@@ -158,12 +158,12 @@ async fn serve_as<S: Drivable>(
     let (provider, queues) = CuaProvider::starting(supervisor.settings().enabled).map_err(bus)?;
     match answering {
         Answering::IntentdOnly => {
-            docket_client::serve_on(connection, provider, NoContext, NoSummon)
+            docket_provider::serve_on(connection, provider, NoContext, NoSummon)
                 .await
                 .map_err(bus)?;
         }
         Answering::Told(intentd) => {
-            docket_client::serve_on_with(connection, provider, NoContext, NoSummon, intentd)
+            docket_provider::serve_on_with(connection, provider, NoContext, NoSummon, intentd)
                 .await
                 .map_err(bus)?;
         }

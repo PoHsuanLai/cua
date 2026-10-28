@@ -30,7 +30,7 @@ cua-session = { workspace = true }
 cua-vendors = { workspace = true }
 cua-parse = { workspace = true }
 model-catalog = { workspace = true }
-model-http = { workspace = true, features = ["hyper"] }
+model-http = { workspace = true, features = ["client"] }
 model-openai-compat = { workspace = true }
 model-provider = { workspace = true }
 vision-prep = { workspace = true, features = ["pixels"] }

@@ -6,8 +6,9 @@
 use crate::desk::*;
 use almanac_client::{InProcess, Memory};
 use almanac_core::{
-    ActorFilter, Caller, Count, SpaceId as MemSpace, TimelineFilter, TimelineQuery, TrustFilter,
+    ActorFilter, Count, SpaceId as MemSpace, TimelineFilter, TimelineQuery, TrustFilter,
 };
+use almanac_service::Caller;
 use cua_run::{GateCheck, GateEvent, GateLink, MessageLink, RecordSink};
 use cuad::{DaemonLinks, IntentsGate};
 use docket_client::{DbusTransport, Intents};

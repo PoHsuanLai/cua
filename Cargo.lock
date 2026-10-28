@@ -33,7 +33,7 @@ dependencies = [
 [[package]]
 name = "action-review"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=82608696009fc7caaceb3afb7a56f9e6c37d7fa0#82608696009fc7caaceb3afb7a56f9e6c37d7fa0"
+source = "git+https://github.com/PoHsuanLai/docket?rev=01390d02c4e79327dbb00c35819b90f2c8d633ae#01390d02c4e79327dbb00c35819b90f2c8d633ae"
 dependencies = [
  "docket-core",
  "model-provider",
@@ -62,6 +62,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "agents-core"
+version = "0.1.0"
+source = "git+https://github.com/PoHsuanLai/docket?rev=01390d02c4e79327dbb00c35819b90f2c8d633ae#01390d02c4e79327dbb00c35819b90f2c8d633ae"
+dependencies = [
+ "const-hex",
+ "serde",
+ "serde_json",
+ "sha2",
+ "thiserror",
+ "toml",
+]
+
+[[package]]
 name = "aho-corasick"
 version = "1.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -73,7 +86,7 @@ dependencies = [
 [[package]]
 name = "almanac-client"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/almanac?rev=39121d44877615ae3d956b6939f485f848f9306c#39121d44877615ae3d956b6939f485f848f9306c"
+source = "git+https://github.com/PoHsuanLai/almanac?rev=8d91de738c76b38fdf3542795db334cc99a05437#8d91de738c76b38fdf3542795db334cc99a05437"
 dependencies = [
  "almanac-core",
  "almanac-dbus",
@@ -84,19 +97,21 @@ dependencies = [
 [[package]]
 name = "almanac-core"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/almanac?rev=39121d44877615ae3d956b6939f485f848f9306c#39121d44877615ae3d956b6939f485f848f9306c"
+source = "git+https://github.com/PoHsuanLai/almanac?rev=8d91de738c76b38fdf3542795db334cc99a05437#8d91de738c76b38fdf3542795db334cc99a05437"
 dependencies = [
+ "const-hex",
  "porter-core",
  "prov",
  "serde",
  "serde_json",
  "thiserror",
+ "ulid",
 ]
 
 [[package]]
 name = "almanac-dbus"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/almanac?rev=39121d44877615ae3d956b6939f485f848f9306c#39121d44877615ae3d956b6939f485f848f9306c"
+source = "git+https://github.com/PoHsuanLai/almanac?rev=8d91de738c76b38fdf3542795db334cc99a05437#8d91de738c76b38fdf3542795db334cc99a05437"
 dependencies = [
  "almanac-core",
  "serde",
@@ -108,12 +123,13 @@ dependencies = [
 [[package]]
 name = "almanac-fake"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/almanac?rev=39121d44877615ae3d956b6939f485f848f9306c#39121d44877615ae3d956b6939f485f848f9306c"
+source = "git+https://github.com/PoHsuanLai/almanac?rev=8d91de738c76b38fdf3542795db334cc99a05437#8d91de738c76b38fdf3542795db334cc99a05437"
 dependencies = [
  "almanac-core",
  "almanac-seal",
  "almanac-service",
  "almanac-store",
+ "almanac-tidy",
  "chrono",
  "eventlog",
  "memfiles",
@@ -127,27 +143,40 @@ dependencies = [
 [[package]]
 name = "almanac-seal"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/almanac?rev=39121d44877615ae3d956b6939f485f848f9306c#39121d44877615ae3d956b6939f485f848f9306c"
+source = "git+https://github.com/PoHsuanLai/almanac?rev=8d91de738c76b38fdf3542795db334cc99a05437#8d91de738c76b38fdf3542795db334cc99a05437"
 dependencies = [
  "almanac-core",
  "blake3",
  "chacha20poly1305",
+ "const-hex",
  "getrandom 0.3.4",
  "thiserror",
  "zeroize",
 ]
 
 [[package]]
+name = "almanac-search"
+version = "0.1.0"
+source = "git+https://github.com/PoHsuanLai/almanac?rev=8d91de738c76b38fdf3542795db334cc99a05437#8d91de738c76b38fdf3542795db334cc99a05437"
+dependencies = [
+ "almanac-core",
+ "almanac-store",
+]
+
+[[package]]
 name = "almanac-service"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/almanac?rev=39121d44877615ae3d956b6939f485f848f9306c#39121d44877615ae3d956b6939f485f848f9306c"
+source = "git+https://github.com/PoHsuanLai/almanac?rev=8d91de738c76b38fdf3542795db334cc99a05437#8d91de738c76b38fdf3542795db334cc99a05437"
 dependencies = [
  "almanac-core",
  "almanac-seal",
+ "almanac-search",
  "almanac-settings",
  "almanac-store",
+ "almanac-tidy",
  "blake3",
  "chrono",
+ "const-hex",
  "memfiles-format",
  "serde",
  "serde_json",
@@ -159,7 +188,7 @@ dependencies = [
 [[package]]
 name = "almanac-settings"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/almanac?rev=39121d44877615ae3d956b6939f485f848f9306c#39121d44877615ae3d956b6939f485f848f9306c"
+source = "git+https://github.com/PoHsuanLai/almanac?rev=8d91de738c76b38fdf3542795db334cc99a05437#8d91de738c76b38fdf3542795db334cc99a05437"
 dependencies = [
  "almanac-core",
  "serde",
@@ -170,7 +199,7 @@ dependencies = [
 [[package]]
 name = "almanac-store"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/almanac?rev=39121d44877615ae3d956b6939f485f848f9306c#39121d44877615ae3d956b6939f485f848f9306c"
+source = "git+https://github.com/PoHsuanLai/almanac?rev=8d91de738c76b38fdf3542795db334cc99a05437#8d91de738c76b38fdf3542795db334cc99a05437"
 dependencies = [
  "almanac-core",
  "almanac-seal",
@@ -178,6 +207,20 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
+]
+
+[[package]]
+name = "almanac-tidy"
+version = "0.1.0"
+source = "git+https://github.com/PoHsuanLai/almanac?rev=8d91de738c76b38fdf3542795db334cc99a05437#8d91de738c76b38fdf3542795db334cc99a05437"
+dependencies = [
+ "almanac-core",
+ "blake3",
+ "memfiles-format",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "toml",
 ]
 
 [[package]]
@@ -740,7 +783,7 @@ dependencies = [
 [[package]]
 name = "companion-wire"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=82608696009fc7caaceb3afb7a56f9e6c37d7fa0#82608696009fc7caaceb3afb7a56f9e6c37d7fa0"
+source = "git+https://github.com/PoHsuanLai/docket?rev=01390d02c4e79327dbb00c35819b90f2c8d633ae#01390d02c4e79327dbb00c35819b90f2c8d633ae"
 dependencies = [
  "almanac-core",
  "docket-core",
@@ -760,6 +803,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "const-hex"
+version = "1.19.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0e59eef12462b0f9b0a3620219be5d639afd79fe39dff0a42c3997061f9298b4"
+dependencies = [
+ "cfg-if",
+ "cpufeatures 0.2.17",
+ "proptest",
+ "serde_core",
+]
+
+[[package]]
 name = "const-oid"
 version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -776,6 +831,12 @@ name = "core-foundation-sys"
 version = "0.8.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "773648b94d0e5d620f64f280777445740e61fe701025087ec8b57f45c791888b"
+
+[[package]]
+name = "core_detect"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7f8f80099a98041a3d1622845c271458a2d73e688351bf3cb999266764b81d48"
 
 [[package]]
 name = "cpufeatures"
@@ -833,7 +894,7 @@ dependencies = [
 [[package]]
 name = "cua-action"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/stoker?rev=f30d2808a9f05901a952c1fac6db2c6479a1bfe2#f30d2808a9f05901a952c1fac6db2c6479a1bfe2"
+source = "git+https://github.com/PoHsuanLai/stoker?rev=521a920898856001860ac4edafd3d57b7e1ccb6e#521a920898856001860ac4edafd3d57b7e1ccb6e"
 dependencies = [
  "keyboard-types",
  "serde",
@@ -982,7 +1043,7 @@ dependencies = [
 [[package]]
 name = "cua-parse"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/stoker?rev=f30d2808a9f05901a952c1fac6db2c6479a1bfe2#f30d2808a9f05901a952c1fac6db2c6479a1bfe2"
+source = "git+https://github.com/PoHsuanLai/stoker?rev=521a920898856001860ac4edafd3d57b7e1ccb6e#521a920898856001860ac4edafd3d57b7e1ccb6e"
 dependencies = [
  "cua-action",
  "keyboard-types",
@@ -1018,7 +1079,7 @@ dependencies = [
 [[package]]
 name = "cua-session"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/stoker?rev=f30d2808a9f05901a952c1fac6db2c6479a1bfe2#f30d2808a9f05901a952c1fac6db2c6479a1bfe2"
+source = "git+https://github.com/PoHsuanLai/stoker?rev=521a920898856001860ac4edafd3d57b7e1ccb6e#521a920898856001860ac4edafd3d57b7e1ccb6e"
 dependencies = [
  "cua-action",
  "cua-parse",
@@ -1069,7 +1130,7 @@ dependencies = [
 [[package]]
 name = "cua-vendors"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/stoker?rev=f30d2808a9f05901a952c1fac6db2c6479a1bfe2#f30d2808a9f05901a952c1fac6db2c6479a1bfe2"
+source = "git+https://github.com/PoHsuanLai/stoker?rev=521a920898856001860ac4edafd3d57b7e1ccb6e#521a920898856001860ac4edafd3d57b7e1ccb6e"
 dependencies = [
  "cua-action",
  "cua-parse",
@@ -1100,6 +1161,7 @@ dependencies = [
  "docket-core",
  "docket-dbus",
  "docket-fake",
+ "docket-provider",
  "docket-router",
  "futures-util",
  "intentd",
@@ -1250,8 +1312,9 @@ dependencies = [
 [[package]]
 name = "docket-checkpoint"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=82608696009fc7caaceb3afb7a56f9e6c37d7fa0#82608696009fc7caaceb3afb7a56f9e6c37d7fa0"
+source = "git+https://github.com/PoHsuanLai/docket?rev=01390d02c4e79327dbb00c35819b90f2c8d633ae#01390d02c4e79327dbb00c35819b90f2c8d633ae"
 dependencies = [
+ "const-hex",
  "docket-core",
  "porter-core",
  "prov",
@@ -1262,10 +1325,11 @@ dependencies = [
 [[package]]
 name = "docket-checkpoint-git"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=82608696009fc7caaceb3afb7a56f9e6c37d7fa0#82608696009fc7caaceb3afb7a56f9e6c37d7fa0"
+source = "git+https://github.com/PoHsuanLai/docket?rev=01390d02c4e79327dbb00c35819b90f2c8d633ae#01390d02c4e79327dbb00c35819b90f2c8d633ae"
 dependencies = [
  "docket-checkpoint",
  "docket-core",
+ "percent-encoding",
  "porter-core",
  "prov",
  "thiserror",
@@ -1276,11 +1340,10 @@ dependencies = [
 [[package]]
 name = "docket-client"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=82608696009fc7caaceb3afb7a56f9e6c37d7fa0#82608696009fc7caaceb3afb7a56f9e6c37d7fa0"
+source = "git+https://github.com/PoHsuanLai/docket?rev=01390d02c4e79327dbb00c35819b90f2c8d633ae#01390d02c4e79327dbb00c35819b90f2c8d633ae"
 dependencies = [
  "docket-core",
  "docket-dbus",
- "docket-router",
  "futures-util",
  "prov",
  "serde",
@@ -1292,10 +1355,11 @@ dependencies = [
 [[package]]
 name = "docket-core"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=82608696009fc7caaceb3afb7a56f9e6c37d7fa0#82608696009fc7caaceb3afb7a56f9e6c37d7fa0"
+source = "git+https://github.com/PoHsuanLai/docket?rev=01390d02c4e79327dbb00c35819b90f2c8d633ae#01390d02c4e79327dbb00c35819b90f2c8d633ae"
 dependencies = [
  "almanac-core",
  "bulkhead",
+ "chrono",
  "cua-action",
  "model-provider",
  "porter-core",
@@ -1304,13 +1368,14 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
+ "toml",
  "url",
 ]
 
 [[package]]
 name = "docket-dbus"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=82608696009fc7caaceb3afb7a56f9e6c37d7fa0#82608696009fc7caaceb3afb7a56f9e6c37d7fa0"
+source = "git+https://github.com/PoHsuanLai/docket?rev=01390d02c4e79327dbb00c35819b90f2c8d633ae#01390d02c4e79327dbb00c35819b90f2c8d633ae"
 dependencies = [
  "docket-core",
  "porter-client",
@@ -1327,13 +1392,13 @@ dependencies = [
 [[package]]
 name = "docket-fake"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=82608696009fc7caaceb3afb7a56f9e6c37d7fa0#82608696009fc7caaceb3afb7a56f9e6c37d7fa0"
+source = "git+https://github.com/PoHsuanLai/docket?rev=01390d02c4e79327dbb00c35819b90f2c8d633ae#01390d02c4e79327dbb00c35819b90f2c8d633ae"
 dependencies = [
  "action-review",
  "almanac-core",
  "docket-checkpoint",
- "docket-client",
  "docket-core",
+ "docket-provider",
  "docket-router",
  "docket-session",
  "policy-point",
@@ -1347,7 +1412,7 @@ dependencies = [
 [[package]]
 name = "docket-log"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=82608696009fc7caaceb3afb7a56f9e6c37d7fa0#82608696009fc7caaceb3afb7a56f9e6c37d7fa0"
+source = "git+https://github.com/PoHsuanLai/docket?rev=01390d02c4e79327dbb00c35819b90f2c8d633ae#01390d02c4e79327dbb00c35819b90f2c8d633ae"
 dependencies = [
  "tracing",
 ]
@@ -1355,13 +1420,26 @@ dependencies = [
 [[package]]
 name = "docket-memory"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=82608696009fc7caaceb3afb7a56f9e6c37d7fa0#82608696009fc7caaceb3afb7a56f9e6c37d7fa0"
+source = "git+https://github.com/PoHsuanLai/docket?rev=01390d02c4e79327dbb00c35819b90f2c8d633ae#01390d02c4e79327dbb00c35819b90f2c8d633ae"
 dependencies = [
  "almanac-client",
  "almanac-core",
  "docket-core",
- "docket-router",
+ "docket-memory-core",
+ "docket-provider",
  "docket-session",
+ "porter-core",
+ "prov",
+ "serde_json",
+]
+
+[[package]]
+name = "docket-memory-core"
+version = "0.1.0"
+source = "git+https://github.com/PoHsuanLai/docket?rev=01390d02c4e79327dbb00c35819b90f2c8d633ae#01390d02c4e79327dbb00c35819b90f2c8d633ae"
+dependencies = [
+ "almanac-core",
+ "docket-core",
  "porter-core",
  "prov",
  "serde_json",
@@ -1370,7 +1448,7 @@ dependencies = [
 [[package]]
 name = "docket-models"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=82608696009fc7caaceb3afb7a56f9e6c37d7fa0#82608696009fc7caaceb3afb7a56f9e6c37d7fa0"
+source = "git+https://github.com/PoHsuanLai/docket?rev=01390d02c4e79327dbb00c35819b90f2c8d633ae#01390d02c4e79327dbb00c35819b90f2c8d633ae"
 dependencies = [
  "action-review",
  "docket-core",
@@ -1383,9 +1461,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "docket-procroot"
+version = "0.1.0"
+source = "git+https://github.com/PoHsuanLai/docket?rev=01390d02c4e79327dbb00c35819b90f2c8d633ae#01390d02c4e79327dbb00c35819b90f2c8d633ae"
+dependencies = [
+ "docket-core",
+ "porter-core",
+]
+
+[[package]]
+name = "docket-provider"
+version = "0.1.0"
+source = "git+https://github.com/PoHsuanLai/docket?rev=01390d02c4e79327dbb00c35819b90f2c8d633ae#01390d02c4e79327dbb00c35819b90f2c8d633ae"
+dependencies = [
+ "docket-core",
+ "docket-dbus",
+ "futures-util",
+ "prov",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "zbus",
+]
+
+[[package]]
 name = "docket-router"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=82608696009fc7caaceb3afb7a56f9e6c37d7fa0#82608696009fc7caaceb3afb7a56f9e6c37d7fa0"
+source = "git+https://github.com/PoHsuanLai/docket?rev=01390d02c4e79327dbb00c35819b90f2c8d633ae#01390d02c4e79327dbb00c35819b90f2c8d633ae"
 dependencies = [
  "action-review",
  "almanac-core",
@@ -1402,7 +1504,6 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
- "toml",
  "tracing",
  "url",
 ]
@@ -1410,7 +1511,7 @@ dependencies = [
 [[package]]
 name = "docket-session"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=82608696009fc7caaceb3afb7a56f9e6c37d7fa0#82608696009fc7caaceb3afb7a56f9e6c37d7fa0"
+source = "git+https://github.com/PoHsuanLai/docket?rev=01390d02c4e79327dbb00c35819b90f2c8d633ae#01390d02c4e79327dbb00c35819b90f2c8d633ae"
 dependencies = [
  "companion-wire",
  "docket-core",
@@ -1424,9 +1525,11 @@ dependencies = [
 [[package]]
 name = "docket-settings"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=82608696009fc7caaceb3afb7a56f9e6c37d7fa0#82608696009fc7caaceb3afb7a56f9e6c37d7fa0"
+source = "git+https://github.com/PoHsuanLai/docket?rev=01390d02c4e79327dbb00c35819b90f2c8d633ae#01390d02c4e79327dbb00c35819b90f2c8d633ae"
 dependencies = [
+ "agents-core",
  "docket-core",
+ "docket-store",
  "porter-core",
  "serde",
  "thiserror",
@@ -1437,7 +1540,7 @@ dependencies = [
 [[package]]
 name = "docket-skills"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=82608696009fc7caaceb3afb7a56f9e6c37d7fa0#82608696009fc7caaceb3afb7a56f9e6c37d7fa0"
+source = "git+https://github.com/PoHsuanLai/docket?rev=01390d02c4e79327dbb00c35819b90f2c8d633ae#01390d02c4e79327dbb00c35819b90f2c8d633ae"
 dependencies = [
  "docket-core",
  "porter-core",
@@ -1448,9 +1551,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "docket-skills-disk"
+version = "0.1.0"
+source = "git+https://github.com/PoHsuanLai/docket?rev=01390d02c4e79327dbb00c35819b90f2c8d633ae#01390d02c4e79327dbb00c35819b90f2c8d633ae"
+dependencies = [
+ "docket-skills",
+]
+
+[[package]]
 name = "docket-store"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=82608696009fc7caaceb3afb7a56f9e6c37d7fa0#82608696009fc7caaceb3afb7a56f9e6c37d7fa0"
+source = "git+https://github.com/PoHsuanLai/docket?rev=01390d02c4e79327dbb00c35819b90f2c8d633ae#01390d02c4e79327dbb00c35819b90f2c8d633ae"
 dependencies = [
  "atomic-write-file",
  "docket-core",
@@ -1593,7 +1704,7 @@ dependencies = [
 [[package]]
 name = "eventlog"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/almanac?rev=39121d44877615ae3d956b6939f485f848f9306c#39121d44877615ae3d956b6939f485f848f9306c"
+source = "git+https://github.com/PoHsuanLai/almanac?rev=8d91de738c76b38fdf3542795db334cc99a05437#8d91de738c76b38fdf3542795db334cc99a05437"
 dependencies = [
  "almanac-core",
  "almanac-seal",
@@ -1780,7 +1891,7 @@ dependencies = [
 [[package]]
 name = "genai-names"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/stoker?rev=f30d2808a9f05901a952c1fac6db2c6479a1bfe2#f30d2808a9f05901a952c1fac6db2c6479a1bfe2"
+source = "git+https://github.com/PoHsuanLai/stoker?rev=521a920898856001860ac4edafd3d57b7e1ccb6e#521a920898856001860ac4edafd3d57b7e1ccb6e"
 
 [[package]]
 name = "generic-array"
@@ -1945,12 +2056,22 @@ version = "0.1.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ddc03d96684f9226b8a787cdb71488417b53ab5ea8fdb1dac946cb9431cc8bff"
 dependencies = [
+ "base64 0.23.1",
  "bytes",
+ "futures-channel",
+ "futures-util",
  "http",
  "http-body",
+ "httparse",
  "hyper",
+ "ipnet",
+ "libc",
+ "percent-encoding",
  "pin-project-lite",
+ "socket2",
  "tokio",
+ "tower-service",
+ "tracing",
 ]
 
 [[package]]
@@ -2157,22 +2278,25 @@ dependencies = [
 [[package]]
 name = "intentd"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=82608696009fc7caaceb3afb7a56f9e6c37d7fa0#82608696009fc7caaceb3afb7a56f9e6c37d7fa0"
+source = "git+https://github.com/PoHsuanLai/docket?rev=01390d02c4e79327dbb00c35819b90f2c8d633ae#01390d02c4e79327dbb00c35819b90f2c8d633ae"
 dependencies = [
  "action-review",
  "almanac-client",
- "almanac-core",
  "docket-checkpoint-git",
  "docket-client",
  "docket-core",
  "docket-dbus",
  "docket-log",
  "docket-memory",
+ "docket-memory-core",
  "docket-models",
+ "docket-procroot",
+ "docket-provider",
  "docket-router",
  "docket-session",
  "docket-settings",
  "docket-skills",
+ "docket-skills-disk",
  "docket-store",
  "futures-util",
  "notify",
@@ -2190,6 +2314,12 @@ dependencies = [
  "toml",
  "zbus",
 ]
+
+[[package]]
+name = "ipnet"
+version = "2.12.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "791930b43c0d5973160d90a8f3894509f2b273430f5c5c73b668636d0287c5c0"
 
 [[package]]
 name = "itertools"
@@ -2525,7 +2655,7 @@ checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
 [[package]]
 name = "memfiles"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/almanac?rev=39121d44877615ae3d956b6939f485f848f9306c#39121d44877615ae3d956b6939f485f848f9306c"
+source = "git+https://github.com/PoHsuanLai/almanac?rev=8d91de738c76b38fdf3542795db334cc99a05437#8d91de738c76b38fdf3542795db334cc99a05437"
 dependencies = [
  "almanac-core",
  "almanac-seal",
@@ -2535,7 +2665,7 @@ dependencies = [
 [[package]]
 name = "memfiles-format"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/almanac?rev=39121d44877615ae3d956b6939f485f848f9306c#39121d44877615ae3d956b6939f485f848f9306c"
+source = "git+https://github.com/PoHsuanLai/almanac?rev=8d91de738c76b38fdf3542795db334cc99a05437#8d91de738c76b38fdf3542795db334cc99a05437"
 dependencies = [
  "almanac-core",
  "almanac-store",
@@ -2612,7 +2742,7 @@ dependencies = [
 [[package]]
 name = "model-catalog"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/stoker?rev=f30d2808a9f05901a952c1fac6db2c6479a1bfe2#f30d2808a9f05901a952c1fac6db2c6479a1bfe2"
+source = "git+https://github.com/PoHsuanLai/stoker?rev=521a920898856001860ac4edafd3d57b7e1ccb6e#521a920898856001860ac4edafd3d57b7e1ccb6e"
 dependencies = [
  "model-provider",
  "serde",
@@ -2624,11 +2754,9 @@ dependencies = [
 [[package]]
 name = "model-http"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/stoker?rev=f30d2808a9f05901a952c1fac6db2c6479a1bfe2#f30d2808a9f05901a952c1fac6db2c6479a1bfe2"
+source = "git+https://github.com/PoHsuanLai/stoker?rev=521a920898856001860ac4edafd3d57b7e1ccb6e#521a920898856001860ac4edafd3d57b7e1ccb6e"
 dependencies = [
- "http-body-util",
- "hyper",
- "hyper-util",
+ "reqwest",
  "serde",
  "thiserror",
  "tokio",
@@ -2638,7 +2766,7 @@ dependencies = [
 [[package]]
 name = "model-openai-compat"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/stoker?rev=f30d2808a9f05901a952c1fac6db2c6479a1bfe2#f30d2808a9f05901a952c1fac6db2c6479a1bfe2"
+source = "git+https://github.com/PoHsuanLai/stoker?rev=521a920898856001860ac4edafd3d57b7e1ccb6e#521a920898856001860ac4edafd3d57b7e1ccb6e"
 dependencies = [
  "log",
  "model-http",
@@ -2653,7 +2781,7 @@ dependencies = [
 [[package]]
 name = "model-provider"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/stoker?rev=f30d2808a9f05901a952c1fac6db2c6479a1bfe2#f30d2808a9f05901a952c1fac6db2c6479a1bfe2"
+source = "git+https://github.com/PoHsuanLai/stoker?rev=521a920898856001860ac4edafd3d57b7e1ccb6e#521a920898856001860ac4edafd3d57b7e1ccb6e"
 dependencies = [
  "base64 0.22.1",
  "cua-action",
@@ -2667,7 +2795,7 @@ dependencies = [
 [[package]]
 name = "model-replay"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/stoker?rev=f30d2808a9f05901a952c1fac6db2c6479a1bfe2#f30d2808a9f05901a952c1fac6db2c6479a1bfe2"
+source = "git+https://github.com/PoHsuanLai/stoker?rev=521a920898856001860ac4edafd3d57b7e1ccb6e#521a920898856001860ac4edafd3d57b7e1ccb6e"
 dependencies = [
  "blake3",
  "model-http",
@@ -2682,7 +2810,7 @@ dependencies = [
 [[package]]
 name = "model-wire"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/stoker?rev=f30d2808a9f05901a952c1fac6db2c6479a1bfe2#f30d2808a9f05901a952c1fac6db2c6479a1bfe2"
+source = "git+https://github.com/PoHsuanLai/stoker?rev=521a920898856001860ac4edafd3d57b7e1ccb6e#521a920898856001860ac4edafd3d57b7e1ccb6e"
 dependencies = [
  "model-http",
  "model-provider",
@@ -2955,7 +3083,7 @@ dependencies = [
 [[package]]
 name = "policy-point"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/docket?rev=82608696009fc7caaceb3afb7a56f9e6c37d7fa0#82608696009fc7caaceb3afb7a56f9e6c37d7fa0"
+source = "git+https://github.com/PoHsuanLai/docket?rev=01390d02c4e79327dbb00c35819b90f2c8d633ae#01390d02c4e79327dbb00c35819b90f2c8d633ae"
 dependencies = [
  "cedar-policy",
  "docket-core",
@@ -3009,7 +3137,7 @@ dependencies = [
 [[package]]
 name = "porter-client"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/porter?rev=fc6b55aba646377c296f5ccf0e086b83e3c139ae#fc6b55aba646377c296f5ccf0e086b83e3c139ae"
+source = "git+https://github.com/PoHsuanLai/porter?rev=f7e47a71ac30ab46dd0629fc8c2b2ae9cfcae261#f7e47a71ac30ab46dd0629fc8c2b2ae9cfcae261"
 dependencies = [
  "porter-core",
  "porter-dbus",
@@ -3026,11 +3154,15 @@ dependencies = [
 [[package]]
 name = "porter-core"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/porter?rev=fc6b55aba646377c296f5ccf0e086b83e3c139ae#fc6b55aba646377c296f5ccf0e086b83e3c139ae"
+source = "git+https://github.com/PoHsuanLai/porter?rev=f7e47a71ac30ab46dd0629fc8c2b2ae9cfcae261#f7e47a71ac30ab46dd0629fc8c2b2ae9cfcae261"
 dependencies = [
+ "chrono",
  "peephole-core",
+ "percent-encoding",
+ "secrecy",
  "serde",
  "serde_json",
+ "subtle",
  "thiserror",
  "zeroize",
 ]
@@ -3038,7 +3170,7 @@ dependencies = [
 [[package]]
 name = "porter-daemon"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/porter?rev=fc6b55aba646377c296f5ccf0e086b83e3c139ae#fc6b55aba646377c296f5ccf0e086b83e3c139ae"
+source = "git+https://github.com/PoHsuanLai/porter?rev=f7e47a71ac30ab46dd0629fc8c2b2ae9cfcae261#f7e47a71ac30ab46dd0629fc8c2b2ae9cfcae261"
 dependencies = [
  "notify",
  "thiserror",
@@ -3047,7 +3179,7 @@ dependencies = [
 [[package]]
 name = "porter-dbus"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/porter?rev=fc6b55aba646377c296f5ccf0e086b83e3c139ae#fc6b55aba646377c296f5ccf0e086b83e3c139ae"
+source = "git+https://github.com/PoHsuanLai/porter?rev=f7e47a71ac30ab46dd0629fc8c2b2ae9cfcae261#f7e47a71ac30ab46dd0629fc8c2b2ae9cfcae261"
 dependencies = [
  "peephole",
  "peephole-bus",
@@ -3064,7 +3196,7 @@ dependencies = [
 [[package]]
 name = "porter-infer"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/porter?rev=fc6b55aba646377c296f5ccf0e086b83e3c139ae#fc6b55aba646377c296f5ccf0e086b83e3c139ae"
+source = "git+https://github.com/PoHsuanLai/porter?rev=f7e47a71ac30ab46dd0629fc8c2b2ae9cfcae261#f7e47a71ac30ab46dd0629fc8c2b2ae9cfcae261"
 dependencies = [
  "base64 0.22.1",
  "cua-action",
@@ -3125,9 +3257,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "proptest"
+version = "1.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b8530004ccb15eae51c7e40009fbe317f341f804db54dc033eec1c50be28cfa0"
+dependencies = [
+ "bitflags 2.13.2",
+ "chacha20 0.10.2",
+ "core_detect",
+ "num-traits",
+ "rand",
+ "rand_xorshift",
+ "regex-syntax",
+ "unarray",
+]
+
+[[package]]
 name = "prov"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/prov?rev=44dc456c04bc4d414e03385b17be2cf6ddab0436#44dc456c04bc4d414e03385b17be2cf6ddab0436"
+source = "git+https://github.com/PoHsuanLai/prov?rev=e1e9725126c44b369086fdb0ce7f8da2e3048b8c#e1e9725126c44b369086fdb0ce7f8da2e3048b8c"
 dependencies = [
  "porter-core",
  "serde",
@@ -3207,9 +3355,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "63b8176103e19a2643978565ca18b50549f6101881c443590420e4dc998a3c69"
 
 [[package]]
+name = "rand_xorshift"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "60aa6af80be32871323012e02e6e65f8a7cc7890931ae421d217ad8fe0df2ccf"
+dependencies = [
+ "rand_core 0.10.1",
+]
+
+[[package]]
 name = "recall"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/almanac?rev=39121d44877615ae3d956b6939f485f848f9306c#39121d44877615ae3d956b6939f485f848f9306c"
+source = "git+https://github.com/PoHsuanLai/almanac?rev=8d91de738c76b38fdf3542795db334cc99a05437#8d91de738c76b38fdf3542795db334cc99a05437"
 dependencies = [
  "almanac-store",
  "rusqlite",
@@ -3285,6 +3442,35 @@ dependencies = [
  "log",
  "rustix",
  "tokio",
+]
+
+[[package]]
+name = "reqwest"
+version = "0.13.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "16a1cfa75cc186dd73d5818e510e042e40927bccc9c236b061cea97e1eb08029"
+dependencies = [
+ "base64 0.23.1",
+ "bytes",
+ "futures-core",
+ "http",
+ "http-body",
+ "http-body-util",
+ "hyper",
+ "hyper-util",
+ "js-sys",
+ "log",
+ "percent-encoding",
+ "pin-project-lite",
+ "sync_wrapper",
+ "tokio",
+ "tower",
+ "tower-http",
+ "tower-service",
+ "url",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
 ]
 
 [[package]]
@@ -3409,6 +3595,16 @@ dependencies = [
  "serde_json",
  "thiserror",
  "xkbcommon",
+]
+
+[[package]]
+name = "secrecy"
+version = "0.10.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e891af845473308773346dc847b2c23ee78fe442e0472ac50e22a18a93d3ae5a"
+dependencies = [
+ "serde",
+ "zeroize",
 ]
 
 [[package]]
@@ -3603,7 +3799,7 @@ dependencies = [
 [[package]]
 name = "speech-provider"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/stoker?rev=f30d2808a9f05901a952c1fac6db2c6479a1bfe2#f30d2808a9f05901a952c1fac6db2c6479a1bfe2"
+source = "git+https://github.com/PoHsuanLai/stoker?rev=521a920898856001860ac4edafd3d57b7e1ccb6e#521a920898856001860ac4edafd3d57b7e1ccb6e"
 dependencies = [
  "base64 0.22.1",
  "model-provider",
@@ -3694,6 +3890,15 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "sync_wrapper"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0bf256ce5efdfa370213c1dabab5935a12e49f2c58d15e9eac2870d3b4f27263"
+dependencies = [
+ "futures-core",
 ]
 
 [[package]]
@@ -3887,6 +4092,51 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7d56353a2a665ad0f41a421187180aab746c8c325620617ad883a99a1cbe66d2"
 
 [[package]]
+name = "tower"
+version = "0.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ebe5ef63511595f1344e2d5cfa636d973292adc0eec1f0ad45fae9f0851ab1d4"
+dependencies = [
+ "futures-core",
+ "futures-util",
+ "pin-project-lite",
+ "sync_wrapper",
+ "tokio",
+ "tower-layer",
+ "tower-service",
+]
+
+[[package]]
+name = "tower-http"
+version = "0.6.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4cfcf7e2740e6fc6d4d688b4ef00650406bb94adf4731e43c096c3a19fe40840"
+dependencies = [
+ "bitflags 2.13.2",
+ "bytes",
+ "futures-util",
+ "http",
+ "http-body",
+ "pin-project-lite",
+ "tower",
+ "tower-layer",
+ "tower-service",
+ "url",
+]
+
+[[package]]
+name = "tower-layer"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "121c2a6cda46980bb0fcd1647ffaf6cd3fc79a013de288782836f6df9c48780e"
+
+[[package]]
+name = "tower-service"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8df9b6e13f2d32c91b9bd719c00d1958837bc7dec474d94952798cc8e69eeec3"
+
+[[package]]
 name = "tracing"
 version = "0.1.44"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3945,6 +4195,21 @@ dependencies = [
  "tempfile",
  "windows-sys 0.61.2",
 ]
+
+[[package]]
+name = "ulid"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "947dde63b6d514cc5e044edad4e0ca7261afd1099d16c83d942cb2b2f348689c"
+dependencies = [
+ "web-time",
+]
+
+[[package]]
+name = "unarray"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eaea85b334db583fe3274d12b4cd1880032beab409c0d774be044d4480ab9a94"
 
 [[package]]
 name = "unicode-ident"
@@ -4056,7 +4321,7 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 [[package]]
 name = "vision-prep"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/stoker?rev=f30d2808a9f05901a952c1fac6db2c6479a1bfe2#f30d2808a9f05901a952c1fac6db2c6479a1bfe2"
+source = "git+https://github.com/PoHsuanLai/stoker?rev=521a920898856001860ac4edafd3d57b7e1ccb6e#521a920898856001860ac4edafd3d57b7e1ccb6e"
 dependencies = [
  "cua-action",
  "fast_image_resize",
@@ -4110,6 +4375,17 @@ dependencies = [
  "rustversion",
  "wasm-bindgen-macro",
  "wasm-bindgen-shared",
+]
+
+[[package]]
+name = "wasm-bindgen-futures"
+version = "0.4.79"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3cbab34de2d982e9b48e18d216d04c4a6f641066ff19ffb699980f591ee3610e"
+dependencies = [
+ "js-sys",
+ "tokio",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -4229,6 +4505,26 @@ dependencies = [
  "dlib",
  "log",
  "pkg-config",
+]
+
+[[package]]
+name = "web-sys"
+version = "0.3.106"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "88261b9deccee56594c11a3460c462c41f58d148598fe70ad77070126a68aba4"
+dependencies = [
+ "js-sys",
+ "wasm-bindgen",
+]
+
+[[package]]
+name = "web-time"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5a6580f308b1fad9207618087a65c04e7a10bc77e02c8e84e9b00dd4b12fa0bb"
+dependencies = [
+ "js-sys",
+ "wasm-bindgen",
 ]
 
 [[package]]

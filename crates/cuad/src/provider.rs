@@ -3,12 +3,12 @@
 use cua_bus::{ControlRefusal, CuaRecord};
 use cua_desktop::ToplevelIdent;
 use cua_run::Enabled;
-use docket_client::IntentProvider;
 use docket_core::{
     AgentReach, AppRefusal, EntityRef, FailText, Follow, Hit, Invocation, Manifest, ManifestError,
     Outcome, ParamName, Preview, SuggestAsk, UndoFault, UndoToken, Undoable, ValidManifest, Value,
     validate,
 };
+use docket_provider::IntentProvider;
 use porter_core::AppName;
 use prov::{
     Actor, AgentRef, EntityId, EntityKey, EntityKind, Label, Labelled, RunId, SessionId, SpaceId,
