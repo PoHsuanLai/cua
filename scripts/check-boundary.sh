@@ -229,7 +229,7 @@ done
 # drafts of a report), porter-core and porter-infer (counts, money, step and served-by ids) and
 # prov (labels). None of them is a capability crate.
 ONLY=(
-  "cua-bus: almanac-core cua-action cua-desktop cua-types docket-core porter-core porter-infer prov"
+  "cua-bus: almanac-core cua-action cua-desktop cua-types docket-core docket-gate-wire docket-vocab model-provider porter-core porter-ids porter-infer prov"
 )
 for entry in "${ONLY[@]}"; do
   crate="${entry%%:*}"
