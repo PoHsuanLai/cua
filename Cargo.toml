@@ -67,15 +67,15 @@ model-openai-compat = { git = "https://github.com/PoHsuanLai/stoker", rev = "c8f
 vision-prep     = { git = "https://github.com/PoHsuanLai/stoker", rev = "c8fed624534867659448ac417992bac4f0f47e28" }
 
 # porter's frozen interfaces.
-porter-core     = { git = "https://github.com/PoHsuanLai/porter", rev = "43ed7a6a2ad74719973f60493c59606c855b3145" }
-porter-ids      = { git = "https://github.com/PoHsuanLai/porter", rev = "43ed7a6a2ad74719973f60493c59606c855b3145" }
-porter-capability = { git = "https://github.com/PoHsuanLai/porter", rev = "43ed7a6a2ad74719973f60493c59606c855b3145" }
-porter-match    = { git = "https://github.com/PoHsuanLai/porter", rev = "43ed7a6a2ad74719973f60493c59606c855b3145" }
-porter-wire     = { git = "https://github.com/PoHsuanLai/porter", rev = "43ed7a6a2ad74719973f60493c59606c855b3145" }
-prov            = { git = "https://github.com/PoHsuanLai/prov", rev = "6181fa3ba3c6b4df573e32d0c4b233a12234fad4" }
-porter-infer    = { git = "https://github.com/PoHsuanLai/porter", rev = "43ed7a6a2ad74719973f60493c59606c855b3145" }
-porter-client   = { git = "https://github.com/PoHsuanLai/porter", rev = "43ed7a6a2ad74719973f60493c59606c855b3145", features = ["infer"] }
-porter-daemon   = { git = "https://github.com/PoHsuanLai/porter", rev = "43ed7a6a2ad74719973f60493c59606c855b3145" }
+porter-core     = { git = "https://github.com/PoHsuanLai/porter", rev = "ad54ea46a9d6ef23039371f5f12c1ed8fccb4cb7" }
+porter-ids      = { git = "https://github.com/PoHsuanLai/porter", rev = "ad54ea46a9d6ef23039371f5f12c1ed8fccb4cb7" }
+porter-capability = { git = "https://github.com/PoHsuanLai/porter", rev = "ad54ea46a9d6ef23039371f5f12c1ed8fccb4cb7" }
+porter-match    = { git = "https://github.com/PoHsuanLai/porter", rev = "ad54ea46a9d6ef23039371f5f12c1ed8fccb4cb7" }
+porter-wire     = { git = "https://github.com/PoHsuanLai/porter", rev = "ad54ea46a9d6ef23039371f5f12c1ed8fccb4cb7" }
+prov            = { git = "https://github.com/PoHsuanLai/prov", rev = "f6cc175c4c6d815b6faa3d58b7875ca00def836d" }
+porter-infer    = { git = "https://github.com/PoHsuanLai/porter", rev = "ad54ea46a9d6ef23039371f5f12c1ed8fccb4cb7" }
+porter-client   = { git = "https://github.com/PoHsuanLai/porter", rev = "ad54ea46a9d6ef23039371f5f12c1ed8fccb4cb7", features = ["infer"] }
+porter-daemon   = { git = "https://github.com/PoHsuanLai/porter", rev = "ad54ea46a9d6ef23039371f5f12c1ed8fccb4cb7" }
 
 # chordkit: the portable keymap core. cua reads the desktop's shortcut conventions from it (a
 # Keymap and a Platform) and restates none of them.
@@ -84,30 +84,30 @@ chordkit        = { git = "https://github.com/PoHsuanLai/chordkit.git", rev = "9
 keycap-client   = { git = "https://github.com/PoHsuanLai/keycap", rev = "bc3d41754fa716f4183c901915f95b70a5c4d0b8" }
 
 # almanac's frozen interfaces: cuad records `CuaRecord`s as `EventBody::Area` through memoryd.
-almanac-core    = { git = "https://github.com/PoHsuanLai/almanac", rev = "b1e07333cccea692748089af08885a0cbdaa7356" }
-almanac-client  = { git = "https://github.com/PoHsuanLai/almanac", rev = "b1e07333cccea692748089af08885a0cbdaa7356", default-features = false }
+almanac-core    = { git = "https://github.com/PoHsuanLai/almanac", rev = "f98261aa54adf78bf8f8cb7252a73ed638e58f49" }
+almanac-client  = { git = "https://github.com/PoHsuanLai/almanac", rev = "f98261aa54adf78bf8f8cb7252a73ed638e58f49", default-features = false }
 
 # docket's frozen interfaces: the gate contract (`CuaAsk`, `GateAnswer`, `RunMode`,
 # `WindowTrust`), the message draft and the provider trait. docket sits below cua and has no cua
 # dependency.
-docket-core     = { git = "https://github.com/PoHsuanLai/docket", rev = "f04f4ddafc61c86977920bb77f26bf76469e6dd0" }
-docket-vocab    = { git = "https://github.com/PoHsuanLai/docket", rev = "f04f4ddafc61c86977920bb77f26bf76469e6dd0" }
-docket-manifest = { git = "https://github.com/PoHsuanLai/docket", rev = "f04f4ddafc61c86977920bb77f26bf76469e6dd0" }
-docket-permissions-core = { git = "https://github.com/PoHsuanLai/docket", rev = "f04f4ddafc61c86977920bb77f26bf76469e6dd0" }
-docket-wire     = { git = "https://github.com/PoHsuanLai/docket", rev = "f04f4ddafc61c86977920bb77f26bf76469e6dd0" }
-docket-gate-wire = { git = "https://github.com/PoHsuanLai/docket", rev = "f04f4ddafc61c86977920bb77f26bf76469e6dd0" }
-docket-client   = { git = "https://github.com/PoHsuanLai/docket", rev = "f04f4ddafc61c86977920bb77f26bf76469e6dd0", default-features = false }
-docket-provider = { git = "https://github.com/PoHsuanLai/docket", rev = "f04f4ddafc61c86977920bb77f26bf76469e6dd0" }
+docket-core     = { git = "https://github.com/PoHsuanLai/docket", rev = "7bb397e5b4e95ab9ec95dea56d93690bc6c13e67" }
+docket-vocab    = { git = "https://github.com/PoHsuanLai/docket", rev = "7bb397e5b4e95ab9ec95dea56d93690bc6c13e67" }
+docket-manifest = { git = "https://github.com/PoHsuanLai/docket", rev = "7bb397e5b4e95ab9ec95dea56d93690bc6c13e67" }
+docket-permissions-core = { git = "https://github.com/PoHsuanLai/docket", rev = "7bb397e5b4e95ab9ec95dea56d93690bc6c13e67" }
+docket-wire     = { git = "https://github.com/PoHsuanLai/docket", rev = "7bb397e5b4e95ab9ec95dea56d93690bc6c13e67" }
+docket-gate-wire = { git = "https://github.com/PoHsuanLai/docket", rev = "7bb397e5b4e95ab9ec95dea56d93690bc6c13e67" }
+docket-client   = { git = "https://github.com/PoHsuanLai/docket", rev = "7bb397e5b4e95ab9ec95dea56d93690bc6c13e67", default-features = false }
+docket-provider = { git = "https://github.com/PoHsuanLai/docket", rev = "7bb397e5b4e95ab9ec95dea56d93690bc6c13e67" }
 # Who is calling a daemon: porter's process identity (`Identity`, `Standing`, the callers table), the one way every daemon of the agent tier asks.
-docket-dbus     = { git = "https://github.com/PoHsuanLai/docket", rev = "f04f4ddafc61c86977920bb77f26bf76469e6dd0" }
+docket-dbus     = { git = "https://github.com/PoHsuanLai/docket", rev = "7bb397e5b4e95ab9ec95dea56d93690bc6c13e67" }
 
 # Dev-dependencies of cuad's tests only: a real intentd on a private bus over docket's fakes, and
 # a real memory service over almanac's fakes. Nothing outside `[dev-dependencies]` names them.
-intentd         = { git = "https://github.com/PoHsuanLai/docket", rev = "f04f4ddafc61c86977920bb77f26bf76469e6dd0" }
-docket-fake     = { git = "https://github.com/PoHsuanLai/docket", rev = "f04f4ddafc61c86977920bb77f26bf76469e6dd0" }
-docket-router   = { git = "https://github.com/PoHsuanLai/docket", rev = "f04f4ddafc61c86977920bb77f26bf76469e6dd0" }
-almanac-fake    = { git = "https://github.com/PoHsuanLai/almanac", rev = "b1e07333cccea692748089af08885a0cbdaa7356" }
-almanac-service = { git = "https://github.com/PoHsuanLai/almanac", rev = "b1e07333cccea692748089af08885a0cbdaa7356" }
+intentd         = { git = "https://github.com/PoHsuanLai/docket", rev = "7bb397e5b4e95ab9ec95dea56d93690bc6c13e67" }
+docket-fake     = { git = "https://github.com/PoHsuanLai/docket", rev = "7bb397e5b4e95ab9ec95dea56d93690bc6c13e67" }
+docket-router   = { git = "https://github.com/PoHsuanLai/docket", rev = "7bb397e5b4e95ab9ec95dea56d93690bc6c13e67" }
+almanac-fake    = { git = "https://github.com/PoHsuanLai/almanac", rev = "f98261aa54adf78bf8f8cb7252a73ed638e58f49" }
+almanac-service = { git = "https://github.com/PoHsuanLai/almanac", rev = "f98261aa54adf78bf8f8cb7252a73ed638e58f49" }
 
 # From quire's pinned block (`docs/workspace-deps.toml`), copied verbatim: only the lines cua
 # names itself.

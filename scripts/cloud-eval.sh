@@ -60,7 +60,7 @@ cat > "$world/config/porter/callers.toml" <<'TOML'
 [[caller]]
 app = "org.quire.Inference"
 unit = "inferd.service"
-role = "porter_daemon"
+role = "ai_broker"
 TOML
 cat > "$world/config/quire/inferd.toml" <<TOML
 [ai]
