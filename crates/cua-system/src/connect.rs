@@ -18,7 +18,7 @@ pub struct Links {
     /// The event log and the message path.
     pub events: DaemonLinks<almanac_client::DbusTransport, docket_client::DbusTransport>,
     /// The model, over inferd on the same bus.
-    pub model: InferdCuaModel<porter_client::DbusTransport>,
+    pub model: InferdCuaModel<inferd_client::DbusTransport>,
 }
 
 impl Links {
@@ -32,7 +32,7 @@ impl Links {
                 Memory::over(almanac_client::DbusTransport::new(connection.clone())),
                 Intents::over(docket_client::DbusTransport::new(connection.clone())),
             ),
-            model: InferdCuaModel::over(porter_client::DbusTransport::over(connection.clone()))
+            model: InferdCuaModel::over(inferd_client::DbusTransport::over(connection.clone()))
                 .on_tier(tier),
         }
     }

@@ -68,12 +68,12 @@ is a description (dev-dependencies are outside it):
 | `cua-dbus` | `cua-bus`, `prov` |
 | `cua-fake` | `a11y-tree`, `cua-action`, `cua-bus`, `cua-desktop`, `cua-run`, `maskcap`, `seat-input`, `docket-core`, `prov`, `porter-core`, `porter-infer`, `model-replay`, `model-provider`, `cua-parse` |
 | `cua-eval` | `a11y-tree`, `chordkit`, `cua-action`, `cua-bus`, `cua-desktop`, `cua-fake`, `cua-parse`, `cua-run`, `cua-session`, `cua-vendors`, `docket-core`, `maskcap`, `model-catalog`, `model-http`, `model-openai-compat`, `model-provider`, `porter-core`, `porter-infer`, `prov`, `seat-input`, `vision-prep` |
-| `cua-eval-cloud` | `cua-eval`, `model-catalog`, `model-provider`, `porter-client`, `porter-core`, `porter-infer`, `vision-prep` |
+| `cua-eval-cloud` | `cua-eval`, `model-catalog`, `model-provider`, `inferd-client`, `porter-core`, `porter-infer`, `vision-prep` |
 | `cua-host` | `cua-bus`, `cua-desktop`, `cua-run`, `docket-core`, `docket-client`, `prov`, `porter-core`, `almanac-core`, `almanac-client` |
 | `maskcap-wayland` | `maskcap`, `cua-action`, `cua-desktop`; `casement-protocols` (client) |
 | `seat-ei` | `seat-input`, `cua-action`, `cua-desktop`, `porter-core` |
 | `a11y-atspi` | `a11y-tree`, `cua-action`, `cua-desktop`, `prov`, `porter-core` |
-| `cua-system` | `a11y-atspi`, `a11y-tree`, `cua-desktop`, `cua-host`, `cua-run`, `maskcap`, `maskcap-wayland`, `seat-ei`, `seat-input`, `desktop-client`, `docket-client`, `almanac-client`, `porter-client`, `porter-core`, `porter-infer` |
+| `cua-system` | `a11y-atspi`, `a11y-tree`, `cua-desktop`, `cua-host`, `cua-run`, `maskcap`, `maskcap-wayland`, `seat-ei`, `seat-input`, `desktop-client`, `docket-client`, `almanac-client`, `inferd-client`, `porter-core`, `porter-infer` |
 | `cuad` | `chordkit`, `keycap-client` (feature `keycap`, on by default), `cua-bus`, `cua-dbus`, `cua-host`, `cua-desktop`, `cua-run`, `cua-system`, `docket-core`, `docket-client`, `prov`, `porter-core` |
 
 The edges differ from SPEC 1.3 in one way, forced by its own types: `seat-input`, `maskcap` and
@@ -83,8 +83,8 @@ where the leaf types its records and the `Start` body name now live (it links no
 conflicts".
 
 The repo order is stoker, porter, almanac, docket, cua, sill. cua reaches stoker's
-`cua-action` and `model-replay`, porter's `prov`, `porter-core`, `porter-infer` and
-`porter-client`, almanac's `almanac-core` and `almanac-client`, and docket's `docket-core`
+`cua-action` and `model-replay`, porter's `prov`, `porter-core`, `porter-infer`,
+almanac's `almanac-core` and `almanac-client`, and docket's `docket-core`
 (`CuaAsk`, `GateAnswer`, `MessageDraft`) and `docket-client`
 (`IntentProvider`, `Intents`), all by sibling path until pinned git revs replace them. Nothing of
 sill may enter any tree here. cua never reaches `policy-point`: the router is the one decision

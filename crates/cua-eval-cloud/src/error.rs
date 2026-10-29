@@ -5,9 +5,9 @@ use cua_eval::corpus::CorpusError;
 use cua_eval::flags::FlagError;
 use cua_eval::live::LiveError;
 use cua_eval::run::SetupError;
+use inferd_client::TransportError;
 use model_catalog::CatalogError;
 use porter_capability::Tier;
-use porter_client::TransportError;
 use porter_ids::IdError;
 use std::path::PathBuf;
 

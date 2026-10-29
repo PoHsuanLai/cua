@@ -30,7 +30,7 @@ impl Seams for SystemSeams {
     type Seat = EiSeat;
     type Capture = Option<CaptureBackend>;
     type A11y = Option<LoggedAtspi>;
-    type Model = InferdCuaModel<porter_client::DbusTransport>;
+    type Model = InferdCuaModel<inferd_client::DbusTransport>;
     type Gate = IntentsGate<docket_client::DbusTransport>;
     type Events = DaemonLinks<almanac_client::DbusTransport, docket_client::DbusTransport>;
     type Time = SystemClock;

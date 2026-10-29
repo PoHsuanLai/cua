@@ -23,7 +23,7 @@ porter-ids = { workspace = true }
 cua-eval = { workspace = true }
 model-catalog = { workspace = true }
 model-provider = { workspace = true }
-porter-client = { workspace = true, features = ["dbus"] }
+inferd-client = { workspace = true, features = ["dbus"] }
 porter-core = { workspace = true }
 porter-infer = { workspace = true }
 thiserror = { workspace = true }

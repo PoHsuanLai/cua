@@ -107,7 +107,7 @@ RULES=(
   # an HTTP client to an engine on this machine; never a bus, a wayland connection, the
   # accessibility stack, a database or the policy engine.
   "cua-eval: zbus zvariant wayland-client wayland-backend wayland-server atspi oo7 ort fastembed rusqlite notify rmcp cedar-policy"
-  # The cloud eval is the eval plus the bus to inferd (zbus through porter-client): a stoker Provider whose
+  # The cloud eval is the eval plus the bus to inferd (zbus through inferd-client): a stoker Provider whose
   # turns are inferd chat turns, so a hosted model's key stays in accountd. It reaches no wayland
   # connection, accessibility stack, database or policy engine.
   "cua-eval-cloud: wayland-client wayland-backend wayland-server atspi oo7 ort fastembed rusqlite notify rmcp cedar-policy"

@@ -25,7 +25,7 @@ cua-host = { workspace = true }
 docket-client = { workspace = true, features = ["dbus"] }
 porter-core = { workspace = true }
 porter-infer = { workspace = true }
-porter-client = { workspace = true, features = ["dbus"] }
+inferd-client = { workspace = true, features = ["dbus"] }
 almanac-client = { workspace = true, features = ["dbus"] }
 wayland-client = { workspace = true }
 rustix = { workspace = true }
@@ -34,7 +34,6 @@ tokio = { workspace = true }
 zbus = { workspace = true }
 
 [dev-dependencies]
-porter-wire = { workspace = true }
 cua-action = { workspace = true }
 
 [lints]

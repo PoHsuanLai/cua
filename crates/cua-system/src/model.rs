@@ -5,9 +5,9 @@ use cua_run::{
     CuaModel, CuaModelError, FrameAttachment, ModelReach, ModelSight, StepEvent, StepSink,
     ThoughtText,
 };
+use inferd_client::{OpenOptions, Transport, TransportError};
 use porter_capability::CuaEnv;
 use porter_capability::Tier;
-use porter_client::{OpenOptions, Transport, TransportError};
 use porter_core::DataClass;
 use porter_ids::Tokens;
 use porter_infer::{

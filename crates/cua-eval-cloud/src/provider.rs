@@ -8,11 +8,11 @@
 
 use crate::request::{RequestFault, SamplingFrom, chat};
 use crate::watch::Watch;
+use inferd_client::{OpenOptions, Transport, TransportError};
 use model_provider as sp;
 use model_provider::{Provider, ProviderError, TurnEvent, TurnSink};
 use porter_capability::LlmFeature;
 use porter_capability::Tier;
-use porter_client::{OpenOptions, Transport, TransportError};
 use porter_core::DataClass;
 use porter_core::consent::Usage;
 use porter_ids::Tokens;

@@ -8,10 +8,10 @@ use cua_action::{
     WindowSpace,
 };
 use cua_run::{FrameAttachment, StepEvent, StepSink};
+use inferd_client::{Transport, TransportError};
 use maskcap::PixelBuf;
 use porter_capability::CuaEnv;
 use porter_capability::{Locality, ModelId, Tier};
-use porter_client::{Transport, TransportError};
 use porter_core::{AccountId, DataClass};
 use porter_ids::Tokens;
 use porter_infer::{
@@ -21,7 +21,6 @@ use porter_infer::{
     WindowGeometry,
 };
 use porter_match::Need;
-use porter_wire::{AccountsReply, AccountsRequest};
 use rustix::fs::{SealFlags, fcntl_get_seals};
 use std::collections::{BTreeSet, VecDeque};
 use std::os::fd::OwnedFd;
@@ -146,10 +145,6 @@ impl InferSession for Session {
 
 impl Transport for Scripted {
     type Session = Session;
-
-    async fn call(&self, _request: AccountsRequest) -> Result<AccountsReply, TransportError> {
-        Err(TransportError::Unreachable)
-    }
 
     async fn prepare(
         &self,
